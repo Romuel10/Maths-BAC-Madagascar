@@ -1,4 +1,4 @@
-name: Android release bundle
+name: Android V7 release
 
 on:
   workflow_dispatch:
