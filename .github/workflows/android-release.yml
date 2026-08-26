@@ -1,0 +1,68 @@
+name: Android release bundle
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Récupérer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Installer le SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Installer Android API 36
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Préparer la clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MATHS_BAC_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.MATHS_BAC_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MATHS_BAC_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.MATHS_BAC_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo 'Secret MATHS_BAC_KEYSTORE_BASE64 manquant'; exit 1; }
+          test -n "$KEYSTORE_PASSWORD" || { echo 'Secret MATHS_BAC_KEYSTORE_PASSWORD manquant'; exit 1; }
+          test -n "$KEY_ALIAS" || { echo 'Secret MATHS_BAC_KEY_ALIAS manquant'; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo 'Secret MATHS_BAC_KEY_PASSWORD manquant'; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/maths-bac-release.jks"
+          echo "MATHS_BAC_KEYSTORE_PATH=$RUNNER_TEMP/maths-bac-release.jks" >> "$GITHUB_ENV"
+          echo "MATHS_BAC_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "MATHS_BAC_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "MATHS_BAC_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Construire le bundle signé
+        run: npm run android:bundle
+
+      - name: Publier l’artefact AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: maths-bac-madagascar-v7-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
