@@ -4,10 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - '**'
+      - main
     tags:
       - 'v*'
   pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -17,52 +19,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  refresh-lock:
-    name: Régénération temporaire du verrouillage
-    if: github.event_name == 'pull_request' && github.head_ref == 'fix/prepublication-audit-2026-10-01'
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Récupérer la branche source
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Régénérer package-lock et appliquer les correctifs npm sûrs
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit fix --package-lock-only --ignore-scripts
-          git diff -- package.json package-lock.json
-
-      - name: Enregistrer le verrouillage corrigé
-        run: |
-          if git diff --quiet -- package.json package-lock.json; then
-            echo "Aucune modification du verrouillage"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "Refresh secure npm lockfile"
-          git push origin HEAD:${{ github.head_ref }}
-
   validate:
     name: Validation complète
-    needs: refresh-lock
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Récupérer le projet
         uses: actions/checkout@v7
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Installer Node.js
         uses: actions/setup-node@v7
@@ -73,8 +36,8 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
-      - name: Vérifier les vulnérabilités élevées
-        run: npm audit --audit-level=high
+      - name: Vérifier les vulnérabilités npm
+        run: npm audit --audit-level=low
 
       - name: Tester le projet complet
         run: npm run test:full
