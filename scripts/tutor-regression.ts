@@ -8,7 +8,8 @@ const samples = [
  ['Calculer une probabilité avec une loi binomiale', 'Probabilités'],
  ['Étudier la suite u_n définie par récurrence', 'Suites'],
  ['Montrer que deux vecteurs sont orthogonaux', 'Géométrie'],
- ['Calculer le PGCD avec Euclide', 'Arithmétique']
+ ['Calculer le PGCD avec Euclide', 'Arithmétique'],
+ ['Calculer la valeur acquise avec un intérêt composé', 'Finance']
 ] as const;
 
 for (const [statement, expectedTopic] of samples) {

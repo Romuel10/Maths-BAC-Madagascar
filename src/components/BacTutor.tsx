@@ -11,7 +11,7 @@ import { solveStatementExactly, type StatementResolution } from '../lib/statemen
 
 type HelpMode = 'understand' | 'start' | 'plan';
 type Workspace = 'statement' | 'function' | 'verify' | 'method';
-export type SolverTool = 'algebra' | 'complex' | 'probability' | 'sequence' | 'geometry' | 'arithmetic' | 'calculator';
+export type SolverTool = 'algebra' | 'complex' | 'probability' | 'sequence' | 'geometry' | 'arithmetic' | 'finance' | 'calculator';
 
 const METHODS: Record<SolverTopic, { title: string; steps: string[]; reminders: string[]; questions: string[] }> = {
  Analyse: { title: 'Méthode d’étude d’une fonction', steps: ['Déterminer l’ensemble de définition.', 'Calculer les limites utiles.', 'Calculer et simplifier la dérivée.', 'Étudier le signe de la dérivée puis dresser les variations.', 'Chercher les asymptotes et les points remarquables si la question le demande.'], reminders: ['Un dénominateur doit être non nul.', 'Sous une racine carrée : $u≥0$.', 'Dans $ln(u)$ : $u>0$.'], questions: ['Quelle est l’expression exacte de la fonction ?', 'Quel est son domaine ?', 'La question demande-t-elle une limite, une dérivée, un signe ou un tableau ?'] },
@@ -21,6 +21,7 @@ const METHODS: Record<SolverTopic, { title: string; steps: string[]; reminders: 
  Suites: { title: 'Méthode pour les suites', steps: ['Identifier si la suite est explicite ou définie par récurrence.', 'Calculer quelques premiers termes si cela aide.', 'Étudier monotonie et bornes si une convergence est demandée.', 'Une limite candidate obtenue par $ℓ=f(ℓ)$ doit ensuite être justifiée.'], reminders: ['Une limite candidate n’est pas une preuve.', 'Suite géométrique : $u_n=u_0q^n$.'], questions: ['La suite est-elle explicite ou récurrente ?', 'Cherche-t-on un terme, une monotonie ou une limite ?', 'Peut-on comparer $u_(n+1)$ et $u_n$ ?'] },
  Géométrie: { title: 'Méthode en géométrie', steps: ['Faire un schéma et relever les données.', 'Choisir un repère ou des vecteurs si cela simplifie.', 'Traduire la propriété demandée en égalité, produit scalaire, déterminant ou distance.', 'Conclure avec une phrase géométrique.'], reminders: ['Orthogonalité : produit scalaire nul.', 'Colinéarité : déterminant nul en dimension 2.'], questions: ['Quelle propriété faut-il montrer ?', 'Un repère simplifierait-il le problème ?', 'Quelles coordonnées sont connues ?'] },
  Arithmétique: { title: 'Méthode en arithmétique', steps: ['Repérer divisibilité, PGCD, congruence ou équation diophantienne.', 'Utiliser l’algorithme d’Euclide si nécessaire.', 'Écrire proprement les congruences.', 'Vérifier la divisibilité ou la solution finale.'], reminders: ['$a≡b [n]$ signifie que $n$ divise $a-b$.', 'Bézout relie le PGCD à une combinaison linéaire.'], questions: ['Quel est le modulo ?', 'Cherche-t-on un PGCD ou une divisibilité ?', 'Peut-on appliquer Euclide ou Bézout ?'] },
+ Finance: { title: 'Méthode en mathématiques financières', steps: ['Identifier le capital ou la valeur nominale, le taux, la durée et la date recherchée.', 'Convertir le taux en décimal et mettre la durée dans l’unité correcte.', 'Choisir intérêt simple, escompte, capitalisation, actualisation ou annuités.', 'Calculer sans arrondi intermédiaire puis interpréter le résultat en Ariary et à la bonne date.'], reminders: ['10 % = 0,10 dans les formules.', 'Intérêt simple : I=Cit.', 'Intérêt composé : A=C(1+i)^n.', 'Actualisation : VA=VF/(1+i)^n.'], questions: ['Quel montant est connu ?', 'Le taux est-il annuel, mensuel ou par période ?', 'Cherche-t-on une valeur actuelle, une valeur acquise, un intérêt ou une annuité ?'] },
  Général: { title: 'Méthode générale de résolution', steps: ['Lire exactement ce qui est demandé.', 'Lister les données et l’inconnue.', 'Identifier le chapitre.', 'Écrire le théorème ou la formule avant le calcul.', 'Vérifier puis conclure.'], reminders: ['Au BAC, le raisonnement et la justification comptent autant que le résultat final.'], questions: ['Quelles sont les données ?', 'Quelle est la question exacte ?', 'Quel chapitre du cours ressemble le plus à ce problème ?'] }
 };
 
@@ -54,6 +55,7 @@ const TOPIC_TOOL: Partial<Record<SolverTopic, SolverTool>> = {
  Suites: 'sequence',
  Géométrie: 'geometry',
  Arithmétique: 'arithmetic',
+ Finance: 'finance',
 };
 
 interface Props {
@@ -199,7 +201,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   </section>}
 
   {workspace==='statement'&&intent&&!statementResolution&&<div className="notice notice-info"><strong>Méthode guidée seulement :</strong> je reconnais le chapitre et la démarche, mais je ne peux pas encore calculer automatiquement toute cette question avec assez de fiabilité. Utilise l’outil recommandé ou recopie la partie mathématique exacte ; aucune réponse finale n’est inventée.</div>}
-  {workspace==='statement'&&<details className="surface p-3"><summary className="font-black text-xs cursor-pointer">Ce que le moteur d’énoncés sait résoudre complètement</summary><p className="section-copy mt-2">Équations réelles du 1er/2e degré, systèmes linéaires 2×2 ou 3×3 en x/y/z, variations de polynômes jusqu’au degré 2, PGCD, congruences linéaires et orthogonalité par coordonnées. Les autres chapitres utilisent les calculateurs spécialisés et le guidage pédagogique.</p></details>}
+  {workspace==='statement'&&<details className="surface p-3"><summary className="font-black text-xs cursor-pointer">Ce que le moteur d’énoncés sait résoudre complètement</summary><p className="section-copy mt-2">Équations réelles du 1er/2e degré, systèmes linéaires 2×2 ou 3×3, dérivées prises en charge par le moteur symbolique, intégrales définies reconnues, certains calculs de suites, loi binomiale, problèmes financiers simples/composés, variations de polynômes, PGCD, congruences et orthogonalité. Si le moteur n’est pas certain, il reste en méthode guidée.</p></details>}
 
   {showGuide && (workspace === 'statement' || workspace === 'method') && <section className="surface p-4">
    <div className="flex items-start justify-between gap-3"><div><p className="eyebrow">{intent?'Chapitre détecté':'Chapitre choisi'}</p><h3 className="section-title mt-2">{topic}</h3></div><label><span className="sr-only">Chapitre</span><select aria-label="Chapitre" value={topic} onChange={e=>setTopic(e.target.value as SolverTopic)} className="field !w-auto !py-2 !px-3 text-xs">{Object.keys(METHODS).map(t=><option key={t}>{t}</option>)}</select></label></div>

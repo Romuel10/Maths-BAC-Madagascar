@@ -296,6 +296,44 @@ const SUPPORT: Record<SolverTopic, TutorStepSupport[]> = {
    bacWriting: 'Conclue avec la propriété exacte demandée.'
   }
  ],
+ Finance: [
+  {
+   objective: 'Identifier les grandeurs financières de l’énoncé.',
+   why: 'Le choix de la formule dépend du capital, du taux, de la durée et de la date de comparaison.',
+   action: 'Relève C ou N, le taux i ou d, la durée t ou n, puis précise s’il s’agit d’intérêt simple, composé, d’escompte, d’actualisation ou d’annuités.',
+   selfCheck: 'Le taux est-il écrit en décimal et la durée utilise-t-elle la même unité que le taux ?',
+   microExample: '10 % devient 0,10 ; 9 mois avec un taux annuel donnent t=9/12=0,75 an pour un intérêt simple.',
+   pitfall: 'Utiliser 10 au lieu de 0,10 dans une formule.',
+   bacWriting: 'Écris d’abord « Données : C=…, i=…, n=… » avec les unités.'
+  },
+  {
+   objective: 'Choisir la bonne formule.',
+   why: 'Intérêt simple et intérêt composé ne modélisent pas la même évolution du capital.',
+   action: 'Utilise I=Cit pour l’intérêt simple, A=C(1+i)^n pour la capitalisation, VA=VF/(1+i)^n pour l’actualisation ou la formule d’annuités adaptée.',
+   selfCheck: 'La formule choisie correspond-elle au sens du temps et au type de placement ?',
+   microExample: 'Pour 1 000 000 Ar à 10 % pendant 2 ans composés : A=1 000 000×1,1².',
+   pitfall: 'Remplacer (1+i)^n par 1+ni dans un problème d’intérêts composés.',
+   bacWriting: 'Écris la formule symbolique avant de remplacer par les nombres.'
+  },
+  {
+   objective: 'Effectuer le calcul sans arrondir trop tôt.',
+   why: 'Les puissances et facteurs d’actualisation amplifient les erreurs d’arrondi.',
+   action: 'Calcule avec toutes les décimales disponibles et arrondis seulement le résultat final selon la consigne.',
+   selfCheck: 'Le résultat a-t-il un ordre de grandeur cohérent avec le capital initial ?',
+   microExample: '1 000 000×1,1²=1 210 000 Ar.',
+   pitfall: 'Arrondir le facteur financier avant la multiplication finale.',
+   bacWriting: 'Garde une ligne avec le facteur numérique puis une ligne avec le résultat en Ariary.'
+  },
+  {
+   objective: 'Interpréter le résultat à la bonne date.',
+   why: 'Une valeur financière n’a de sens qu’avec sa date et son rôle : actuelle, acquise, nominale ou annuité.',
+   action: 'Relis la question puis écris une phrase avec la date et l’unité monétaire.',
+   selfCheck: 'Ta réponse précise-t-elle ce que représente la somme obtenue ?',
+   microExample: '« La valeur acquise après 2 ans est 1 210 000 Ar. »',
+   pitfall: 'Donner seulement un nombre sans préciser s’il s’agit d’un intérêt ou d’une valeur acquise.',
+   bacWriting: 'Termine par une phrase complète avec « Ar » et la date concernée.'
+  }
+ ],
  Général: [
   {
    objective: 'Comprendre exactement la consigne.',
@@ -394,6 +432,13 @@ const PRACTICE: Record<SolverTopic, TutorPractice> = {
   hint: 'Cherche 38=7q+r avec 0≤r<7.',
   solution: '38=5×7+3. Donc 38≡3 [7].',
   checkpoint: 'Le reste doit être compris entre 0 et 6.'
+ },
+ Finance: {
+  title: 'Mini-entraînement · finance OSE',
+  prompt: '1 000 000 Ar sont placés à 10 % par an pendant 2 ans à intérêts composés. Calcule la valeur acquise.',
+  hint: 'Transforme 10 % en 0,10 puis utilise A=C(1+i)^n.',
+  solution: 'A=1 000 000×(1+0,10)^2=1 000 000×1,21=1 210 000 Ar.',
+  checkpoint: 'Vérifie que tu as utilisé une puissance : c’est un placement à intérêts composés.'
  },
  Général: {
   title: 'Mini-entraînement · méthode',
