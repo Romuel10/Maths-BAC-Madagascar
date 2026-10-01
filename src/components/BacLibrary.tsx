@@ -4,6 +4,7 @@ import { subjectProgress } from '../lib/bacProgress';
 import { OfficialAnnalesBrowser } from './OfficialAnnalesBrowser';
 import { AnnaleStudyWorkbench } from './AnnaleStudyWorkbench';
 import { OfflineAnnaleManager } from './OfflineAnnaleManager';
+import { getStudentProfile } from '../lib/studentProfile';
 
 const BacGuidedSolver=lazy(()=>import('./BacGuidedSolver').then(module=>({default:module.BacGuidedSolver})));
 const BacExamSession=lazy(()=>import('./BacExamSession').then(module=>({default:module.BacExamSession})));
@@ -14,7 +15,7 @@ type Mode = 'list' | 'guided' | 'exam';
 type LibraryTab = 'annales' | 'training' | 'local';
 
 export function BacLibrary({ onAnalyzeFunction, onTutor }: Props) {
- const [series, setSeries] = useState<BacSeries>('D');
+ const [series, setSeries] = useState<BacSeries>(()=>getStudentProfile().series||'D');
  const [selected, setSelected] = useState<BacSubject | null>(null);
  const [mode, setMode] = useState<Mode>('list');
  const [tab,setTab]=useState<LibraryTab>('training');
