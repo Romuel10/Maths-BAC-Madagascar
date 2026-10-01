@@ -1,5 +1,5 @@
 import { solveQuadraticReal } from './algebraCore.js';
-import { formatPolynomial, parsePolynomial, polynomialDegree, polynomialDerivative, polynomialSub, polynomialValue, type Polynomial } from './polynomialEngine.js';
+import { formatPolynomial, parsePolynomial, polynomialDegree, polynomialDerivative, polynomialSub, polynomialValue } from './polynomialEngine.js';
 
 export type StatementResolutionKind = 'equation' | 'function-variation' | 'pgcd' | 'orthogonality';
 
