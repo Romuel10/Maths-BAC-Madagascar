@@ -92,7 +92,7 @@ const CORE_LEARNING_CHAPTERS: CoreLearningChapter[] = [
   ]
  },
  {
-  topic: 'Géométrie', title: 'Géométrie', series: ['A','C','D','S'], tool: 'geometry',
+  topic: 'Géométrie', title: 'Géométrie', series: ['C','D','S'], tool: 'geometry',
   summary: 'Vecteurs, droites, distances, produit scalaire et configurations.',
   objectives: ['Montrer une colinéarité', 'Prouver une orthogonalité', 'Calculer une distance'],
   method: ['Faire un schéma.', 'Relever les coordonnées et données.', 'Traduire la propriété par une égalité.', 'Conclure géométriquement.'],
@@ -102,7 +102,7 @@ const CORE_LEARNING_CHAPTERS: CoreLearningChapter[] = [
   ]
  },
  {
-  topic: 'Arithmétique', title: 'Arithmétique', series: ['C','D','S'], tool: 'arithmetic',
+  topic: 'Arithmétique', title: 'Arithmétique', series: ['C','S'], tool: 'arithmetic',
   summary: 'Divisibilité, PGCD, algorithme d’Euclide, Bézout et congruences.',
   objectives: ['Calculer un PGCD', 'Utiliser Bézout', 'Résoudre une congruence simple'],
   method: ['Identifier la divisibilité demandée.', 'Appliquer Euclide ou les congruences.', 'Écrire chaque égalité.', 'Vérifier la conclusion.'],
@@ -112,7 +112,7 @@ const CORE_LEARNING_CHAPTERS: CoreLearningChapter[] = [
   ]
  },
  {
-  topic: 'Statistiques', title: 'Statistiques', series: ['A','C','D','S'],
+  topic: 'Statistiques', title: 'Statistiques', series: ['A','D'],
   summary: 'Moyenne, médiane, variance, écart-type et lecture de données.',
   objectives: ['Calculer une moyenne', 'Trouver une médiane', 'Interpréter une dispersion'],
   method: ['Ordonner et compter les valeurs.', 'Choisir l’indicateur demandé.', 'Calculer avec les effectifs.', 'Interpréter dans le contexte.'],
@@ -134,12 +134,12 @@ const CORE_LEARNING_QUESTIONS: LearningQuestion[] = [
  {id:'diag-pr-2',topic:'Probabilités',series:['C','D','S'],level:2,prompt:'Pour une loi binomiale B(n,p), quelle est l’espérance ?',choices:['n+p','np','n/p','p/n'],correctIndex:1,explanation:'L’espérance d’une loi binomiale est E(X)=np.'},
  {id:'diag-su-1',topic:'Suites',series:['C','D','S'],level:1,prompt:'Une suite géométrique de raison q vérifie :',choices:['u_(n+1)=u_n+q','u_(n+1)=q u_n','u_n=nq','u_(n+1)=u_n/q²'],correctIndex:1,explanation:'On multiplie chaque terme par la raison q.'},
  {id:'diag-su-2',topic:'Suites',series:['C','D','S'],level:2,prompt:'Si une suite est croissante et majorée, elle est :',choices:['Divergente','Périodique','Convergente','Constante'],correctIndex:2,explanation:'Le théorème de convergence monotone donne la convergence.'},
- {id:'diag-ge-1',topic:'Géométrie',series:['A','C','D','S'],level:1,prompt:'Deux vecteurs de produit scalaire nul sont :',choices:['Colinéaires','Orthogonaux','Égaux','Opposés'],correctIndex:1,explanation:'Le produit scalaire nul caractérise l’orthogonalité.'},
+ {id:'diag-ge-1',topic:'Géométrie',series:['C','D','S'],level:1,prompt:'Deux vecteurs de produit scalaire nul sont :',choices:['Colinéaires','Orthogonaux','Égaux','Opposés'],correctIndex:1,explanation:'Le produit scalaire nul caractérise l’orthogonalité.'},
  {id:'diag-ge-2',topic:'Géométrie',series:['C','D','S'],level:2,prompt:'Distance entre A(0,0) et B(3,4) ?',choices:['4','5','6','7'],correctIndex:1,explanation:'AB=sqrt(3²+4²)=5.'},
- {id:'diag-ar-1',topic:'Arithmétique',series:['C','D','S'],level:1,prompt:'Quel est le PGCD de 18 et 24 ?',choices:['2','3','6','12'],correctIndex:2,explanation:'Les diviseurs communs maximaux donnent PGCD(18,24)=6.'},
- {id:'diag-ar-2',topic:'Arithmétique',series:['C','D','S'],level:2,prompt:'17 modulo 5 vaut :',choices:['1','2','3','4'],correctIndex:1,explanation:'17=3×5+2, donc le reste est 2.'},
- {id:'diag-st-1',topic:'Statistiques',series:['A','C','D','S'],level:1,prompt:'Moyenne de 8, 10 et 12 ?',choices:['9','10','11','12'],correctIndex:1,explanation:'(8+10+12)/3=10.'},
- {id:'diag-st-2',topic:'Statistiques',series:['A','C','D','S'],level:2,prompt:'Médiane de 2, 5, 7, 9, 12 ?',choices:['5','7','9','8'],correctIndex:1,explanation:'La valeur centrale de cinq nombres ordonnés est la troisième : 7.'},
+ {id:'diag-ar-1',topic:'Arithmétique',series:['C','S'],level:1,prompt:'Quel est le PGCD de 18 et 24 ?',choices:['2','3','6','12'],correctIndex:2,explanation:'Les diviseurs communs maximaux donnent PGCD(18,24)=6.'},
+ {id:'diag-ar-2',topic:'Arithmétique',series:['C','S'],level:2,prompt:'17 modulo 5 vaut :',choices:['1','2','3','4'],correctIndex:1,explanation:'17=3×5+2, donc le reste est 2.'},
+ {id:'diag-st-1',topic:'Statistiques',series:['A','D'],level:1,prompt:'Moyenne de 8, 10 et 12 ?',choices:['9','10','11','12'],correctIndex:1,explanation:'(8+10+12)/3=10.'},
+ {id:'diag-st-2',topic:'Statistiques',series:['A','D'],level:2,prompt:'Médiane de 2, 5, 7, 9, 12 ?',choices:['5','7','9','8'],correctIndex:1,explanation:'La valeur centrale de cinq nombres ordonnés est la troisième : 7.'},
 ];
 
 export const LEARNING_CHAPTERS:LearningChapter[]=CORE_LEARNING_CHAPTERS.map(chapter=>{
