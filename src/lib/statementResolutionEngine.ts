@@ -7,8 +7,9 @@ import { tryExactDefiniteIntegral } from './integralEngine.js';
 import { analyzeSequenceVerified } from './sequenceEngine.js';
 import { binomialProbability, combinationBigInt } from './probabilityEngine.js';
 import { simpleInterest, compoundFutureValue, presentValue } from './financialMathEngine.js';
+import { solveAdvancedStatement } from './advancedStatementResolution.js';
 
-export type StatementResolutionKind = 'equation' | 'linear-system' | 'derivative' | 'integral' | 'sequence' | 'probability' | 'finance' | 'function-variation' | 'pgcd' | 'congruence' | 'orthogonality';
+export type StatementResolutionKind = 'equation' | 'inequality' | 'linear-system' | 'derivative' | 'limit' | 'integral' | 'sequence' | 'probability' | 'complex' | 'ode' | 'conic' | 'finance' | 'function-variation' | 'pgcd' | 'congruence' | 'orthogonality';
 
 export interface StatementResolutionStep {
  title: string;
@@ -391,5 +392,5 @@ function solveOrthogonality(statement:string):StatementResolution|null{
 
 export function solveStatementExactly(statement:string):StatementResolution|null{
  const text=statement.trim();if(!text)return null;
- return solveFinanceStatement(text)||solveBinomialStatement(text)||solveSequenceStatement(text)||solveIntegralStatement(text)||solveDerivativeStatement(text)||solveLinearSystemStatement(text)||solveCongruenceStatement(text)||solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
+ return solveAdvancedStatement(text)||solveFinanceStatement(text)||solveBinomialStatement(text)||solveSequenceStatement(text)||solveIntegralStatement(text)||solveDerivativeStatement(text)||solveLinearSystemStatement(text)||solveCongruenceStatement(text)||solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
 }

@@ -37,11 +37,11 @@ function normalized(text: string): string {
 export function detectSolverTopic(text: string): SolverTopic {
  const s = normalized(text);
  if (/interet|intérêt|escompte|actualis|capitalis|annuit|valeur acquise|valeur actuelle|taux annuel/.test(s)) return 'Finance';
- if (/deriv|limite|variation|asympt|fonction|tangente|primitive|integrale|ensemble de definition/.test(s)) return 'Analyse';
+ if (/deriv|limite|variation|asympt|fonction|tangente|primitive|integrale|ensemble de definition|equation differentielle|différentielle|y''|y'/.test(s)) return 'Analyse';
  if (/complex|\bz\b|module|argument|conjugu|partie reelle|partie imaginaire/.test(s)) return 'Complexes';
  if (/probab|binom|evenement|tirage|urne|esperance|ecart.type/.test(s)) return 'Probabilités';
  if (/suite|u_n|u\(n\)|u\s*[_]?\s*n\s*\+\s*1|recurrence|geometrique|arithmetique.*suite/.test(s)) return 'Suites';
- if (/vecteur|droite|cercle|plan|distance|triangle|orthogonal|barycentre|colineaire/.test(s)) return 'Géométrie';
+ if (/vecteur|droite|cercle|plan|distance|triangle|orthogonal|barycentre|colineaire|conique|ellipse|hyperbole|parabole/.test(s)) return 'Géométrie';
  if (/pgcd|congru|divisib|nombre premier|bezout|euclide/.test(s)) return 'Arithmétique';
  if (/equation|inequation|resou|factor|developp|polyn|systeme|matrice|trinome/.test(s)) return 'Algèbre';
  return 'Général';
@@ -76,6 +76,8 @@ function detectedKeywords(text: string): string[] {
  const candidates: Array<[RegExp, string]> = [
   [/ensemble de definition|domaine/, 'domaine'],
   [/limite/, 'limites'],
+  [/equation differentielle|différentielle|y''|y'/, 'équation différentielle'],
+  [/conique|ellipse|hyperbole|parabole/, 'conique'],
   [/deriv/, 'dérivée'],
   [/variation/, 'variations'],
   [/asymptote/, 'asymptote'],
