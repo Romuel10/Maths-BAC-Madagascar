@@ -22,6 +22,7 @@ import { toolProgramBadge, toolRelevance, type BacToolId } from './data/bacMadag
 
 type Page = 'home' | 'subjects' | 'solve' | 'tools' | 'profile';
 type Sub = 'steps' | 'graph' | 'props' | 'calc';
+type ReviewTab = 'learn' | 'progress' | 'settings';
 type ModalId = 'search' | 'compare' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'calculator' | 'ineqxy' | 'ode' | 'conics' | 'finance';
 type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'bac' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
 
@@ -102,6 +103,7 @@ function App() {
  const [activated, setActivated] = useState(() => !REQUIRE_ACTIVATION || isActivated());
  const [page, setPage] = useState<Page>(initialRoute.page);
  const [sub, setSub] = useState<Sub>('steps');
+ const [reviewTab,setReviewTab]=useState<ReviewTab>('learn');
  const [modal, setModal] = useState<ModalId | null>(initialRoute.modal);
  const [result, setResult] = useState<AnalysisResult | null>(null);
  const [analysisRange, setAnalysisRange] = useState({ xMin: -10, xMax: 10 });
@@ -276,7 +278,7 @@ function App() {
  };
 
  const modals: Record<ModalId, ReactNode> = {
-  search: <GlobalSearch onClose={closeModal} onOpenTopic={topic=>{storageSet('mathbac_learning_open',topic);navigate('profile');}} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} onAnalyzeFunction={handleExternal}/>,
+  search: <GlobalSearch onClose={closeModal} onOpenTopic={topic=>{storageSet('mathbac_learning_open',topic);setReviewTab('learn');navigate('profile');}} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} onAnalyzeFunction={handleExternal}/>,
   compare: <FunctionCompare onClose={closeModal} />,
   sequence: <SequenceAnalyzer onClose={closeModal} />,
   parametric: <ParametricExplorer onClose={closeModal} />,
@@ -347,7 +349,7 @@ function App() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{isLoading?'Analyse en cours.':error?'Analyse terminée avec une erreur.':result?'Analyse terminée.':''}</div>
       {storageWarning && <div className="notice notice-warning mb-3" role="status"><strong>Stockage local indisponible.</strong> La session continue, mais certaines données ne pourront pas être conservées sur cet appareil. <button className="underline" onClick={()=>setStorageWarning(false)}>Masquer</button></div>}
       {updateReady && <div className="notice notice-info mb-3" role="status"><strong>Une mise à jour est prête.</strong> <button className="btn btn-small btn-primary ml-2" onClick={applyUpdate}>Actualiser</button></div>}
-      {!modal && page === 'home' && <BacHome onBac={() => navigate('subjects')} onTutor={() => navigate('solve')} onTools={() => navigate('tools')} onReview={() => navigate('profile')} />}
+      {!modal && page === 'home' && <BacHome onBac={() => navigate('subjects')} onTutor={() => navigate('solve')} onTools={() => navigate('tools')} onReview={() => {setReviewTab('learn');navigate('profile')}} />}
       {!modal && page === 'subjects' && <Suspense fallback={<LoadingPanel/>}><BacLibrary onAnalyzeFunction={handleExternal} onTutor={() => navigate('solve')} /></Suspense>}
       {!modal && page === 'solve' && <Suspense fallback={<LoadingPanel/>}><BacTutor onAnalyzeFunction={handleExternal} onOpenTool={tool=>openModal(tool)} /></Suspense>}
 
@@ -458,32 +460,42 @@ function App() {
 
       {!modal && page === 'profile' && (
        <div className="space-y-4">
-        <div><p className="eyebrow">Réviser</p><h2 className="page-title">Cours, coach et progression</h2><p className="page-copy">Commence par le cours, puis entraîne-toi sur tes points faibles et suis tes progrès.</p></div>
-        <Suspense fallback={<LoadingPanel/>}><LearningCoach onOpenTool={tool=>openModal(tool)} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>
-        <Suspense fallback={<LoadingPanel/>}><BacProgressDashboard onOpenQuestion={(prompt:string)=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>
-        <section className="surface p-4">
-         <p className="eyebrow">Préférences</p>
-         <h3 className="section-title mt-2">Réglages de l’application</h3>
-         <div className="grid grid-cols-2 gap-2.5 mt-3">
-          <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
-          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
-         </div>
-         <p className="section-copy mt-2">Le réglage FR/MG adapte la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie scolaire du BAC.</p>
-         <div className="surface-flat p-3 mt-3 space-y-3">
-          <label className="field-label" htmlFor="text-scale">Taille du texte</label>
-          <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
-          <label className="annale-check-row"><input type="checkbox" checked={accessibility.highContrast} onChange={event=>updateAccessibility({highContrast:event.target.checked})}/><span>Contraste renforcé</span></label>
-          <label className="annale-check-row"><input type="checkbox" checked={accessibility.reduceMotion} onChange={event=>updateAccessibility({reduceMotion:event.target.checked})}/><span>Réduire les animations</span></label>
-         </div>
-         {showInstall && <button onClick={handleInstall} className="btn btn-primary w-full mt-3"><Icon name="install" /> Installer l’application</button>}
-        </section>
-        <section className="surface p-4 text-center">
-         <div className="brand-mark mx-auto">M</div>
-         <p className="section-title mt-3">Maths BAC Madagascar</p>
-         <p className="section-copy mt-1">v{APP_VERSION} · Plateforme de préparation BAC</p>
-         <p className="text-[10px] font-bold text-brand mt-2">{CREATOR}</p>
-         <p className="text-[8px] subtle mt-1">{COPYRIGHT}</p>
-        </section>
+        <div><p className="eyebrow">Réviser</p><h2 className="page-title">Mon espace de révision</h2><p className="page-copy">Cours, progression et réglages sont séparés pour aller directement à l’essentiel.</p></div>
+        <div className="segmented grid-cols-3" role="tablist" aria-label="Espace de révision">
+         <button role="tab" aria-selected={reviewTab==='learn'} onClick={()=>setReviewTab('learn')} className={reviewTab==='learn'?'active':''}>Cours</button>
+         <button role="tab" aria-selected={reviewTab==='progress'} onClick={()=>setReviewTab('progress')} className={reviewTab==='progress'?'active':''}>Progression</button>
+         <button role="tab" aria-selected={reviewTab==='settings'} onClick={()=>setReviewTab('settings')} className={reviewTab==='settings'?'active':''}>Réglages</button>
+        </div>
+
+        {reviewTab==='learn'&&<Suspense fallback={<LoadingPanel/>}><LearningCoach onOpenTool={tool=>openModal(tool)} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>}
+
+        {reviewTab==='progress'&&<Suspense fallback={<LoadingPanel/>}><BacProgressDashboard onOpenQuestion={(prompt:string)=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>}
+
+        {reviewTab==='settings'&&<>
+         <section className="surface p-4">
+          <p className="eyebrow">Préférences</p>
+          <h3 className="section-title mt-2">Affichage et accessibilité</h3>
+          <div className="grid grid-cols-2 gap-2.5 mt-3">
+           <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
+           <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
+          </div>
+          <p className="section-copy mt-2">FR/MG adapte uniquement la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie du BAC.</p>
+          <div className="surface-flat p-3 mt-3 space-y-3">
+           <label className="field-label" htmlFor="text-scale">Taille du texte</label>
+           <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
+           <label className="annale-check-row"><input type="checkbox" checked={accessibility.highContrast} onChange={event=>updateAccessibility({highContrast:event.target.checked})}/><span>Contraste renforcé</span></label>
+           <label className="annale-check-row"><input type="checkbox" checked={accessibility.reduceMotion} onChange={event=>updateAccessibility({reduceMotion:event.target.checked})}/><span>Réduire les animations</span></label>
+          </div>
+          {showInstall && <button onClick={handleInstall} className="btn btn-primary w-full mt-3"><Icon name="install" /> Installer l’application</button>}
+         </section>
+         <section className="surface p-4 text-center">
+          <div className="brand-mark mx-auto">M</div>
+          <p className="section-title mt-3">Maths BAC Madagascar</p>
+          <p className="section-copy mt-1">v{APP_VERSION} · Préparation BAC A/C/D/L/OSE/S</p>
+          <p className="text-[10px] font-bold text-brand mt-2">{CREATOR}</p>
+          <p className="text-[8px] subtle mt-1">{COPYRIGHT}</p>
+         </section>
+        </>}
        </div>
       )}
      </main>
