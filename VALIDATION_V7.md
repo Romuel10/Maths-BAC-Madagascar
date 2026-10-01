@@ -1,65 +1,63 @@
 # Validation de la version 7.0.0
 
-Date : 26 août 2026
+Mise à jour prépublication : 1 octobre 2026.
 
-## Environnement de validation
+## Configuration actuellement validée par la CI
 
-- Node.js 24.19.0 ; exigence du projet : Node.js 22 ou ultérieur.
-- npm 11.9.0.
-- Vite 7.3.2, TypeScript 5.9.3, React 19.2.6.
-- Capacitor Core/Android/CLI 8.5.0 et Capacitor App 8.1.1.
+- Node.js : 22.12 ou ultérieur.
+- Vite : 8.3.2.
+- React / React DOM : 19.2.6.
+- TypeScript : 5.9.3.
+- Tailwind CSS et `@tailwindcss/vite` : 4.3.3.
+- Capacitor Core / Android / CLI : 8.5.2.
+- Capacitor App : 8.1.1.
+- Android : `minSdk 24`, `compileSdk 36`, `targetSdk 36`.
+- Identifiant Android : `mg.mathsbac.madagascar`.
+- Version Android : `versionCode 700`, `versionName 7.0.0`.
 
-## Résultats automatisés
+## Contrôles obligatoires
 
-| Contrôle | Résultat |
-| --- | --- |
-| TypeScript `tsc --noEmit` | réussi |
-| Audit source | 96 fichiers, 336 contrôles, 0 erreur |
-| Dérivées première et seconde | 1 960 contrôles, 0 échec |
-| Algèbre/probabilités/géométrie/matrices/complexes | 1 130 contrôles, 0 échec |
-| Moteurs d’outils mathématiques | 1 908 contrôles, 0 échec |
-| Limites | 20 contrôles, 0 échec |
-| Arithmétique et conversions | 400 contrôles, 0 échec |
-| Intégration, contenus et assistant Résoudre | 43 contrôles, 0 échec |
-| Build de production | réussi |
-| Audit du chargement initial | 5 ressources, 222 Kio gzip, 0 erreur |
-| Synchronisation Capacitor Android | réussie, 1 plugin natif détecté |
+Le workflow `.github/workflows/android-v7-release.yml` est la source de vérité avant publication. Une version ne doit être considérée publiable que lorsque les jobs requis sont verts.
 
-Total des contrôles mathématiques et d’intégration : **5 461**, sans échec.
+Le job **Validation complète** exécute :
 
-## Corpus contrôlé
+- `npm ci` ;
+- `npm audit --audit-level=low` ;
+- `npm run typecheck` ;
+- audit des sources et de la configuration ;
+- régressions dérivées première et seconde ;
+- régressions algèbre, probabilités, géométrie, matrices et complexes ;
+- régressions des outils mathématiques, limites, arithmétique et conversions ;
+- tests d’intégration ;
+- build de production et audit des ressources générées.
 
-- 8 chapitres uniques ;
-- 32 sections de leçon ;
-- 51 formules expliquées ;
-- 16 exemples entièrement corrigés ;
-- 56 QCM, exactement 7 par thème ;
-- 6 sujets guidés, exactement 2 par série A, C et D ;
-- 36 questions de sujet avec indice, méthode et réponse finale.
+Le job **Vérification Android** exécute ensuite la synchronisation Capacitor et compile :
 
-## Performance et fonctionnement web
+- les tests unitaires Android ;
+- l’APK debug ;
+- les tests instrumentés ;
+- le bundle release non signé.
 
-- MathJS reste dans un paquet séparé et n’appartient pas aux dépendances initiales.
-- Les sessions guidées et chronométrées sont chargées uniquement à leur ouverture.
-- Le Worker d’analyse est présent dans `dist/assets` et inclus dans le socle hors ligne PWA.
-- Le préchargement PWA ne télécharge plus d’avance tous les outils ni les formats WOFF/TTF redondants.
-- Le serveur de production a répondu HTTP 200 pour l’index, la route `#solve`, le JavaScript principal, le Worker, le manifeste et le Service Worker.
+Sur `main`, sur un tag `v*` ou lors d’un lancement manuel, le job **Bundle Android signé** produit enfin l’AAB de publication avec les secrets GitHub de signature.
 
-## Validation Android
+## Corrections prépublication intégrées
 
-- Projet natif généré et synchronisé dans `android/`.
-- `minSdk 24`, `compileSdk 36`, `targetSdk 36`.
-- `applicationId mg.mathsbac.madagascar`, `versionCode 1`, `versionName 7.0.0`.
-- Icônes et écrans de démarrage vérifiés en PNG 8 bits.
-- Trafic HTTP en clair désactivé.
-- La commande de publication s’arrête volontairement si la clé ou un mot de passe de signature manque.
+- intervalle d’analyse transmis correctement au graphe ;
+- resynchronisation du graphe entre deux analyses et protection des données vides ;
+- préférence « réduire les animations » respectée par le tracé ;
+- erreurs de stockage des annales locales remontées à l’utilisateur ;
+- jours d’étude calculés selon la date locale ;
+- progression globale calculée sur l’ensemble du corpus ;
+- cache PWA étendu à tous les modules chargés dynamiquement ;
+- sauvegarde Android automatique désactivée pour les données locales ;
+- tests Android déplacés dans le namespace réel de l’application ;
+- scripts Gradle exécutés via Bash dans les commandes npm ;
+- dépendances npm corrigées et audit de vulnérabilités intégré à la CI ;
+- politique de confidentialité débarrassée de son contact provisoire ;
+- mises à jour de dépendances surveillées par Dependabot.
 
-Le bundle AAB signé n’a pas été produit dans cet environnement, car aucune clé privée de publication ni aucun SDK Android local ne doivent être embarqués dans la livraison. Le workflow GitHub Actions et la procédure Android Studio/Termux sont fournis pour cette dernière étape propriétaire.
+## Publication
 
-## Actions obligatoires avant mise en production
+La branche de publication doit être fusionnée uniquement après réussite de la validation complète et de la vérification Android. Après fusion sur `main`, vérifier que le job signé produit bien l’artefact `maths-bac-madagascar-v7-aab`, puis installer cette version sur une piste Google Play de test interne avant diffusion publique.
 
-1. Confirmer définitivement l’identifiant `mg.mathsbac.madagascar`.
-2. Remplacer l’adresse e-mail provisoire dans `PRIVACY_POLICY.md`, puis publier cette politique sur une URL publique.
-3. Créer et sauvegarder la clé de signature, configurer les secrets et générer l’AAB.
-4. Installer l’AAB sur une piste Google Play de test interne et tester sur au moins un téléphone Android réel.
-5. Faire relire le corpus 2026 par un enseignant connaissant le programme malgache en vigueur.
+Une vérification sur au moins un téléphone Android réel reste nécessaire pour le démarrage, la navigation, le bouton Retour, le mode hors connexion, les graphiques et la mise à jour depuis une version antérieure.
