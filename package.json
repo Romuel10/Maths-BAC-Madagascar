@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "cap:sync": "npm run build && cap sync android",
     "cap:open": "cap open android",
-    "android:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug",
+    "android:debug": "npm run cap:sync && cd android && bash ./gradlew assembleDebug",
     "android:bundle": "bash ./scripts/build-android-release.sh",
     "test:derivatives": "tsc scripts/derivative-regression.ts src/lib/derivativeEngine.ts --target ES2022 --module ES2022 --moduleResolution bundler --outDir .derivative-test --skipLibCheck && node .derivative-test/scripts/derivative-regression.js",
     "test:core": "tsc scripts/core-regression.ts src/lib/algebraCore.ts src/lib/probabilityEngine.ts src/lib/geometryEngine.ts src/lib/matrix.ts src/lib/complex.ts src/lib/linearInequality2DEngine.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .core-test --skipLibCheck && node .core-test/scripts/core-regression.js",
