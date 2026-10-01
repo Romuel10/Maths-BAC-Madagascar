@@ -112,6 +112,7 @@ function fallbackLatex(input: string): string {
 
  // School sets, binomial coefficients and indexed sequences.
  s = s
+  .replace(/^\{([^{}]*)\}$/g, '\\left\\{$1\\right\\}')
   .replace(/\bS\s*=\s*\{([^{}]*)\}/g, 'S=\\left\\{$1\\right\\}')
   .replace(/\bC\s*\(\s*([^,;()]+)\s*[,;]\s*([^()]+)\s*\)/g, '\\binom{$1}{$2}')
   .replace(/\bPGCD\s*\(/gi, '\\operatorname{PGCD}(')
