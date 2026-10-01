@@ -189,7 +189,7 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
      )))}
      {showExtras&&<button onClick={()=>{setMode('normal');setRes(null)}} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode==='normal'?'bg-indigo-600 text-white':'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>Normale · complément</button>}
     </div>
-    <button onClick={()=>{setShowExtras(v=>!v);if(showExtras&&mode==='normal'){setMode(primaryMode);setRes(null)}} className="btn btn-small btn-ghost mb-4">{showExtras?'Masquer les compléments avancés':'Afficher les compléments avancés'}</button>
+    <button onClick={()=>{setShowExtras(v=>!v);if(showExtras&&mode==='normal'){setMode(primaryMode);setRes(null)}}} className="btn btn-small btn-ghost mb-4">{showExtras?'Masquer les compléments avancés':'Afficher les compléments avancés'}</button>
 
     {mode === 'stats' && <div className="space-y-3"><In label="Données (séparées par virgules)" value={dataStr} onChange={setDataStr} type="textarea" /><button onClick={doStats} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
     {mode === 'combi' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="k =" value={k} onChange={setK} /></div><button onClick={doCombi} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
