@@ -19,41 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  refresh-lock:
-    name: Mise à jour temporaire du package-lock
-    if: github.event_name == 'pull_request' && github.head_ref == 'fix/prepublication-audit-2026-10-01'
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Récupérer la branche source
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Régénérer le verrouillage
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Enregistrer le package-lock
-        run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "package-lock déjà à jour"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "Refresh Vite 8 npm lockfile"
-          git push origin HEAD:${{ github.head_ref }}
-
   validate:
-    needs: refresh-lock
     name: Validation complète
     runs-on: ubuntu-latest
     timeout-minutes: 20
