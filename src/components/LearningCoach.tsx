@@ -7,7 +7,7 @@ import { storageGet, storageRemove } from '../lib/safeStorage';
 import { MathExpression, MathText } from './MathNotation';
 
 type Mode='dashboard'|'diagnostic'|'quickSetup'|'quick'|'chapters'|'chapter'|'chapterQuiz'|'mistakes'|'formulas';
-type LearningTool='algebra'|'complex'|'probability'|'sequence'|'geometry'|'arithmetic';
+type LearningTool='algebra'|'complex'|'probability'|'sequence'|'geometry'|'arithmetic'|'finance';
 
 interface Props{
  onOpenTool?:(tool:LearningTool)=>void;
