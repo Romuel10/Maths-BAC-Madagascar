@@ -7,7 +7,7 @@
 - Nom : `Maths BAC Madagascar`.
 - Android minimum : API 24, soit Android 7.
 - Compilation et cible : API 36.
-- Version Android de publication : `versionCode 700`, `versionName 7.0.0`.
+- Version Android de publication : `versionCode 701`, `versionName 1.0.1`.
 - Module natif `@capacitor/app` : gestion par défaut du bouton Retour Android.
 - Ressources web embarquées dans l’application : aucun serveur n’est requis pour les cours et outils.
 - Icône adaptative, écran de démarrage sombre et trafic HTTP en clair désactivé.
@@ -21,7 +21,7 @@ Après extraction de l’archive dans le stockage privé de Termux :
 ```bash
 pkg update
 pkg install nodejs-lts openjdk-21 git unzip imagemagick
-cd ~/Maths-BAC-Madagascar-V7-Capacitor
+cd ~/Maths-BAC-Madagascar
 node -v
 npm ci
 npm run termux
@@ -52,14 +52,14 @@ Ne jamais placer le fichier `.jks` ou ses mots de passe dans le projet, l’arch
 
 ## Méthode recommandée depuis un téléphone : GitHub Actions
 
-Le workflow `.github/workflows/android-v7-release.yml` valide d’abord le projet et Android, puis construit un AAB signé sur `main`, sur un tag `v*` ou lors d’un lancement manuel. Ajouter ces quatre secrets dans les paramètres GitHub du dépôt :
+Le workflow `.github/workflows/android-release.yml` valide d’abord le projet et Android, puis construit un AAB signé sur `main`, sur un tag `v*` ou lors d’un lancement manuel. Ajouter ces quatre secrets dans les paramètres GitHub du dépôt :
 
 - `MATHS_BAC_KEYSTORE_BASE64` : résultat de `base64 -w 0 ~/maths-bac-release.jks` ;
 - `MATHS_BAC_KEYSTORE_PASSWORD` ;
 - `MATHS_BAC_KEY_ALIAS` : par exemple `maths-bac` ;
 - `MATHS_BAC_KEY_PASSWORD`.
 
-Lancer ensuite **Actions → Validation et Android V7 → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v7-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
+Lancer ensuite **Actions → Validation et Android → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v1.0.1-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
 
 ## Construction locale avec un SDK Android configuré
 
