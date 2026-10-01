@@ -71,7 +71,9 @@ assertSource(!/from\s+['"]mathjs['"]/.test(mathNotation), 'le rendu des formules
 assertSource(!html.includes('user-scalable=no'), 'le zoom utilisateur ne doit pas être bloqué');
 assertSource(manifest.orientation === 'any', 'le manifeste doit autoriser portrait et paysage');
 assertSource(manifest.icons.every(icon => icon.type === 'image/png' && icon.purpose === 'any'), 'les icônes doivent être déclarées en PNG sans faux masque');
-assertSource(packageJson.dependencies?.['@capacitor/core'] === '8.5.0' && packageJson.dependencies?.['@capacitor/android'] === '8.5.0' && packageJson.dependencies?.['@capacitor/app'] === '8.1.1' && packageJson.devDependencies?.['@capacitor/cli'] === '8.5.0', 'Capacitor Android et le gestionnaire du bouton Retour doivent rester verrouillés');
+assertSource(packageJson.dependencies?.['@capacitor/core'] === '8.5.2' && packageJson.dependencies?.['@capacitor/android'] === '8.5.2' && packageJson.dependencies?.['@capacitor/app'] === '8.1.1' && packageJson.devDependencies?.['@capacitor/cli'] === '8.5.2', 'Capacitor Android et le gestionnaire du bouton Retour doivent rester verrouillés');
+assertSource(packageJson.devDependencies?.vite === '7.3.6', 'Vite doit rester sur une version corrigée des vulnérabilités connues');
+assertSource(packageJson.overrides?.xcode?.uuid === '11.1.1', 'la dépendance uuid de xcode doit utiliser la version corrigée compatible CommonJS');
 assertSource(packageJson.engines?.node === '>=22.0.0', 'Node.js 22 ou ultérieur doit être exigé pour Capacitor 8');
 assertSource(capacitorConfig.includes("appId: 'mg.mathsbac.madagascar'") && capacitorConfig.includes("webDir: 'dist'"), 'la configuration Capacitor doit conserver son identifiant et son répertoire web');
 assertSource(androidVariables.includes('minSdkVersion = 24') && androidVariables.includes('compileSdkVersion = 36') && androidVariables.includes('targetSdkVersion = 36'), 'Android doit cibler API 36 avec un minimum API 24');
