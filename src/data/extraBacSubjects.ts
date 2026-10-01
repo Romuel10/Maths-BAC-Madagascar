@@ -54,5 +54,25 @@ export const EXTRA_BAC_SUBJECTS:BacSubject[]=[
     {id:'d2-pr-2',number:'3.b',topic:'Probabilités',points:1,prompt:'Calculer l’espérance de X.',hints:['Pour B(n,p), E(X)=np.'],method:['E(X)=5×0,4.'],check:{kind:'number',expected:2},finalAnswer:'$E(X)=2$.'},
    ]},
   ]
+ },
+ {
+  id:'type-s-2026-01',series:'S',year:2026,title:'Entraînement BAC — Série S · Sujet 1',durationMinutes:120,coefficient:5,official:false,
+  sourceLabel:'Sujet original d’entraînement aligné sur la répartition officielle Terminale S disponible',description:'Calcul matriciel, équation différentielle, nombres complexes et suites.',
+  exercises:[
+   {id:'s1-matrix',title:'Exercice 1 — Calcul matriciel',introduction:'On considère le système 2x+y=5 et x−y=1.',questions:[
+    {id:'s1-ma-1',number:'1.a',topic:'Algèbre',points:2,prompt:'Résoudre le système par élimination de Gauss.',hints:['Écris la matrice augmentée.','Élimine x de la deuxième ligne ou combine les deux équations.'],method:['L₂ ← 2L₂−L₁ donne −3y=−3.','Donc y=1.','Dans x−y=1, x=2.'],check:{kind:'text',allOf:['2','1']},finalAnswer:'La solution est $(x,y)=(2,1)$.'},
+    {id:'s1-ma-2',number:'1.b',topic:'Algèbre',points:1.5,prompt:'Pour A=[[2,1],[1,-1]], calculer det(A).',hints:['Pour [[a,b],[c,d]], det=ad−bc.'],method:['det(A)=2×(−1)−1×1.'],check:{kind:'number',expected:-3},finalAnswer:'$det(A)=-3$, donc A est inversible.'},
+   ]},
+   {id:'s1-ode',title:'Exercice 2 — Équation différentielle',introduction:"On considère y''−3y'+2y=0.",questions:[
+    {id:'s1-ode-1',number:'2.a',topic:'Analyse',points:2,prompt:"Résoudre y''−3y'+2y=0.",hints:['Écris l’équation caractéristique r²−3r+2=0.','Factorise (r−1)(r−2).'],method:['Les racines caractéristiques sont 1 et 2.','La solution générale est y=C₁e^x+C₂e^(2x).'],check:{kind:'text',allOf:['e^x','e^(2x)']},finalAnswer:'$y(x)=C_1e^x+C_2e^{2x}$.'},
+    {id:'s1-ode-2',number:'2.b',topic:'Analyse',points:2,prompt:"Déterminer la solution vérifiant y(0)=1 et y'(0)=0.",hints:["À x=0 : C₁+C₂=1.","y'=C₁e^x+2C₂e^(2x), donc C₁+2C₂=0."],method:['Soustraire les deux équations : C₂=−1.','Alors C₁=2.'],check:{kind:'text',allOf:['2','-1']},finalAnswer:'$y(x)=2e^x-e^{2x}$.'},
+   ]},
+   {id:'s1-complex',title:'Exercice 3 — Nombres complexes',introduction:'On cherche les racines cubiques de 1 dans ℂ.',questions:[
+    {id:'s1-co-1',number:'3.a',topic:'Complexes',points:1.5,prompt:'Donner les arguments des trois racines cubiques de 1 dans [0,2π[.',hints:['Les arguments sont (0+2kπ)/3 pour k=0,1,2.'],method:['k=0 : 0.','k=1 : 2π/3.','k=2 : 4π/3.'],check:{kind:'text',allOf:['0','2π/3','4π/3']},finalAnswer:'Les arguments sont $0$, $2π/3$ et $4π/3$.'},
+   ]},
+   {id:'s1-suite',title:'Exercice 4 — Suite numérique',introduction:'On définit u₀=1 et u_(n+1)=(u_n+3)/2.',questions:[
+    {id:'s1-su-1',number:'4.a',topic:'Suites',points:1.5,prompt:'Si la suite converge vers ℓ, déterminer ℓ.',hints:['Passe formellement à la limite dans la relation de récurrence.'],method:['ℓ=(ℓ+3)/2.','2ℓ=ℓ+3.'],check:{kind:'number',expected:3},finalAnswer:'La limite candidate est $ℓ=3$.'},
+   ]},
+  ]
  }
 ];
