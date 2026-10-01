@@ -72,7 +72,9 @@ assertSource(!html.includes('user-scalable=no'), 'le zoom utilisateur ne doit pa
 assertSource(manifest.orientation === 'any', 'le manifeste doit autoriser portrait et paysage');
 assertSource(manifest.icons.every(icon => icon.type === 'image/png' && icon.purpose === 'any'), 'les icônes doivent être déclarées en PNG sans faux masque');
 assertSource(packageJson.dependencies?.['@capacitor/core'] === '8.5.2' && packageJson.dependencies?.['@capacitor/android'] === '8.5.2' && packageJson.dependencies?.['@capacitor/app'] === '8.1.1' && packageJson.devDependencies?.['@capacitor/cli'] === '8.5.2', 'Capacitor Android et le gestionnaire du bouton Retour doivent rester verrouillés');
-assertSource(packageJson.devDependencies?.vite === '7.3.6', 'Vite doit rester sur une version corrigée des vulnérabilités connues');
+assertSource(packageJson.devDependencies?.vite === '8.3.2', 'Vite doit rester sur la version 8 validée pour le bundling des Web Workers');
+assertSource(packageJson.devDependencies?.['@vitejs/plugin-react'] === '6.1.1', 'le plugin React doit rester compatible avec Vite 8');
+assertSource(packageJson.devDependencies?.['@tailwindcss/vite'] === '4.3.3' && packageJson.devDependencies?.tailwindcss === '4.3.3', 'Tailwind et son plugin Vite doivent rester alignés et compatibles Vite 8');
 assertSource(packageJson.overrides?.xcode?.uuid === '11.1.1', 'la dépendance uuid de xcode doit utiliser la version corrigée compatible CommonJS');
 assertSource(packageJson.engines?.node === '>=22.12.0', 'Node.js 22.12 ou ultérieur doit être exigé pour Vite et Capacitor');
 assertSource(capacitorConfig.includes("appId: 'mg.mathsbac.madagascar'") && capacitorConfig.includes("webDir: 'dist'"), 'la configuration Capacitor doit conserver son identifiant et son répertoire web');
