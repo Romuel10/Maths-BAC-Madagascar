@@ -38,8 +38,10 @@ android {
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled true
-            shrinkResources true
+            // R8 reste désactivé jusqu’à validation sur appareils réels avec Capacitor 8.x.
+            // La priorité de cette version est la stabilité de la WebView embarquée.
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
