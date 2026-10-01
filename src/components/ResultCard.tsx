@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { MathExpression, MathText } from './MathNotation';
+import { MathSolutionWork } from './MathSolutionWork';
 
 const mathNode = (value: React.ReactNode, className = '') => {
  if (typeof value === 'string' || typeof value === 'number') {
@@ -17,7 +18,7 @@ export const ResultBox = ({ label, value, color = 'indigo' }: { label: string; v
  <div className={`bg-gradient-to-r from-${color}-600/15 to-${color}-800/15 rounded-xl p-4 border border-${color}-500/25 text-center animate-scale-in`}>
   <p className={`text-[10px] text-${color}-400 mb-1 font-bold uppercase tracking-wider`}>{label}</p>
   <div className="text-xl font-extrabold text-white break-words math-answer">
-   <MathText auto>{value}</MathText>
+   <MathSolutionWork value={value} compact answer/>
   </div>
  </div>
 );
@@ -27,8 +28,8 @@ export const Step = ({ n, title, content, color = 'slate' }: { n: number | strin
   <span className={`w-6 h-6 rounded-full bg-${color}-600/50 text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold`}>{n}</span>
   <div className="flex-1 min-w-0">
    <p className="text-xs font-bold text-slate-300">{title}</p>
-   <div className="text-xs text-slate-400 mt-1 break-words leading-relaxed">
-    <MathText auto>{content}</MathText>
+   <div className="mt-1 break-words leading-relaxed">
+    <MathSolutionWork value={content} compact/>
    </div>
   </div>
  </div>
