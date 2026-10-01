@@ -7,6 +7,7 @@ import { analyzeStudentRequest, type SolverIntent, type SolverTopic } from '../l
 import { speakFrench, stopSpeaking } from '../lib/accessibility';
 import { setLastActivity } from '../lib/studentProfile';
 import { getTutorExplanation, getTutorPractice, getTutorStepSupport, type TutorExplanationLevel } from '../lib/tutorCoach';
+import { solveStatementExactly, type StatementResolution } from '../lib/statementResolutionEngine';
 
 type HelpMode = 'understand' | 'start' | 'plan';
 type Workspace = 'statement' | 'function' | 'verify' | 'method';
@@ -84,6 +85,9 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
  const [showPractice,setShowPractice]=useState(false);
  const [showPracticeHint,setShowPracticeHint]=useState(false);
  const [showPracticeSolution,setShowPracticeSolution]=useState(false);
+ const [statementResolution,setStatementResolution]=useState<StatementResolution|null>(null);
+ const [revealedResolutionSteps,setRevealedResolutionSteps]=useState(0);
+ const [showResolutionAnswer,setShowResolutionAnswer]=useState(false);
  const guide = useMemo(() => METHODS[topic], [topic]);
  const stepSupport = useMemo(() => getTutorStepSupport(topic,blockedStep), [topic,blockedStep]);
  const stepExplanation = useMemo(() => getTutorExplanation(topic,blockedStep,explanationLevel), [topic,blockedStep,explanationLevel]);
@@ -93,7 +97,11 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
 
  const analyzeStatement = () => {
   const next = analyzeStudentRequest(statement);
+  const exactResolution = solveStatementExactly(statement);
   setIntent(next);
+  setStatementResolution(exactResolution);
+  setRevealedResolutionSteps(0);
+  setShowResolutionAnswer(false);
   setTopic(next.topic);
   setShowGuide(true);
   setHintLevel(0);setBlockedStep(0);setExplanationLevel('simple');
@@ -164,7 +172,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
 
    <section className="paper-card p-4">
     <label className="field-label" htmlFor="tutor-statement">Énoncé ou question recopiée</label>
-    <textarea id="tutor-statement" maxLength={10000} value={statement} onChange={e => { setStatement(e.target.value); setShowGuide(false); setIntent(null); setPhotoConfirmed(false); }} rows={6} placeholder="Ex. On considère f(x)=x²−4x+3. Étudier ses variations." className="field mt-2 resize-none" />
+    <textarea id="tutor-statement" maxLength={10000} value={statement} onChange={e => { setStatement(e.target.value); setShowGuide(false); setIntent(null); setStatementResolution(null); setRevealedResolutionSteps(0); setShowResolutionAnswer(false); setPhotoConfirmed(false); }} rows={6} placeholder="Ex. On considère f(x)=x²−4x+3. Étudier ses variations." className="field mt-2 resize-none" />
     {statement.trim()&&<div className="flex justify-end gap-2 mt-2"><button onClick={()=>speakFrench(statement)} className="btn btn-small btn-secondary">🔊 Lire la consigne</button><button onClick={stopSpeaking} className="btn btn-small btn-ghost">Arrêter</button></div>}
     {photo && <label className="annale-check-row mt-2"><input type="checkbox" checked={photoConfirmed} onChange={e=>setPhotoConfirmed(e.target.checked)}/><span>J’ai comparé la transcription à la photo.</span></label>}
     <button onClick={analyzeStatement} disabled={!statement.trim() || Boolean(photo && !photoConfirmed)} className="btn btn-primary w-full mt-3">Comprendre la demande</button>
@@ -178,6 +186,19 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   {workspace === 'method' && <section className="surface p-4"><p className="eyebrow">Accès par chapitre</p><h3 className="section-title mt-2">Quelle partie du programme ?</h3><div className="grid grid-cols-2 gap-2 mt-3">{(Object.keys(METHODS) as SolverTopic[]).filter(item=>item!=='Général').map(item=><button key={item} onClick={()=>{setTopic(item);setShowGuide(true);setIntent(null);setHintLevel(0);setBlockedStep(0);setExplanationLevel('simple');setShowPractice(false);setShowPracticeHint(false);setShowPracticeSolution(false)}} aria-pressed={topic===item} className={`chapter-choice ${topic===item?'active':''}`}>{item}</button>)}</div></section>}
 
   {intent && workspace === 'statement' && <section className="surface p-4" aria-live="polite"><p className="eyebrow">Énoncé décomposé</p><h3 className="section-title mt-2">{intent.goalLabel}</h3><p className="section-copy mt-2">Chapitre probable : <strong>{intent.topic}</strong>.</p>{intent.keywords.length>0&&<div className="flex flex-wrap gap-1.5 mt-3">{intent.keywords.map(word=><span key={word} className="chip chip-info">{word}</span>)}</div>}<div className="grid gap-2 mt-3"><div className="surface-flat p-3"><p className="font-black text-xs">Données repérées</p>{intent.givens.map(item=><p key={item} className="section-copy mt-1">• <MathText auto>{item}</MathText></p>)}</div><div className="surface-flat p-3"><p className="font-black text-xs">Question</p><p className="section-copy mt-1"><MathText auto>{intent.question}</MathText></p></div><div className="surface-flat p-3"><p className="font-black text-xs">Ce qu’il faut obtenir</p><p className="section-copy mt-1">{intent.unknown}</p></div></div><div className="notice notice-info mt-3"><p className="font-black">Plan proposé</p>{intent.suggestedSteps.map((line,index)=><p key={line} className="mt-1">{index+1}. {line}</p>)}</div>{intent.functionExpression&&onAnalyzeFunction&&<button onClick={()=>analyzeFunctionValue(intent.functionExpression!)} className="btn btn-primary w-full mt-3">Étudier automatiquement {intent.functionExpression}</button>}</section>}
+
+  {workspace==='statement'&&intent&&statementResolution&&<section className="paper-card p-4" aria-live="polite">
+   <div className="flex items-start justify-between gap-3"><div><p className="eyebrow">Correction construite avec ton énoncé</p><h3 className="section-title mt-2">{statementResolution.title}</h3></div><span className="chip chip-success">Calcul exact vérifié</span></div>
+   <p className="section-copy mt-2">Cette correction utilise les nombres, expressions ou coordonnées que tu as saisis. Les étapes restent cachées pour te laisser chercher avant de regarder.</p>
+   <div className="flex flex-wrap gap-1.5 mt-3">{statementResolution.givens.map(item=><span key={item} className="chip chip-info"><MathText auto>{item}</MathText></span>)}</div>
+   {statementResolution.scope&&<div className="notice notice-info mt-3"><strong>Portée :</strong> {statementResolution.scope}</div>}
+   {revealedResolutionSteps===0&&<div className="notice notice-warning mt-3"><strong>À toi d’essayer :</strong> commence sur ton brouillon. Affiche la première étape seulement si tu bloques.</div>}
+   {revealedResolutionSteps>0&&<div className="space-y-2 mt-3">{statementResolution.steps.slice(0,revealedResolutionSteps).map((step,index)=><div key={index} className="surface-flat p-3"><div className="flex gap-3"><span className="action-index">{index+1}</span><div className="min-w-0"><p className="font-black text-xs">{step.title}</p><p className="mt-2 text-sm font-bold"><MathText auto>{step.work}</MathText></p><p className="section-copy mt-2"><strong>Pourquoi :</strong> {step.why}</p>{step.check&&<p className="section-copy mt-1"><strong>Contrôle :</strong> {step.check}</p>}</div></div></div>)}</div>}
+   {revealedResolutionSteps<statementResolution.steps.length?<div className="grid grid-cols-2 gap-2 mt-3"><button onClick={()=>setRevealedResolutionSteps(value=>Math.min(statementResolution.steps.length,value+1))} className="btn btn-primary">{revealedResolutionSteps===0?'Voir la 1re étape':'Étape suivante'}</button><button onClick={()=>setRevealedResolutionSteps(statementResolution.steps.length)} className="btn btn-secondary">Voir toute la méthode</button></div>:<div className="mt-3"><button onClick={()=>setShowResolutionAnswer(value=>!value)} className="btn btn-primary w-full">{showResolutionAnswer?'Masquer la réponse finale':'Voir la réponse finale'}</button>{showResolutionAnswer&&<div className="notice notice-success mt-2"><p className="font-black">Réponse</p><p className="mt-1"><MathText auto>{statementResolution.finalAnswer}</MathText></p><p className="mt-2 text-xs"><strong>Vérification :</strong> {statementResolution.verification}</p></div>}</div>}
+   <div className="grid grid-cols-2 gap-2 mt-3"><button onClick={()=>setWorkspace('verify')} className="btn btn-small btn-secondary">Vérifier ma propre étape</button><button onClick={()=>{setShowPractice(true);setShowPracticeHint(false);setShowPracticeSolution(false)}} className="btn btn-small btn-secondary">Exercice similaire</button></div>
+  </section>}
+
+  {workspace==='statement'&&intent&&!statementResolution&&<div className="notice notice-info"><strong>Résolution automatique prudente :</strong> ce type d’énoncé n’est pas encore couvert de façon suffisamment fiable. Le tuteur garde donc la méthode guidée ci-dessous au lieu d’inventer une correction.</div>}
 
   {showGuide && (workspace === 'statement' || workspace === 'method') && <section className="surface p-4">
    <div className="flex items-start justify-between gap-3"><div><p className="eyebrow">{intent?'Chapitre détecté':'Chapitre choisi'}</p><h3 className="section-title mt-2">{topic}</h3></div><label><span className="sr-only">Chapitre</span><select aria-label="Chapitre" value={topic} onChange={e=>setTopic(e.target.value as SolverTopic)} className="field !w-auto !py-2 !px-3 text-xs">{Object.keys(METHODS).map(t=><option key={t}>{t}</option>)}</select></label></div>
