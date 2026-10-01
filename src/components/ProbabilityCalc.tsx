@@ -5,11 +5,11 @@
 import React, { useState } from 'react';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
-import { factorialBigInt, combinationBigInt, arrangementsBigInt, binomialProbability, binomialCdf, binomialRangeProbability, normalCdf, normalRangeProbability, inverseNormalCdf, descriptiveStats, linearRegression, mayerRegression } from '../lib/probabilityEngine';
+import { factorialBigInt, combinationBigInt, arrangementsBigInt, binomialProbability, binomialCdf, binomialRangeProbability, normalCdf, normalRangeProbability, inverseNormalCdf, descriptiveStats, linearRegression, mayerRegression, uniformRangeProbability, uniformMeanVariance, exponentialRangeProbability, exponentialSurvival, exponentialMeanVariance } from '../lib/probabilityEngine';
 import type { BacSeries } from '../data/bacSubjects';
 
 interface Props { onClose: () => void; series?: BacSeries | null }
-type Mode = 'combi' | 'binomial' | 'stats' | 'normal' | 'regression';
+type Mode = 'combi' | 'binomial' | 'stats' | 'normal' | 'regression' | 'continuous';
 
 function f(n: number): string { const r = Math.round(n * 100000000) / 100000000; return Number.isInteger(r) ? String(r) : r.toFixed(8).replace(/0+$/, '').replace(/\.$/, ''); }
 function pct(n: number): string { return (n * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + '%'; }
@@ -22,6 +22,8 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
  const [dataStr, setDataStr] = useState('4, 7, 8, 5, 9, 6, 8, 3, 7, 5');
  const [mu, setMu] = useState('0'); const [sigma, setSigma] = useState('1'); const [xVal, setXVal] = useState('-1'); const [xVal2,setXVal2]=useState('1'); const [qVal,setQVal]=useState('0.975');
  const [regX,setRegX]=useState('1,2,3,4,5'); const [regY,setRegY]=useState('2,4,5,8,10');
+ const [continuousLaw,setContinuousLaw]=useState<'uniform'|'exponential'>('uniform');
+ const [contA,setContA]=useState('0'); const [contB,setContB]=useState('1'); const [lambda,setLambda]=useState('0.5'); const [contX1,setContX1]=useState('0.2'); const [contX2,setContX2]=useState('0.8');
  const [res, setRes] = useState<React.ReactNode | null>(null);
 
  const In = ({ label, value, onChange, type = 'number' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) => (
@@ -146,14 +148,40 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
   </div>);
  };
 
+ const doContinuous = () => {
+  const x1=Number(contX1),x2=Number(contX2);
+  if(!Number.isFinite(x1)||!Number.isFinite(x2)||x1>x2){setRes(<ReliabilityPanel level="warning" title="Bornes invalides" detail="Il faut deux bornes finies avec x₁≤x₂."/>);return;}
+  if(continuousLaw==='uniform'){
+   const a=Number(contA),b=Number(contB);
+   if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b){setRes(<ReliabilityPanel level="warning" title="Paramètres invalides" detail="Pour U([a,b]), il faut a<b."/>);return;}
+   const prob=uniformRangeProbability(x1,x2,a,b),mom=uniformMeanVariance(a,b);
+   setRes(<div className="space-y-3 animate-scale-in">
+    <ReliabilityPanel level={Number.isFinite(prob)&&prob>=0&&prob<=1?'verified':'warning'} title="Loi uniforme" detail="Terminale S : la densité est constante sur [a,b], égale à 1/(b−a)."/>
+    <ResultBox label={`P(${x1}≤X≤${x2})`} value={pct(prob)} color="emerald"/>
+    <div className="grid grid-cols-2 gap-2"><PropBadge label="E(X)" value={f(mom.mean)} color="indigo"/><PropBadge label="V(X)" value={f(mom.variance)} color="purple"/></div>
+    <StepsList><Step n={1} title="Densité" content={`f(x)=1/(${b}−${a}) sur [${a};${b}]`} color="indigo"/><Step n={2} title="Intervalle utile" content="On intersecte l’intervalle demandé avec [a,b]." color="blue"/><Step n={3} title="Probabilité" content={`P=${f(prob)}`} color="emerald"/></StepsList>
+   </div>);
+  }else{
+   const l=Number(lambda);
+   if(!Number.isFinite(l)||l<=0){setRes(<ReliabilityPanel level="warning" title="Paramètre λ invalide" detail="Pour une loi exponentielle, λ doit être strictement positif."/>);return;}
+   const prob=exponentialRangeProbability(x1,x2,l),survival=exponentialSurvival(x2,l),mom=exponentialMeanVariance(l);
+   setRes(<div className="space-y-3 animate-scale-in">
+    <ReliabilityPanel level={Number.isFinite(prob)&&prob>=0&&prob<=1?'verified':'warning'} title="Loi exponentielle" detail="Terminale S : f(x)=λe^(−λx) pour x≥0."/>
+    <ResultBox label={`P(${x1}≤X≤${x2})`} value={pct(prob)} color="emerald"/>
+    <div className="grid grid-cols-2 gap-2"><PropBadge label={`P(X>${x2})`} value={pct(survival)} color="amber"/><PropBadge label="E(X)=1/λ" value={f(mom.mean)} color="indigo"/><PropBadge label="V(X)=1/λ²" value={f(mom.variance)} color="purple"/></div>
+    <StepsList><Step n={1} title="Fonction de répartition" content="F(x)=1−e^(−λx) pour x≥0." color="indigo"/><Step n={2} title="Intervalle" content="P(a≤X≤b)=F(b)−F(a)." color="blue"/><Step n={3} title="Calcul" content={`P=${f(prob)}`} color="emerald"/></StepsList>
+   </div>);
+  }
+ };
+
  const doRegression = () => {
   const parse=(text:string)=>text.split(/[,;\\s]+/).map(v=>v.trim()).filter(Boolean).map(Number);
   const xs=parse(regX),ys=parse(regY);
   try{
-   if(series==='A'){
+   if(series==='A'||series==='L'){
     const r=mayerRegression(xs,ys);
     setRes(<div className="space-y-3 animate-scale-in">
-     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Ajustement par la méthode de Mayer" detail="Méthode du programme Terminale A 2024-2025 : deux groupes ordonnés selon x, deux points moyens G₁ et G₂, puis droite (G₁G₂)." checks={r.checks}/>
+     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Ajustement par la méthode de Mayer" detail={`Méthode du programme Terminale ${series} 2024-2025 : deux groupes ordonnés selon x, deux points moyens G₁ et G₂, puis droite (G₁G₂).`} checks={r.checks}/>
      <ResultBox label="Droite de Mayer" value={'y = '+f(r.slope)+'x '+(r.intercept>=0?'+ ':'− ')+f(Math.abs(r.intercept))} color="indigo"/>
      <div className="grid grid-cols-2 gap-2"><PropBadge label="G₁" value={'('+f(r.firstPoint.x)+' ; '+f(r.firstPoint.y)+')'} color="purple"/><PropBadge label="G₂" value={'('+f(r.secondPoint.x)+' ; '+f(r.secondPoint.y)+')'} color="cyan"/></div>
      <Section icon="∴" title="Méthode" color="blue"><p className="text-xs text-slate-300">Les couples sont classés par abscisse, partagés en deux groupes, puis on calcule le point moyen de chaque groupe. La droite de Mayer passe par ces deux points.</p></Section>
@@ -161,7 +189,7 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
    }else{
     const r=linearRegression(xs,ys);
     setRes(<div className="space-y-3 animate-scale-in">
-     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Régression linéaire contrôlée" detail="Terminale D : ajustement affine par la méthode des moindres carrés et coefficient de corrélation." checks={r.checks}/>
+     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Régression linéaire contrôlée" detail={`Terminale ${series==='OSE'?'OSE':'D'} : ajustement affine par la méthode des moindres carrés et coefficient de corrélation.`} checks={r.checks}/>
      <ResultBox label="Droite de régression" value={'y = '+f(r.slope)+'x '+(r.intercept>=0?'+ ':'− ')+f(Math.abs(r.intercept))} color="indigo"/>
      <div className="grid grid-cols-2 gap-2"><PropBadge label="Corrélation r" value={f(r.correlation)} color="purple"/><PropBadge label="Coefficient R²" value={f(r.rSquared)} color="cyan"/><PropBadge label="x̄" value={f(r.meanX)} color="slate"/><PropBadge label="ȳ" value={f(r.meanY)} color="slate"/></div>
      <Section icon="∴" title="Interprétation" color="blue"><p className="text-xs text-slate-300">Plus |r| est proche de 1, plus la liaison linéaire est forte. Le signe indique le sens de la liaison.</p></Section>
@@ -180,22 +208,31 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
     <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-hide">
      {((
       series==='A'?[{id:'stats' as Mode,l:'Stats'},{id:'regression' as Mode,l:'Mayer'}]:
+      series==='L'?[{id:'stats' as Mode,l:'Stats'},{id:'regression' as Mode,l:'Mayer'},{id:'combi' as Mode,l:'Dénombrement'}]:
       series==='D'?[{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]:
+      series==='OSE'?[{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'Dénombrement'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]:
       series==='C'?[{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'}]:
-      series==='S'?[{id:'combi' as Mode,l:'Dénombrement'}]:
+      series==='S'?[{id:'combi' as Mode,l:'Dénombrement'},{id:'binomial' as Mode,l:'Binomiale'},{id:'continuous' as Mode,l:'Uniforme/Expo'},{id:'normal' as Mode,l:'Normale'}]:
       [{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]
      ).map(m => (
       <button key={m.id} onClick={() => { setMode(m.id); setRes(null); }} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode === m.id ? 'bg-indigo-600 text-white' : 'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>{m.l}</button>
      )))}
-     {showExtras&&<button onClick={()=>{setMode('normal');setRes(null)}} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode==='normal'?'bg-indigo-600 text-white':'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>Normale · complément</button>}
+     {showExtras&&series!=='S'&&<button onClick={()=>{setMode('normal');setRes(null)}} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode==='normal'?'bg-indigo-600 text-white':'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>Normale · complément</button>}
     </div>
-    <button onClick={()=>{setShowExtras(v=>!v);if(showExtras&&mode==='normal'){setMode(primaryMode);setRes(null)}}} className="btn btn-small btn-ghost mb-4">{showExtras?'Masquer les compléments avancés':'Afficher les compléments avancés'}</button>
+    {series!=='S'&&<button onClick={()=>{setShowExtras(v=>!v);if(showExtras&&mode==='normal'){setMode(primaryMode);setRes(null)}}} className="btn btn-small btn-ghost mb-4">{showExtras?'Masquer les compléments avancés':'Afficher les compléments avancés'}</button>}
 
     {mode === 'stats' && <div className="space-y-3"><In label="Données (séparées par virgules)" value={dataStr} onChange={setDataStr} type="textarea" /><button onClick={doStats} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
     {mode === 'combi' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="k =" value={k} onChange={setK} /></div><button onClick={doCombi} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
     {mode === 'binomial' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="p =" value={p} onChange={setP} /><In label="k (borne basse)" value={k} onChange={setK} /><In label="b (borne haute)" value={k2} onChange={setK2} /></div><button onClick={doBinom} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Calculer P(X=k), cumul et intervalle</button></div>}
+    {mode === 'continuous' && <div className="space-y-3">
+     <div className="notice notice-info"><strong>Terminale S :</strong> lois continues uniforme et exponentielle du programme 2024-2025.</div>
+     <div className="grid grid-cols-2 gap-2"><button onClick={()=>setContinuousLaw('uniform')} className={`btn btn-small ${continuousLaw==='uniform'?'btn-primary':'btn-secondary'}`}>Uniforme</button><button onClick={()=>setContinuousLaw('exponential')} className={`btn btn-small ${continuousLaw==='exponential'?'btn-primary':'btn-secondary'}`}>Exponentielle</button></div>
+     {continuousLaw==='uniform'?<div className="grid grid-cols-2 gap-2"><In label="a =" value={contA} onChange={setContA}/><In label="b =" value={contB} onChange={setContB}/></div>:<In label="λ =" value={lambda} onChange={setLambda}/>}
+     <div className="grid grid-cols-2 gap-2"><In label="x₁ =" value={contX1} onChange={setContX1}/><In label="x₂ =" value={contX2} onChange={setContX2}/></div>
+     <button onClick={doContinuous} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Calculer la probabilité</button>
+    </div>}
     {mode === 'normal' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="μ =" value={mu} onChange={setMu} /><In label="σ =" value={sigma} onChange={setSigma} /><In label="a =" value={xVal} onChange={setXVal} /><In label="b =" value={xVal2} onChange={setXVal2} /></div><In label="Quantile q (ex. 0,975 → saisir 0.975)" value={qVal} onChange={setQVal}/><button onClick={doNormal} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">CDF, intervalle et quantile</button></div>}
-    {mode === 'regression' && <div className="space-y-3"><div className="notice notice-info">{series==='A'?<><strong>Terminale A :</strong> méthode de Mayer.</>:<><strong>Terminale D :</strong> moindres carrés et corrélation linéaire.</>}</div><In label="Valeurs x" value={regX} onChange={setRegX} type="textarea"/><In label="Valeurs y" value={regY} onChange={setRegY} type="textarea"/><button onClick={doRegression} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">{series==='A'?'Calculer la droite de Mayer':'Calculer la régression'}</button></div>}
+    {mode === 'regression' && <div className="space-y-3"><div className="notice notice-info">{series==='A'||series==='L'?<><strong>Terminale {series} :</strong> méthode de Mayer.</>:<><strong>Terminale {series==='OSE'?'OSE':'D'} :</strong> moindres carrés et corrélation linéaire.</>}</div><In label="Valeurs x" value={regX} onChange={setRegX} type="textarea"/><In label="Valeurs y" value={regY} onChange={setRegY} type="textarea"/><button onClick={doRegression} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">{series==='A'||series==='L'?'Calculer la droite de Mayer':'Calculer la régression'}</button></div>}
 
     {res && <div className="mt-4">{res}</div>}
    </div>

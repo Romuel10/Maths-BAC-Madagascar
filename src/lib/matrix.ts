@@ -288,6 +288,46 @@ export function mPower(m: Matrix, exponent: number): Matrix | null {
  return result;
 }
 
+export interface CramerResult {
+ determinant:number;
+ columnDeterminants:number[];
+ solution:number[];
+ residualMax:number;
+ checks:{label:string;ok:boolean;detail:string}[];
+}
+
+export function solveCramer(a: Matrix, b: number[]): CramerResult | null {
+ if(!validMatrix(a)||rows(a)!==cols(a)||b.length!==rows(a)||b.some(v=>!Number.isFinite(v)))return null;
+ const n=rows(a);
+ if(n<2||n>3)return null;
+ const determinant=mDet(a);
+ if(determinant===null)return null;
+ const tol=matrixTolerance(a)*Math.max(1,Math.pow(maxAbs(a),Math.max(0,n-1)));
+ if(Math.abs(determinant)<=tol)return null;
+ const columnDeterminants:number[]=[];
+ const solution:number[]=[];
+ for(let col=0;col<n;col++){
+  const replaced=a.map((row,i)=>row.map((value,j)=>j===col?b[i]:value));
+  const d=mDet(replaced);
+  if(d===null)return null;
+  columnDeterminants.push(d);
+  solution.push(d/determinant);
+ }
+ let residualMax=0;
+ for(let i=0;i<n;i++){
+  const lhs=a[i].reduce((sum,value,j)=>sum+value*solution[j],0);
+  residualMax=Math.max(residualMax,Math.abs(lhs-b[i]));
+ }
+ const scale=Math.max(1,...b.map(Math.abs));
+ return{
+  determinant,columnDeterminants,solution,residualMax,
+  checks:[
+   {label:'Déterminant non nul',ok:Math.abs(determinant)>tol,detail:`Δ=${fmt(determinant)}`},
+   {label:'Substitution dans le système',ok:residualMax<=1e-9*scale,detail:`max |Ax−b|=${fmt(residualMax)}`}
+  ]
+ };
+}
+
 export interface LinearSystemResult {
  status: 'unique' | 'infinite' | 'none';
  solution: number[] | null;

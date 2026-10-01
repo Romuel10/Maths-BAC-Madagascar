@@ -1,6 +1,6 @@
 import { EXTRA_BAC_SUBJECTS } from './extraBacSubjects.js';
 
-export type BacSeries = 'A' | 'C' | 'D' | 'S';
+export type BacSeries = 'A' | 'C' | 'D' | 'L' | 'OSE' | 'S';
 export type BacTopic =
  | 'Analyse'
  | 'Algèbre'
@@ -9,7 +9,8 @@ export type BacTopic =
  | 'Suites'
  | 'Géométrie'
  | 'Arithmétique'
- | 'Statistiques';
+ | 'Statistiques'
+ | 'Finance';
 
 export type AnswerCheck =
  | { kind: 'number'; expected: number; tolerance?: number }

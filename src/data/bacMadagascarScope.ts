@@ -3,7 +3,7 @@ import type { BacSeries } from './bacSubjects.js';
 export type BacToolId =
  | 'calculator' | 'algebra' | 'complex' | 'arithmetic' | 'sequence'
  | 'compare' | 'parametric' | 'geometry' | 'probability' | 'matrix'
- | 'ineqxy' | 'ode' | 'conics' | 'revision' | 'lessons' | 'units';
+ | 'ineqxy' | 'ode' | 'conics' | 'finance' | 'revision' | 'lessons' | 'units';
 
 export type ProgramRelevance = 'core' | 'useful' | 'extra';
 
@@ -17,42 +17,47 @@ export interface ProgramChapter {
 export const BAC_PROGRAM_REFERENCE = {
  country: 'Madagascar',
  authority: 'Ministère de l’Éducation Nationale',
- schoolYear: 'Références officielles 2024-2025 (A/C/D) et Terminale S officielle disponible 2021-2022',
+ schoolYear: '2024-2025',
  edition: 2024,
- note: 'A, C et D sont alignées sur les répartitions annuelles MEN 2024-2025. Pour S, la référence officielle publique retrouvée est la répartition Terminale S 2021-2022 ; les outils S sont donc étiquetés sur cette base et devront être revalidés si le MEN publie une répartition plus récente.',
+ series: ['A','C','D','L','OSE','S'] as const,
+ note: 'Périmètre fondé sur les répartitions annuelles officielles MEN 2024-2025. Les outils complémentaires restent accessibles mais ne sont pas étiquetés comme programme.',
 } as const;
 
 export const PROGRAM_CHAPTERS: ProgramChapter[] = [
- {id:'analysis',title:'Analyse : limites, continuité, dérivation, variations, asymptotes, primitives et intégrales',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 des séries C, D et S.'},
- {id:'sequences',title:'Suites numériques : récurrence, monotonie, bornes et convergence',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 des séries C, D et S.'},
- {id:'complex',title:'Nombres complexes : formes, module, argument, Moivre, Euler, racines et équations',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 des séries C, D et S.'},
- {id:'probability',title:'Probabilités, dénombrement, variables aléatoires et lois',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 ; les contenus diffèrent selon la série.'},
- {id:'statistics-ad',title:'Statistiques à une/deux variables et ajustement',series:['A','D'],evidence:'Terminale A 2024-2025 : une variable, nuage de points, point moyen et méthode de Mayer ; Terminale D 2024-2025 : moindres carrés, droites de régression et corrélation.'},
- {id:'matrix-s',title:'Matrices : opérations et calculs matriciels',series:['S'],evidence:'Explicitement prévu dans la répartition officielle Terminale S 2021-2022, avec opérations sur matrices carrées.'},
- {id:'arithmetic-cs',title:'Arithmétique : Euclide, PGCD/PPCM, Gauss, congruences et calculs dans ℤ',series:['C','S'],evidence:'Terminale C 2024-2025 couvre division euclidienne, congruences, PGCD/PPCM et théorème de Gauss ; Terminale S officielle couvre divisibilité, congruences, PGCD/PPCM et opérations dans ℤ/nℤ.'},
- {id:'ode-cs',title:'Équations différentielles linéaires à coefficients constants',series:['C','S'],evidence:'Terminale C 2024-2025 et Terminale S officielle : y′+ay=0, équations du second ordre via équation caractéristique et conditions initiales.'},
+ {id:'analysis',title:'Analyse : fonctions, limites, continuité, dérivation, variations et représentation graphique',series:['A','C','D','L','OSE','S'],evidence:'Présent dans les répartitions annuelles officielles 2024-2025 des six séries.'},
+ {id:'integral',title:'Primitives, intégrales et calculs d’aires',series:['A','C','D','OSE','S'],evidence:'Présent avec profondeur variable selon la série ; OSE inclut notamment intégration par parties, changement de variable affine, aire, valeur moyenne et volume de révolution.'},
+ {id:'sequences',title:'Suites numériques : formes explicite/récurrente, variation, sommes et convergence',series:['A','C','D','L','OSE','S'],evidence:'Les suites figurent dans les programmes et/ou sujets de référence de ces séries ; L et OSE les détaillent explicitement dans la répartition 2024-2025.'},
+ {id:'complex',title:'Nombres complexes : formes, module, argument, Moivre, Euler, racines et équations',series:['C','D','S'],evidence:'Présent dans les répartitions scientifiques 2024-2025.'},
+ {id:'probability',title:'Probabilités, dénombrement, conditionnement, variables aléatoires et loi binomiale',series:['A','C','D','L','OSE','S'],evidence:'Présent selon un niveau différent dans les six séries ; L inclut dénombrement/probabilités, OSE et S vont jusqu’aux variables aléatoires et lois.'},
+ {id:'statistics',title:'Statistiques à deux variables et ajustement affine',series:['A','D','L','OSE'],evidence:'A et L utilisent notamment la méthode de Mayer ; D et OSE utilisent les moindres carrés et le coefficient de corrélation.'},
+ {id:'finance-ose',title:'Mathématiques financières : intérêts, escompte, actualisation, capitalisation et annuités',series:['OSE'],evidence:'Explicitement prévu en Terminale OSE 2024-2025.'},
+ {id:'systems-l-ose',title:'Systèmes linéaires à trois inconnues',series:['D','L','OSE'],evidence:'L précise la méthode de Cramer ; D prévoit notamment Gauss ; OSE demande la résolution de systèmes à trois inconnues.'},
+ {id:'matrix-s',title:'Calcul matriciel : somme, produit, déterminant, transposée, inverse, trace et puissances',series:['S'],evidence:'Explicitement prévu en Terminale S 2024-2025.'},
+ {id:'arithmetic-cs',title:'Arithmétique : divisibilité, congruences, PGCD/PPCM, Bézout, Gauss et équations diophantiennes',series:['C','S'],evidence:'Présent dans les répartitions C/S 2024-2025 ; S inclut aussi ℤ/nℤ et bases de numération.'},
+ {id:'ode-cs',title:'Équations différentielles du premier et du second ordre',series:['C','S'],evidence:'Explicitement prévues en Terminale C et S 2024-2025.'},
  {id:'conics-c',title:'Coniques : parabole, ellipse, hyperbole, équations réduites et tangentes',series:['C'],evidence:'Explicitement prévu en Terminale C 2024-2025.'},
- {id:'space',title:'Géométrie dans l’espace',series:['C','D','S'],evidence:'Présente dans le programme scientifique, avec profondeur variable selon la série.'},
- {id:'continuous-laws-s',title:'Probabilités et lois',series:['S'],evidence:'La répartition officielle Terminale S retrouvée confirme probabilités et indépendance ; les lois continues ne sont pas étiquetées « programme » tant qu’une référence officielle plus récente n’est pas vérifiée.'},
+ {id:'space',title:'Géométrie plane et dans l’espace',series:['C','D','S'],evidence:'Présente dans les séries scientifiques avec profondeur variable.'},
+ {id:'continuous-laws-s',title:'Lois continues : densité, uniforme, exponentielle, centrée réduite et normale',series:['S'],evidence:'Explicitement prévues en Terminale S 2024-2025.'},
 ];
 
 const TOOL_RELEVANCE: Record<BacToolId, Partial<Record<BacSeries, ProgramRelevance>>> = {
- calculator:{A:'core',C:'core',D:'core',S:'core'},
- algebra:{A:'core',C:'core',D:'core',S:'core'},
- complex:{C:'core',D:'core',S:'core',A:'extra'},
- arithmetic:{C:'core',S:'core',D:'extra',A:'extra'},
- sequence:{C:'core',D:'core',S:'core',A:'useful'},
- compare:{A:'useful',C:'core',D:'core',S:'core'},
- parametric:{C:'useful',D:'useful',S:'useful',A:'extra'},
- geometry:{A:'extra',C:'core',D:'core',S:'core'},
- probability:{A:'core',C:'core',D:'core',S:'core'},
- matrix:{S:'core',D:'useful',C:'extra',A:'extra'},
- ineqxy:{A:'core',C:'useful',D:'useful',S:'useful'},
- ode:{C:'core',S:'core',D:'extra',A:'extra'},
- conics:{C:'core',S:'extra',D:'extra',A:'extra'},
- revision:{A:'core',C:'core',D:'core',S:'core'},
- lessons:{A:'core',C:'core',D:'core',S:'core'},
- units:{A:'useful',C:'useful',D:'useful',S:'useful'},
+ calculator:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ algebra:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ complex:{A:'extra',C:'core',D:'core',L:'extra',OSE:'extra',S:'core'},
+ arithmetic:{A:'extra',C:'core',D:'extra',L:'extra',OSE:'extra',S:'core'},
+ sequence:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ compare:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ parametric:{A:'extra',C:'useful',D:'useful',L:'extra',OSE:'useful',S:'useful'},
+ geometry:{A:'extra',C:'core',D:'core',L:'extra',OSE:'extra',S:'core'},
+ probability:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ matrix:{A:'extra',C:'extra',D:'useful',L:'useful',OSE:'useful',S:'core'},
+ ineqxy:{A:'core',C:'useful',D:'useful',L:'extra',OSE:'extra',S:'useful'},
+ ode:{A:'extra',C:'core',D:'extra',L:'extra',OSE:'extra',S:'core'},
+ conics:{A:'extra',C:'core',D:'extra',L:'extra',OSE:'extra',S:'extra'},
+ finance:{A:'extra',C:'extra',D:'extra',L:'extra',OSE:'core',S:'extra'},
+ revision:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ lessons:{A:'core',C:'core',D:'core',L:'core',OSE:'core',S:'core'},
+ units:{A:'useful',C:'useful',D:'useful',L:'useful',OSE:'useful',S:'useful'},
 };
 
 export function toolRelevance(tool: BacToolId, series: BacSeries | null): ProgramRelevance | null {

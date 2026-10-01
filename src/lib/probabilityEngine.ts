@@ -230,3 +230,47 @@ export function mayerRegression(xs:number[],ys:number[]):MayerRegressionResult{
     ]
   };
 }
+
+
+export function uniformCdf(x:number,a:number,b:number):number{
+ if(![x,a,b].every(Number.isFinite)||a>=b)return NaN;
+ if(x<=a)return 0;
+ if(x>=b)return 1;
+ return (x-a)/(b-a);
+}
+
+export function uniformRangeProbability(x1:number,x2:number,a:number,b:number):number{
+ if(![x1,x2,a,b].every(Number.isFinite)||a>=b||x1>x2)return NaN;
+ const lo=Math.max(a,x1),hi=Math.min(b,x2);
+ return hi<=lo?0:(hi-lo)/(b-a);
+}
+
+export function uniformMeanVariance(a:number,b:number):{mean:number;variance:number;std:number}{
+ if(![a,b].every(Number.isFinite)||a>=b)return{mean:NaN,variance:NaN,std:NaN};
+ const mean=(a+b)/2,variance=(b-a)*(b-a)/12;
+ return{mean,variance,std:Math.sqrt(variance)};
+}
+
+export function exponentialCdf(x:number,lambda:number):number{
+ if(!Number.isFinite(x)||!Number.isFinite(lambda)||lambda<=0)return NaN;
+ if(x<=0)return 0;
+ return 1-Math.exp(-lambda*x);
+}
+
+export function exponentialSurvival(x:number,lambda:number):number{
+ if(!Number.isFinite(x)||!Number.isFinite(lambda)||lambda<=0)return NaN;
+ if(x<=0)return 1;
+ return Math.exp(-lambda*x);
+}
+
+export function exponentialRangeProbability(a:number,b:number,lambda:number):number{
+ if(![a,b,lambda].every(Number.isFinite)||lambda<=0||a>b)return NaN;
+ const lo=Math.max(0,a),hi=Math.max(0,b);
+ return Math.max(0,Math.min(1,exponentialCdf(hi,lambda)-exponentialCdf(lo,lambda)));
+}
+
+export function exponentialMeanVariance(lambda:number):{mean:number;variance:number;std:number}{
+ if(!Number.isFinite(lambda)||lambda<=0)return{mean:NaN,variance:NaN,std:NaN};
+ const mean=1/lambda,variance=1/(lambda*lambda);
+ return{mean,variance,std:mean};
+}

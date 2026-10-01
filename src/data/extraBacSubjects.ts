@@ -74,5 +74,44 @@ export const EXTRA_BAC_SUBJECTS:BacSubject[]=[
     {id:'s1-su-1',number:'4.a',topic:'Suites',points:1.5,prompt:'Si la suite converge vers ℓ, déterminer ℓ.',hints:['Passe formellement à la limite dans la relation de récurrence.'],method:['ℓ=(ℓ+3)/2.','2ℓ=ℓ+3.'],check:{kind:'number',expected:3},finalAnswer:'La limite candidate est $ℓ=3$.'},
    ]},
   ]
+ },
+ {
+  id:'type-l-2026-01',series:'L',year:2026,title:'Entraînement BAC — Série L · Sujet 1',durationMinutes:90,coefficient:2,official:false,
+  sourceLabel:'Sujet original aligné sur la répartition MEN Terminale L 2024-2025',description:'Système par Cramer, suites, dénombrement-probabilité et statistiques avec Mayer.',
+  exercises:[
+   {id:'l1-system',title:'Exercice 1 — Système à trois inconnues',introduction:'On considère x+y+z=6 ; 2x−y+z=3 ; x+2y−z=2.',questions:[
+    {id:'l1-sy-1',number:'1',topic:'Algèbre',points:2.5,prompt:'Résoudre le système par la méthode de Cramer.',hints:['Construis la matrice des coefficients A.','Calcule Δ=det(A), puis Δx, Δy et Δz.'],method:['A=[[1,1,1],[2,-1,1],[1,2,-1]].','Δ≠0 donc le système possède une solution unique.','Calculer x=Δx/Δ, y=Δy/Δ, z=Δz/Δ.'],check:{kind:'text',allOf:['1','2','3']},finalAnswer:'La solution est $(x,y,z)=(1,2,3)$.'}
+   ]},
+   {id:'l1-suite',title:'Exercice 2 — Suite géométrique',introduction:'On pose u₀=3 et u_(n+1)=2u_n.',questions:[
+    {id:'l1-su-1',number:'2.a',topic:'Suites',points:1.5,prompt:'Exprimer u_n en fonction de n puis calculer u_5.',hints:['La raison est q=2.'],method:['u_n=u₀q^n=3×2^n.','u_5=3×32.'],check:{kind:'number',expected:96},finalAnswer:'$u_n=3×2^n$ et $u_5=96$.'}
+   ]},
+   {id:'l1-proba',title:'Exercice 3 — Dénombrement et probabilité',introduction:'Une urne contient 5 boules distinctes dont 2 rouges. On tire simultanément 2 boules.',questions:[
+    {id:'l1-pr-1',number:'3.a',topic:'Probabilités',points:1.5,prompt:'Combien de tirages différents de 2 boules sont possibles ?',hints:['L’ordre ne compte pas : utilise une combinaison.'],method:['Nombre total=C(5,2).'],check:{kind:'number',expected:10},finalAnswer:'Il y a $C(5,2)=10$ tirages.'},
+    {id:'l1-pr-2',number:'3.b',topic:'Probabilités',points:1.5,prompt:'Calculer la probabilité de tirer les deux boules rouges.',hints:['Il y a C(2,2) cas favorables.'],method:['P=C(2,2)/C(5,2).'],check:{kind:'expression',expected:'1/10'},finalAnswer:'$P=1/10$.'}
+   ]},
+   {id:'l1-stats',title:'Exercice 4 — Ajustement de Mayer',introduction:'On étudie les couples (1,3), (2,5), (3,7), (4,9).',questions:[
+    {id:'l1-st-1',number:'4',topic:'Statistiques',points:2,prompt:'Déterminer la droite d’ajustement par la méthode de Mayer.',hints:['Classe les points selon x puis sépare-les en deux groupes de même effectif.','Calcule les deux points moyens G₁ et G₂.'],method:['G₁=(1,5;4) et G₂=(3,5;8).','La pente vaut (8−4)/(3,5−1,5)=2.','L’ordonnée à l’origine vaut 1.'],check:{kind:'text',allOf:['2','1']},finalAnswer:'La droite de Mayer est $y=2x+1$.'}
+   ]}
+  ]
+ },
+ {
+  id:'type-ose-2026-01',series:'OSE',year:2026,title:'Entraînement BAC — Série OSE · Sujet 1',durationMinutes:120,coefficient:4,official:false,
+  sourceLabel:'Sujet original aligné sur la répartition MEN Terminale OSE 2024-2025',description:'Analyse, mathématiques financières, probabilités et régression.',
+  exercises:[
+   {id:'ose1-analysis',title:'Exercice 1 — Logarithme et intégrale',introduction:'On considère f(x)=ln(x) sur ]0,+∞[.',questions:[
+    {id:'ose1-an-1',number:'1.a',topic:'Analyse',points:1.5,prompt:'Calculer f\'(x) et préciser son signe.',hints:['La dérivée de ln(x) vaut 1/x.'],method:["f'(x)=1/x.",'Pour x>0, 1/x>0.'],check:{kind:'text',allOf:['1/x','positive']},finalAnswer:"$f'(x)=1/x>0$ sur ]0,+∞[.",toolExpression:'log(x)'},
+    {id:'ose1-an-2',number:'1.b',topic:'Analyse',points:2,prompt:'Calculer I=∫_1^e ln(x) dx.',hints:['Utilise une intégration par parties.','Une primitive de ln(x) est x ln(x)−x.'],method:['I=[x ln(x)−x]_1^e.','À e : e−e=0 ; à 1 : 0−1=−1.'],check:{kind:'number',expected:1},finalAnswer:'$I=1$.'}
+   ]},
+   {id:'ose1-finance',title:'Exercice 2 — Mathématiques financières',introduction:'Un capital de 1 000 000 Ar est placé à intérêts composés au taux annuel de 10 % pendant 2 ans.',questions:[
+    {id:'ose1-fi-1',number:'2.a',topic:'Finance',points:2,prompt:'Calculer la valeur acquise après 2 ans.',hints:['Utilise A=C(1+i)^n.','i=10%=0,10.'],method:['A=1 000 000×(1,10)^2.','(1,10)^2=1,21.'],check:{kind:'number',expected:1210000,tolerance:0.5},finalAnswer:'La valeur acquise est $1 210 000$ Ar.'},
+    {id:'ose1-fi-2',number:'2.b',topic:'Finance',points:1.5,prompt:'Quelle valeur actuelle faut-il placer aujourd’hui pour obtenir 1 210 000 Ar dans 2 ans au même taux ?',hints:['Actualise : VA=VF/(1+i)^n.'],method:['VA=1 210 000/(1,10)^2.'],check:{kind:'number',expected:1000000,tolerance:0.5},finalAnswer:'La valeur actuelle est $1 000 000$ Ar.'}
+   ]},
+   {id:'ose1-proba',title:'Exercice 3 — Loi binomiale',introduction:'Une opération réussit avec une probabilité 0,7 et est répétée 5 fois indépendamment.',questions:[
+    {id:'ose1-pr-1',number:'3',topic:'Probabilités',points:2,prompt:'Calculer la probabilité d’obtenir exactement 4 réussites.',hints:['X suit B(5;0,7).'],method:['P(X=4)=C(5,4)×0,7^4×0,3.'],check:{kind:'number',expected:0.36015,tolerance:0.00001},finalAnswer:'$P(X=4)=0,36015$.'}
+   ]},
+   {id:'ose1-stats',title:'Exercice 4 — Régression linéaire',introduction:'On donne x : 1,2,3,4 et y : 3,5,7,9.',questions:[
+    {id:'ose1-st-1',number:'4',topic:'Statistiques',points:2,prompt:'Déterminer la droite de régression de y en x par les moindres carrés.',hints:['Calcule x̄, ȳ puis la pente.'],method:['Les points sont exactement alignés.','La pente vaut 2 et l’ordonnée à l’origine vaut 1.'],check:{kind:'text',allOf:['2','1']},finalAnswer:'La droite de régression est $y=2x+1$.'}
+   ]}
+  ]
  }
 ];

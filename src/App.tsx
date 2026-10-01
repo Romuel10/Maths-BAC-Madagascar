@@ -27,12 +27,12 @@ import { toolProgramBadge, toolRelevance, type BacToolId } from './data/bacMadag
 
 type Page = 'home' | 'subjects' | 'solve' | 'tools' | 'profile';
 type Sub = 'steps' | 'graph' | 'props' | 'calc';
-type ModalId = 'search' | 'compare' | 'revision' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'units' | 'calculator' | 'lessons' | 'ineqxy' | 'ode' | 'conics';
+type ModalId = 'search' | 'compare' | 'revision' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'units' | 'calculator' | 'lessons' | 'ineqxy' | 'ode' | 'conics' | 'finance';
 type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
 
 const REQUIRE_ACTIVATION = import.meta.env.VITE_REQUIRE_ACTIVATION === 'true';
 const PAGES:Page[]=['home','subjects','solve','tools','profile'];
-const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy','ode','conics'];
+const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy','ode','conics','finance'];
 
 const FunctionCompare=lazy(()=>import('./components/FunctionCompare').then(module=>({default:module.FunctionCompare})));
 const RevisionSheets=lazy(()=>import('./components/RevisionSheets').then(module=>({default:module.RevisionSheets})));
@@ -50,6 +50,7 @@ const MiniLesson=lazy(()=>import('./components/MiniLesson').then(module=>({defau
 const InequalityXY=lazy(()=>import('./components/InequalityXY').then(module=>({default:module.InequalityXY})));
 const DifferentialEquationCalculator=lazy(()=>import('./components/DifferentialEquationCalculator').then(module=>({default:module.DifferentialEquationCalculator})));
 const ConicCalculator=lazy(()=>import('./components/ConicCalculator').then(module=>({default:module.ConicCalculator})));
+const FinancialMathCalculator=lazy(()=>import('./components/FinancialMathCalculator').then(module=>({default:module.FinancialMathCalculator})));
 const InteractiveGraph=lazy(()=>import('./components/InteractiveGraph').then(module=>({default:module.InteractiveGraph})));
 const TangentCalculator=lazy(()=>import('./components/TangentCalculator').then(module=>({default:module.TangentCalculator})));
 const EquationSolver=lazy(()=>import('./components/EquationSolver').then(module=>({default:module.EquationSolver})));
@@ -286,7 +287,7 @@ function App() {
   sequence: <SequenceAnalyzer onClose={closeModal} />,
   parametric: <ParametricExplorer onClose={closeModal} />,
   complex: <ComplexCalculator onClose={closeModal} />,
-  matrix: <MatrixCalculator onClose={closeModal} />,
+  matrix: <MatrixCalculator onClose={closeModal} series={studentSeries} />,
   geometry: <GeometryCalc onClose={closeModal} />,
   probability: <ProbabilityCalc onClose={closeModal} series={studentSeries} />,
   arithmetic: <ArithmeticCalc onClose={closeModal} />,
@@ -297,6 +298,7 @@ function App() {
   ineqxy: <InequalityXY onClose={closeModal} />,
   ode: <DifferentialEquationCalculator onClose={closeModal} />,
   conics: <ConicCalculator onClose={closeModal} />,
+  finance: <FinancialMathCalculator onClose={closeModal} />,
  };
 
  if (!activated) return <ActivationGate onActivated={() => setActivated(true)} />;
@@ -435,12 +437,13 @@ function App() {
         </div>
         {!result && (
          <div className="space-y-5">
-          <div className="notice notice-info"><strong>{studentSeries?`Outils adaptés à la série ${studentSeries}`:'Configure ta série dans Mon coach'}</strong> · Les outils hors programme sont masqués quand une série est choisie. Le périmètre A/C/D suit le MEN 2024-2025 ; la série S utilise la référence officielle publique Terminale S retrouvée.</div>
+          <div className="notice notice-info"><strong>{studentSeries?`Outils adaptés à la série ${studentSeries}`:'Configure ta série dans Mon coach'}</strong> · Les outils hors programme sont masqués quand une série est choisie. Le périmètre A/C/D/L/OSE/S suit les répartitions officielles MEN 2024-2025.</div>
           <ToolGroup title="Calcul et algèbre" copy="Résoudre, transformer et contrôler les calculs du programme.">
            <ToolCard tool="algebra" symbol="x²" title="Algèbre" desc="Équations, inéquations, factorisation" onClick={() => openModal('algebra')} />
            <ToolCard tool="complex" symbol="ℂ" title="Complexes" desc="Formes, racines n-ièmes, équations" onClick={() => openModal('complex')} />
            <ToolCard tool="arithmetic" symbol="≡" title="Arithmétique" desc="Euclide, Bézout, congruences, ℤ" onClick={() => openModal('arithmetic')} />
            <ToolCard tool="matrix" symbol="[A]" title="Matrices" desc="Gauss-Jordan, puissances et systèmes" onClick={() => openModal('matrix')} />
+           <ToolCard tool="finance" symbol="%" title="Mathématiques financières" desc="Intérêts, escompte, actualisation et annuités" onClick={() => openModal('finance')} />
           </ToolGroup>
           <ToolGroup title="Analyse" copy="Fonctions, suites et équations différentielles selon la série.">
            <ToolCard tool="sequence" symbol="uₙ" title="Suites" desc="Récurrence, monotonie et convergence" onClick={() => openModal('sequence')} />

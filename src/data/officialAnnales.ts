@@ -89,6 +89,14 @@ const archiveAnnales: OfficialAnnaleRecord[] = lechayaRows.map(([series, year, c
 
 const secondaryAnnales: OfficialAnnaleRecord[] = [
  {
+  id: 'mg-l-2025-secondary', series: 'L', year: 2025,
+  title: 'BAC Madagascar 2025 — Série L — Mathématiques',
+  subjectUrl: 'https://fr.scribd.com/document/898640111/MATHEMATIQUES-TL-2025-Madagascar',
+  sourceName: 'Copie communautaire 2025', correctionAvailable: false, trust: 'secondary',
+  note: 'Sujet Série L 2025 repéré sur une source secondaire. Il sert à recouper les thèmes, mais n’est pas présenté comme archive officielle vérifiée.'
+ },
+
+ {
   id: 'mg-a-2025-secondary', series: 'A', year: 2025,
   title: 'BAC Madagascar 2025 — Série A — Mathématiques',
   subjectUrl: 'https://fr.scribd.com/document/898636635/Mathematiques-TA-2025-Madagascar',
@@ -118,7 +126,9 @@ export const OFFICIAL_ARCHIVE_SOURCES = {
  educmadA: EDUCMAD.A,
  educmadC: EDUCMAD.C,
  educmadD: EDUCMAD.D,
- terminaleSProgramme: 'https://www.education.gov.mg/wp-content/uploads/2021/09/REPARTITION-TERMINALE-S.pdf',
+ terminaleLProgramme: 'https://www.education.gov.mg/wp-content/uploads/2024/09/RAPE-T12-L_2024_2025.pdf',
+ terminaleOSEProgramme: 'https://www.education.gov.mg/wp-content/uploads/2024/09/RAPE-T12-OSE_2024_2025.pdf',
+ terminaleSProgramme: 'https://www.education.gov.mg/wp-content/uploads/2024/09/RAPE-T12-S_2024_2025.pdf',
  lechaya: LECHAYA,
  ministryProgramme: 'https://www.education.gov.mg/systeme-educatif/lycee/',
 };

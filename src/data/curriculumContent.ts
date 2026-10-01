@@ -11,11 +11,11 @@ export interface CurriculumEnrichment {
  formulas:CurriculumFormula[];
 }
 
-const ALL:BacSeries[]=['A','C','D','S'];
+const ALL:BacSeries[]=['A','C','D','L','OSE','S'];
 const SCI:BacSeries[]=['C','D','S'];
 const GEOM:BacSeries[]=['C','D','S'];
 const ARITH:BacSeries[]=['C','S'];
-const STATS:BacSeries[]=['A','D'];
+const STATS:BacSeries[]=['A','D','L','OSE'];
 
 export const CURRICULUM_ENRICHMENTS:Record<BacTopic,CurriculumEnrichment>={
  Analyse:{
@@ -177,6 +177,26 @@ export const CURRICULUM_ENRICHMENTS:Record<BacTopic,CurriculumEnrichment>={
    {id:'interquartile',title:'Écart interquartile',expression:'I=Q_3-Q_1',meaning:'Mesure la dispersion de la moitié centrale des données.',example:'Q₁=8, Q₃=14 : I=6'},
    {id:'affine-transform-stats',title:'Transformation affine',expression:'m(aX+b)=am(X)+b ; σ(aX+b)=|a|σ(X)',meaning:'Effet d’un changement d’échelle sur moyenne et écart-type.',example:'Passer de °C à une échelle affine'},
   ]
+ },
+ Finance:{
+  definitions:['Un intérêt rémunère un capital pendant une durée donnée.','Actualiser consiste à ramener une valeur future à aujourd’hui ; capitaliser fait l’opération inverse.','Une annuité est un versement périodique, souvent supposé constant dans les exercices de Terminale OSE.'],
+  lessonSections:[
+   {title:'Intérêt simple',explanation:'L’intérêt est proportionnel au capital, au taux et à la durée : I=C×i×t.',keyPoints:['Transformer le pourcentage en nombre décimal','Utiliser la même unité de temps pour t et le taux','Valeur acquise A=C+I']},
+   {title:'Escompte commercial',explanation:'L’escompte commercial retranche à une valeur nominale N un montant D=N×d×t.',keyPoints:['Identifier N, d et t','Calculer D avant la valeur actuelle','VA=N−D']},
+   {title:'Intérêts composés',explanation:'À chaque période, les intérêts s’ajoutent au capital et produisent eux-mêmes des intérêts : A=C(1+i)^n.',keyPoints:['n est un nombre de périodes','Ne pas remplacer (1+i)^n par 1+ni','Actualisation : VA=VF/(1+i)^n']},
+   {title:'Annuités constantes',explanation:'Pour des versements de fin de période, on utilise les formules de valeur actuelle ou de valeur acquise d’une suite géométrique.',keyPoints:['Vérifier si les versements sont en début ou fin de période','Identifier R, i et n','Garder les décimales jusqu’à la fin']},
+  ],
+  pitfalls:['Utiliser 10 au lieu de 0,10 pour un taux de 10 %.','Mélanger des mois et un taux annuel sans conversion justifiée.','Confondre intérêt simple et intérêt composé.','Arrondir le taux ou la puissance trop tôt.'],
+  workedExamples:[
+   {title:'Capitalisation',statement:'1 000 000 Ar sont placés à 10 % par an pendant 2 ans.',steps:['i=0,10 et n=2.','A=1 000 000(1,10)^2.','(1,10)^2=1,21.'],answer:'A=1 210 000 Ar.'},
+   {title:'Actualisation',statement:'Quelle somme placer aujourd’hui pour obtenir 1 210 000 Ar dans 2 ans à 10 % ?',steps:['VA=VF/(1+i)^n.','VA=1 210 000/(1,10)^2.'],answer:'VA=1 000 000 Ar.'},
+  ],
+  formulas:[
+   {id:'simple-interest',title:'Intérêt simple',expression:'I=C i t',meaning:'Intérêt proportionnel au capital et à la durée.',example:'C=100000, i=0,08, t=2 ⇒ I=16000'},
+   {id:'compound-interest',title:'Capitalisation composée',expression:'A=C(1+i)^n',meaning:'Valeur acquise après n périodes.',example:'100000×1,1²=121000'},
+   {id:'present-value',title:'Actualisation',expression:'VA=VF/(1+i)^n',meaning:'Valeur actuelle équivalente à une valeur future.',example:'121000/1,1²=100000'},
+   {id:'annuity-present',title:'Valeur actuelle d’annuités',expression:'VA=R(1-(1+i)^(-n))/i',meaning:'Versements constants de fin de période.',example:'R=10000, i=0,1, n=3'},
+  ]
  }
 };
 
@@ -224,4 +244,11 @@ export const EXTRA_LEARNING_QUESTIONS:ExtraLearningQuestion[]=[
  q('q-st-05','Statistiques',STATS,2,'La médiane de 1,3,8,10 est :',['3','5,5','8','22'],1,'Pour quatre valeurs, moyenne des deux centrales : (3+8)/2=5,5.'),
  q('q-st-06','Statistiques',STATS,2,'Quel indicateur est le plus sensible aux valeurs extrêmes ?', ['Médiane','Premier quartile','Moyenne','Écart interquartile'],2,'Une valeur extrême modifie fortement la moyenne.'),
  q('q-st-07','Statistiques',STATS,3,'Si V=16, l’écart-type vaut :',['4','8','16','256'],0,'σ=√16=4.'),
+ q('q-fi-01','Finance',['OSE'],1,'Un taux de 10 % s’écrit dans une formule :',['10','1','0,10','0,01'],2,'10 %=10/100=0,10.'),
+ q('q-fi-02','Finance',['OSE'],2,'Avec intérêts composés, la valeur acquise d’un capital C après n périodes est :',['C(1+ni)','C(1+i)^n','C+i+n','C/(1+i)^n'],1,'Les intérêts sont capitalisés à chaque période : A=C(1+i)^n.'),
+ q('q-fi-03','Finance',['OSE'],2,'Pour actualiser une valeur future VF sur n périodes au taux i, on calcule :',['VF(1+i)^n','VF/(1+i)^n','VF-ni','VF/i'],1,'Actualiser revient à diviser par le facteur de capitalisation (1+i)^n.'),
+ q('q-fi-04','Finance',['OSE'],1,'À intérêt simple, I=C×i×t. Si C=100 000, i=0,08 et t=2, I vaut :',['8 000','16 000','108 000','116 000'],1,'I=100000×0,08×2=16000.'),
+ q('q-fi-05','Finance',['OSE'],2,'Un escompte commercial D se calcule par :',['N+d+t','N×d×t','N/(1+d)^t','N−d'],1,'La formule du programme est D=N×d×t avec des unités de temps cohérentes.'),
+ q('q-fi-06','Finance',['OSE'],3,'1 000 000 Ar placés à 10 % pendant 2 ans à intérêts composés deviennent :',['1 100 000','1 200 000','1 210 000','1 020 000'],2,'A=1 000 000×1,10²=1 210 000 Ar.'),
+ q('q-fi-07','Finance',['OSE'],3,'Pour des annuités constantes de fin de période, la valeur actuelle utilise le facteur :',['((1+i)^n−1)/i','(1−(1+i)^(-n))/i','1+ni','n/i'],1,'La valeur actuelle d’une annuité immédiate est R[1−(1+i)^(-n)]/i.'),
 ];

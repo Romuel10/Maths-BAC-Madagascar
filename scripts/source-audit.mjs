@@ -74,6 +74,8 @@ const arithmeticSource = fs.readFileSync('src/lib/arithmeticEngine.ts', 'utf8');
 const odeSource = fs.readFileSync('src/lib/differentialEquationEngine.ts', 'utf8');
 const conicSource = fs.readFileSync('src/lib/conicEngine.ts', 'utf8');
 const probabilityCalcSource = fs.readFileSync('src/components/ProbabilityCalc.tsx', 'utf8');
+const financialSource = fs.readFileSync('src/lib/financialMathEngine.ts', 'utf8');
+const learningCatalogSource = fs.readFileSync('src/data/learningCatalog.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
 assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
 assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
@@ -109,19 +111,22 @@ assertSource(tutorSource.includes('Je n’ai pas compris cette étape') && tutor
 assertSource(tutorCoachSource.includes("TutorExplanationLevel = 'simple' | 'detail' | 'bac'") && tutorCoachSource.includes('getTutorPractice') && tutorCoachSource.includes('getTutorStepSupport'), 'le moteur pédagogique doit conserver ses trois niveaux d’explication et ses exercices de transfert');
 assertSource(packageJson.scripts?.['test:tutor'] && packageJson.scripts?.['test:full']?.includes('npm run test:tutor'), 'les régressions du tuteur doivent faire partie de la validation complète');
 assertSource(tutorSource.includes('Correction construite avec ton énoncé') && tutorSource.includes('revealedResolutionSteps') && tutorSource.includes('solveStatementExactly'), 'le tuteur doit afficher progressivement la résolution calculée depuis l’énoncé réel');
-assertSource(statementResolutionSource.includes("StatementResolutionKind = 'equation' | 'function-variation' | 'pgcd' | 'orthogonality'") && statementResolutionSource.includes('solveStatementExactly'), 'le moteur d’énoncé réel doit conserver ses familles vérifiées');
+assertSource(statementResolutionSource.includes("'linear-system'") && statementResolutionSource.includes("'congruence'") && statementResolutionSource.includes('solveStatementExactly'), 'le moteur d’énoncé réel doit conserver équations, systèmes, congruences et familles vérifiées');
 assertSource(packageJson.scripts?.['test:statement'] && packageJson.scripts?.['test:full']?.includes('npm run test:statement'), 'les tests des résolutions d’énoncés doivent faire partie de la validation complète');
 assertSource(calculatorEngineSource.includes('convertAngleFunctionsDegrees') && calculatorEngineSource.includes('asin') && calculatorEngineSource.includes('atan'), 'la calculatrice scientifique doit gérer les fonctions trigonométriques réciproques en degrés');
-assertSource(matrixSource.includes('solveLinearSystem') && matrixSource.includes('mRref') && matrixSource.includes('mPower'), 'la calculatrice matricielle doit conserver systèmes, RREF et puissances');
-assertSource(probabilitySource.includes('binomialRangeProbability') && probabilitySource.includes('inverseNormalCdf') && probabilitySource.includes('linearRegression'), 'probabilités/statistiques doivent conserver intervalles, quantiles et régression');
+assertSource(matrixSource.includes('solveLinearSystem') && matrixSource.includes('solveCramer') && matrixSource.includes('mRref') && matrixSource.includes('mPower'), 'la calculatrice matricielle doit conserver systèmes, Cramer, RREF et puissances');
+assertSource(probabilitySource.includes('binomialRangeProbability') && probabilitySource.includes('inverseNormalCdf') && probabilitySource.includes('linearRegression') && probabilitySource.includes('uniformRangeProbability') && probabilitySource.includes('exponentialRangeProbability'), 'probabilités/statistiques doivent conserver binomiale, normale, uniforme, exponentielle et régression');
 assertSource(complexSource.includes('cRoots') && complexSource.includes('cFromPolar'), 'la calculatrice complexe doit conserver racines n-ièmes et conversion polaire');
 assertSource(packageJson.scripts?.['test:advanced-calculators'] && packageJson.scripts?.['test:full']?.includes('npm run test:advanced-calculators'), 'les calculatrices avancées doivent faire partie de la validation complète');
-assertSource(bacSubjectsSource.includes("BacSeries = 'A' | 'C' | 'D' | 'S'"), 'la série S doit faire partie du modèle BAC');
-assertSource(bacScopeSource.includes('Terminale S officielle') && bacScopeSource.includes("conics:{C:'core'") && bacScopeSource.includes("matrix:{S:'core'"), 'le périmètre par série doit distinguer C, D, A et S sans présenter les compléments comme programme');
+assertSource(bacSubjectsSource.includes("BacSeries = 'A' | 'C' | 'D' | 'L' | 'OSE' | 'S'"), 'les séries A C D L OSE S doivent faire partie du modèle BAC');
+assertSource(bacScopeSource.includes("schoolYear: '2024-2025'") && bacScopeSource.includes("finance:{A:'extra',C:'extra',D:'extra',L:'extra',OSE:'core',S:'extra'}") && bacScopeSource.includes("matrix:{A:'extra',C:'extra',D:'useful',L:'useful',OSE:'useful',S:'core'}") && bacScopeSource.includes('continuous-laws-s'), 'le périmètre 2024-2025 doit distinguer A C D L OSE S et leurs outils propres');
 assertSource(arithmeticSource.includes('extendedGcd') && arithmeticSource.includes('solveLinearCongruence') && arithmeticSource.includes('solveLinearDiophantine'), 'l’arithmétique BAC C/S doit inclure Bézout, congruences et diophantiennes');
 assertSource(odeSource.includes('solveFirstOrderHomogeneous') && odeSource.includes('solveSecondOrderHomogeneous'), 'les équations différentielles BAC C/S doivent être couvertes');
 assertSource(conicSource.includes('analyzeEllipse') && conicSource.includes('analyzeHyperbola') && conicSource.includes('analyzeParabola') && conicSource.includes('conicTangent'), 'les coniques de Terminale C doivent être couvertes');
-assertSource(probabilitySource.includes('mayerRegression') && probabilityCalcSource.includes("series==='A'") && probabilityCalcSource.includes('méthode de Mayer'), 'la série A doit utiliser la méthode de Mayer plutôt que les moindres carrés');
+assertSource(probabilitySource.includes('mayerRegression') && probabilityCalcSource.includes("series==='A'||series==='L'") && probabilityCalcSource.includes("series==='OSE'") && probabilityCalcSource.includes("id:'continuous' as Mode"), 'les statistiques A/L, D/OSE et les lois continues S doivent être distinguées');
+assertSource(financialSource.includes('simpleInterest') && financialSource.includes('compoundFutureValue') && financialSource.includes('annuityPresentValue'), 'les mathématiques financières OSE doivent inclure intérêts, actualisation et annuités');
+assertSource(learningCatalogSource.includes("topic: 'Finance'") && learningCatalogSource.includes("series: ['OSE']"), 'le coach OSE doit contenir un chapitre Finance');
+assertSource(tutorSource.includes('Résolution complète · vérifiée') && tutorSource.includes('Méthode guidée seulement'), 'le tuteur doit distinguer une résolution complète d’un simple guidage');
 assertSource(packageJson.scripts?.['test:bac-madagascar'] && packageJson.scripts?.['test:full']?.includes('npm run test:bac-madagascar'), 'le périmètre BAC Madagascar doit être testé dans test:full');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
