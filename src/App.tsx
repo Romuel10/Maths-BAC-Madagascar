@@ -7,9 +7,7 @@ import type { ReactNode } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BacHome } from './components/BacHome';
 import { BacLibrary } from './components/BacLibrary';
-import { BacTutor } from './components/BacTutor';
 import { BacProgressDashboard } from './components/BacProgressDashboard';
-import { LearningCoach } from './components/LearningCoach';
 import { GlobalSearch } from './components/GlobalSearch';
 import { FunctionInput } from './components/FunctionInput';
 import { History } from './components/History';
@@ -34,6 +32,8 @@ const REQUIRE_ACTIVATION = import.meta.env.VITE_REQUIRE_ACTIVATION === 'true';
 const PAGES:Page[]=['home','subjects','solve','tools','profile'];
 const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy','ode','conics','finance'];
 
+const BacTutor=lazy(()=>import('./components/BacTutor').then(module=>({default:module.BacTutor})));
+const LearningCoach=lazy(()=>import('./components/LearningCoach').then(module=>({default:module.LearningCoach})));
 const FunctionCompare=lazy(()=>import('./components/FunctionCompare').then(module=>({default:module.FunctionCompare})));
 const RevisionSheets=lazy(()=>import('./components/RevisionSheets').then(module=>({default:module.RevisionSheets})));
 const SequenceAnalyzer=lazy(()=>import('./components/SequenceAnalyzer').then(module=>({default:module.SequenceAnalyzer})));
