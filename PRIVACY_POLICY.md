@@ -33,4 +33,4 @@ Cette politique sera mise à jour si des fonctionnalités de compte, de synchron
 ## Contact
 
 Responsable : RATOVOSON Navelanizara Romuel  
-Adresse de contact à compléter avant publication : `[votre adresse e-mail de support]`
+Support et demandes relatives à l’application : dépôt officiel GitHub `Romuel10/Maths-BAC-Madagascar`, via l’onglet « Issues ».

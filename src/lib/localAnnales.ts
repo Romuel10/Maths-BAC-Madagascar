@@ -97,7 +97,7 @@ function save(items: LocalAnnale[]):boolean {
 export function addLocalAnnale(input: Omit<LocalAnnale, 'id' | 'createdAt'>): LocalAnnale {
  const normalized=normalizeAnnale({...input,id:`local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,createdAt:new Date().toISOString()},0);
  if(!normalized)throw new Error('Le contenu de l’annale est incomplet ou trop long.');
- save([normalized,...getLocalAnnales()]);
+ if(!save([normalized,...getLocalAnnales()]))throw new Error('Stockage local indisponible : l’annale n’a pas été enregistrée.');
  return normalized;
 }
 

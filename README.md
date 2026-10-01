@@ -10,7 +10,7 @@ Application mobile et web de préparation aux mathématiques du BAC à Madagasca
 - 32 sections de cours, 51 formules expliquées, 16 exemples entièrement corrigés et 56 QCM avec explications.
 - 6 sujets originaux guidés de type BAC, soit 2 pour chacune des séries A, C et D et 36 questions avec indices, méthode et correction.
 - Recherche dans les leçons, formules et exercices ; diagnostic par série, carnet d’erreurs et recommandations locales.
-- Projet Android Capacitor 8.5 prêt pour un premier bundle Google Play, API 36 et Android 7 minimum.
+- Projet Android Capacitor 8.5.2 prêt pour un premier bundle Google Play, API 36 et Android 7 minimum.
 - Icône Android, écran de démarrage, signature externe sécurisée et workflow de génération AAB inclus.
 
 ## Menu Résoudre
@@ -22,6 +22,7 @@ Le menu répond à quatre besoins d’élève : comprendre un énoncé, étudier
 ```bash
 pkg update
 pkg install nodejs-lts openjdk-21 git unzip imagemagick
+# Vérifier ensuite : Node.js 22.12 ou ultérieur
 cd ~/Maths-BAC-Madagascar-V7-Capacitor
 npm ci
 npm run termux

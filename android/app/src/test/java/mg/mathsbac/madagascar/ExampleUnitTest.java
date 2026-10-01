@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package mg.mathsbac.madagascar;
 
 import static org.junit.Assert.*;
 

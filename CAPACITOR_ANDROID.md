@@ -2,12 +2,12 @@
 
 ## Configuration déjà intégrée
 
-- Capacitor `8.5.0` avec projet natif dans `android/`.
+- Capacitor `8.5.2` avec projet natif dans `android/`.
 - Identifiant Android : `mg.mathsbac.madagascar`.
 - Nom : `Maths BAC Madagascar`.
 - Android minimum : API 24, soit Android 7.
 - Compilation et cible : API 36.
-- Version Android initiale : `versionCode 1`, `versionName 7.0.0`.
+- Version Android de publication : `versionCode 700`, `versionName 7.0.0`.
 - Module natif `@capacitor/app` : gestion par défaut du bouton Retour Android.
 - Ressources web embarquées dans l’application : aucun serveur n’est requis pour les cours et outils.
 - Icône adaptative, écran de démarrage sombre et trafic HTTP en clair désactivé.
@@ -27,7 +27,7 @@ npm ci
 npm run termux
 ```
 
-Node.js doit être en version 22 ou ultérieure. Ouvrir l’adresse `http://localhost:5173` affichée. La commande `npm run termux` construit d’abord la version optimisée puis la sert ; elle évite les compilations lentes de `npm run dev` sur téléphone.
+Node.js doit être en version 22.12 ou ultérieure. Ouvrir l’adresse `http://localhost:5173` affichée. La commande `npm run termux` construit d’abord la version optimisée puis la sert ; elle évite les compilations lentes de `npm run dev` sur téléphone.
 
 Après une modification du code :
 
@@ -52,14 +52,14 @@ Ne jamais placer le fichier `.jks` ou ses mots de passe dans le projet, l’arch
 
 ## Méthode recommandée depuis un téléphone : GitHub Actions
 
-Le workflow `.github/workflows/android-release.yml` construit un AAB signé sur un environnement Android officiel. Dans un dépôt GitHub privé, ajouter ces quatre secrets :
+Le workflow `.github/workflows/android-v7-release.yml` valide d’abord le projet et Android, puis construit un AAB signé sur `main`, sur un tag `v*` ou lors d’un lancement manuel. Ajouter ces quatre secrets dans les paramètres GitHub du dépôt :
 
 - `MATHS_BAC_KEYSTORE_BASE64` : résultat de `base64 -w 0 ~/maths-bac-release.jks` ;
 - `MATHS_BAC_KEYSTORE_PASSWORD` ;
 - `MATHS_BAC_KEY_ALIAS` : par exemple `maths-bac` ;
 - `MATHS_BAC_KEY_PASSWORD`.
 
-Lancer ensuite **Actions → Android release bundle → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v7-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
+Lancer ensuite **Actions → Validation et Android V7 → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v7-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
 
 ## Construction locale avec un SDK Android configuré
 

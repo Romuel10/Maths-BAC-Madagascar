@@ -1,6 +1,5 @@
-const CACHE_NAME = 'maths-bac-madagascar-v7-0-0';
+const CACHE_NAME = 'maths-bac-madagascar-v7-0-0-r2';
 const CORE_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './asset-manifest.json'];
-const ESSENTIAL_DYNAMIC_ENTRIES = ['src/components/BacGuidedSolver.tsx', 'src/components/BacExamSession.tsx', 'src/lib/pedagogy.ts'];
 
 function scoped(path = '') {
   return new URL(path, self.registration.scope).toString();
@@ -36,8 +35,10 @@ async function precacheApplication() {
         if (Array.isArray(entry.imports)) entry.imports.forEach(addManifestEntry);
       };
       const entryKey = Object.keys(buildManifest).find(key => buildManifest[key]?.isEntry);
-      addManifestEntry(entryKey);
-      ESSENTIAL_DYNAMIC_ENTRIES.forEach(addManifestEntry);
+      // Précharger toutes les entrées Vite garantit que les outils chargés avec
+      // React.lazy restent disponibles même si l'appareil passe hors connexion
+      // avant leur première ouverture.
+      Object.keys(buildManifest).forEach(addManifestEntry);
       entryAsset = entryKey && typeof buildManifest[entryKey]?.file === 'string' ? buildManifest[entryKey].file : '';
       if (entryAsset) {
         const entryResponse = await fetch(scoped(entryAsset), { cache: 'reload' });

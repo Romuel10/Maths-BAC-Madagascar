@@ -105,6 +105,7 @@ function App() {
  const [sub, setSub] = useState<Sub>('steps');
  const [modal, setModal] = useState<ModalId | null>(initialRoute.modal);
  const [result, setResult] = useState<AnalysisResult | null>(null);
+ const [analysisRange, setAnalysisRange] = useState({ xMin: -10, xMax: 10 });
  const [error, setError] = useState<string | null>(null);
  const [isLoading, setIsLoading] = useState(false);
  const [history, setHistory] = useState<string[]>(() => storageJsonGet('mathsolver_history', []));
@@ -244,6 +245,7 @@ function App() {
   try {
     const next = await analyzeFunctionAsync(expr, xMin, xMax);
     setResult(next);
+    setAnalysisRange({ xMin, xMax });
     setSub('steps');
     setHistory(previous => {
      const updated = [expr, ...previous.filter(item => item !== expr)].slice(0, 12);
@@ -396,7 +398,7 @@ function App() {
 
            {sub === 'steps' && <StepByStep result={result} />}
            {sub === 'graph' && <>
-            <InteractiveGraph data={result.plotData} xMin={-10} xMax={10} criticalPoints={result.variation.criticalPoints} zeros={result.zeros} inflectionPoints={result.convexity.inflectionPoints} asymptotes={result.asymptotes} expression={result.expression} derivativeExpr={result.derivativeExpr} secondDerivativeExpr={result.secondDerivativeExpr} />
+            <InteractiveGraph data={result.plotData} xMin={analysisRange.xMin} xMax={analysisRange.xMax} criticalPoints={result.variation.criticalPoints} zeros={result.zeros} inflectionPoints={result.convexity.inflectionPoints} asymptotes={result.asymptotes} expression={result.expression} derivativeExpr={result.derivativeExpr} secondDerivativeExpr={result.secondDerivativeExpr} />
             <GraphExplanation result={result} />
             <SignTableCard signTable={result.signTable} zeros={result.zeros} expression={result.expression} />
             <VariationTable variation={result.variation} domain={result.domain} derivativeExpr={formatPretty(result.derivativeExpr)} />
@@ -458,8 +460,9 @@ function App() {
          <h3 className="section-title mt-2">Réglages de l’application</h3>
          <div className="grid grid-cols-2 gap-2.5 mt-3">
           <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
-          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Malagasy' : 'FR · Français'}</button>
+          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
          </div>
+         <p className="section-copy mt-2">Le réglage FR/MG adapte la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie scolaire du BAC.</p>
          <div className="surface-flat p-3 mt-3 space-y-3">
           <label className="field-label" htmlFor="text-scale">Taille du texte</label>
           <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
