@@ -72,7 +72,7 @@ if(!androidBuild.includes('versionName "'+EXPECTED_VERSION+'"'))errors.push('And
 if(!sw.includes('maths-bac-madagascar-v1-0-1'))errors.push('cache PWA doit être versionné 1.0.1');
 if(orphans.length)errors.push('fichiers source orphelins : '+orphans.join(', '));
 if(!i18n.includes("navReview")||!i18n.includes("navBac"))errors.push('navigation principale doit distinguer Réviser et BAC');
-if(!app.includes("['profile', 'book'")||!app.includes("['subjects', 'progress'"))errors.push('ordre de navigation mobile simplifié absent');
+if(!app.includes("['profile', 'book'")||!app.includes("['subjects', 'bac'"))errors.push('ordre de navigation mobile simplifié absent');
 if(app.includes("MiniLesson")||app.includes("UnitConverter")||app.includes("RevisionSheets"))errors.push('anciens outils redondants encore branchés dans App');
 if(/\bV7\b|7\.0\.0/.test(app))errors.push('ancienne version visible dans App.tsx');
 
