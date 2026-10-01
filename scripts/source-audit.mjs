@@ -74,11 +74,11 @@ assertSource(manifest.icons.every(icon => icon.type === 'image/png' && icon.purp
 assertSource(packageJson.dependencies?.['@capacitor/core'] === '8.5.2' && packageJson.dependencies?.['@capacitor/android'] === '8.5.2' && packageJson.dependencies?.['@capacitor/app'] === '8.1.1' && packageJson.devDependencies?.['@capacitor/cli'] === '8.5.2', 'Capacitor Android et le gestionnaire du bouton Retour doivent rester verrouillés');
 assertSource(packageJson.devDependencies?.vite === '7.3.6', 'Vite doit rester sur une version corrigée des vulnérabilités connues');
 assertSource(packageJson.overrides?.xcode?.uuid === '11.1.1', 'la dépendance uuid de xcode doit utiliser la version corrigée compatible CommonJS');
-assertSource(packageJson.engines?.node === '>=22.0.0', 'Node.js 22 ou ultérieur doit être exigé pour Capacitor 8');
+assertSource(packageJson.engines?.node === '>=22.12.0', 'Node.js 22.12 ou ultérieur doit être exigé pour Vite et Capacitor');
 assertSource(capacitorConfig.includes("appId: 'mg.mathsbac.madagascar'") && capacitorConfig.includes("webDir: 'dist'"), 'la configuration Capacitor doit conserver son identifiant et son répertoire web');
 assertSource(androidVariables.includes('minSdkVersion = 24') && androidVariables.includes('compileSdkVersion = 36') && androidVariables.includes('targetSdkVersion = 36'), 'Android doit cibler API 36 avec un minimum API 24');
 assertSource(androidBuild.includes('versionCode 700') && androidBuild.includes('versionName "7.0.0"') && androidBuild.includes('MATHS_BAC_KEYSTORE_PATH'), 'la version Android et la signature de publication doivent être configurées');
-assertSource(androidBuild.includes('minifyEnabled true') && androidBuild.includes('shrinkResources true'), 'la release Android doit activer la réduction du code et des ressources');
+assertSource(androidBuild.includes('minifyEnabled false') && androidBuild.includes('shrinkResources false'), 'la release Android doit conserver R8 désactivé tant que la stabilité Capacitor 8 n’est pas validée sur appareils réels');
 assertSource(androidManifest.includes('android:usesCleartextTraffic="false"'), 'Android ne doit pas autoriser le trafic HTTP en clair');
 assertSource(androidManifest.includes('android:allowBackup="false"'), 'Android ne doit pas sauvegarder automatiquement les données scolaires locales');
 assertSource(androidInstrumentedTest.includes('"mg.mathsbac.madagascar"'), 'le test Android doit vérifier le vrai applicationId');
