@@ -1,18 +1,45 @@
-name: Android V7 release
+name: Validation et Android V7
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - '**'
     tags:
       - 'v*'
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
+  validate:
+    name: Validation complète
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier les vulnérabilités élevées
+        run: npm audit --audit-level=high
+
+      - name: Tester le projet complet
+        run: npm run test:full
+
   build-aab:
+    name: Bundle Android signé
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,7 +53,7 @@ jobs:
           cache: npm
 
       - name: Installer Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -40,9 +67,6 @@ jobs:
 
       - name: Installer les dépendances
         run: npm ci
-
-      - name: Vérifier le projet complet
-        run: npm run test:full
 
       - name: Préparer la clé de signature
         env:
