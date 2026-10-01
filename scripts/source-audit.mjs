@@ -63,6 +63,7 @@ const learningStoreSource = fs.readFileSync('src/lib/learningStore.ts', 'utf8');
 const progressSource = fs.readFileSync('src/components/BacProgressDashboard.tsx', 'utf8');
 const tutorSource = fs.readFileSync('src/components/BacTutor.tsx', 'utf8');
 const tutorCoachSource = fs.readFileSync('src/lib/tutorCoach.ts', 'utf8');
+const statementResolutionSource = fs.readFileSync('src/lib/statementResolutionEngine.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
 assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
 assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
@@ -97,6 +98,9 @@ assertSource(progressSource.includes('progression globale') && !progressSource.i
 assertSource(tutorSource.includes('Je n’ai pas compris cette étape') && tutorSource.includes('M’entraîner sur une question similaire') && tutorSource.includes('TutorExplanationLevel'), 'le tuteur doit proposer une aide progressive et un entraînement similaire');
 assertSource(tutorCoachSource.includes("TutorExplanationLevel = 'simple' | 'detail' | 'bac'") && tutorCoachSource.includes('getTutorPractice') && tutorCoachSource.includes('getTutorStepSupport'), 'le moteur pédagogique doit conserver ses trois niveaux d’explication et ses exercices de transfert');
 assertSource(packageJson.scripts?.['test:tutor'] && packageJson.scripts?.['test:full']?.includes('npm run test:tutor'), 'les régressions du tuteur doivent faire partie de la validation complète');
+assertSource(tutorSource.includes('Correction construite avec ton énoncé') && tutorSource.includes('revealedResolutionSteps') && tutorSource.includes('solveStatementExactly'), 'le tuteur doit afficher progressivement la résolution calculée depuis l’énoncé réel');
+assertSource(statementResolutionSource.includes("StatementResolutionKind = 'equation' | 'function-variation' | 'pgcd' | 'orthogonality'") && statementResolutionSource.includes('solveStatementExactly'), 'le moteur d’énoncé réel doit conserver ses familles vérifiées');
+assertSource(packageJson.scripts?.['test:statement'] && packageJson.scripts?.['test:full']?.includes('npm run test:statement'), 'les tests des résolutions d’énoncés doivent faire partie de la validation complète');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
