@@ -45,6 +45,13 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
  const [themeTick, setThemeTick] = useState(0);
 
  useEffect(() => {
+  setXMin(initialXMin);
+  setXMax(initialXMax);
+  setTouchPt(null);
+  setTangent(null);
+ }, [initialXMin, initialXMax]);
+
+ useEffect(() => {
   const obs = new MutationObserver(() => setThemeTick(v => v + 1));
   obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   return () => obs.disconnect();
@@ -96,6 +103,11 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
 
  // Animate draw on new data
  useEffect(() => {
+  if (document.body.classList.contains('reduce-motion')) {
+   setDrawProgress(1);
+   setAnimated(true);
+   return;
+  }
   setDrawProgress(0);
   setAnimated(false);
   let start: number | null = null;
@@ -123,7 +135,7 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
  const fromCx = useCallback((px: number) => xMin + ((px - pad.l) / (dims.w - pad.l - pad.r)) * (xMax - xMin), [xMin, xMax, dims.w]);
 
  const handleTouch = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-  if (!expression) return;
+  if (!expression || activeData.length === 0) return;
   const rect = canvasRef.current?.getBoundingClientRect();
   if (!rect) return;
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
