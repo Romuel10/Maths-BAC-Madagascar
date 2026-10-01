@@ -75,6 +75,11 @@ if(!i18n.includes("navReview")||!i18n.includes("navBac"))errors.push('navigation
 if(!app.includes("['profile', 'book'")||!app.includes("['subjects', 'bac'"))errors.push('ordre de navigation mobile simplifié absent');
 if(app.includes("MiniLesson")||app.includes("UnitConverter")||app.includes("RevisionSheets"))errors.push('anciens outils redondants encore branchés dans App');
 if(/\bV7\b/.test(app)||/['\"]7\.0\.0['\"]/.test(app))errors.push('ancienne version visible dans App.tsx');
+const ownedReleaseFiles=['README.md','CAPACITOR_ANDROID.md','PRIVACY_POLICY.md','CHANGELOG.md','RELEASE_V1.0.1.md','src/lib/protection.ts','public/sw.js','android/app/build.gradle','.github/workflows/android-release.yml'];
+for(const file of ownedReleaseFiles){
+ const text=fs.readFileSync(file,'utf8');
+ if(/7\.0\.0|\bV7\b/.test(text))errors.push('ancienne référence de version dans '+file);
+}
 const legacyPaths=['CHANGELOG_V6.md','VALIDATION_V7.md','.github/workflows/android-v7-release.yml'];
 for(const legacy of legacyPaths)if(fs.existsSync(legacy))errors.push('ancien fichier de version encore présent : '+legacy);
 if(packageJson.dependencies?.clsx||packageJson.dependencies?.['tailwind-merge'])errors.push('dépendances UI inutilisées encore déclarées');
