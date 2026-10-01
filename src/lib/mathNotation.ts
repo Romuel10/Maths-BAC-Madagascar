@@ -223,10 +223,10 @@ export function looksLikeMath(input: string): boolean {
 export function splitMathWorkLines(input:string):string[]{
  const source=String(input??'').trim();
  if(!source)return [];
- const out:string[]=[];
+ const arrowParts:string[]=[];
  let current='';
  let depth=0;
- const push=()=>{const value=current.trim().replace(/^[→⇒⟺⇔]+\s*/,'');if(value)out.push(value);current='';};
+ const push=()=>{const value=current.trim().replace(/^[→⇒⟺⇔]+\s*/,'');if(value)arrowParts.push(value);current='';};
  for(let i=0;i<source.length;i++){
   const ch=source[i];
   if(ch==='('||ch==='['||ch==='{')depth++;
@@ -238,6 +238,22 @@ export function splitMathWorkLines(input:string):string[]{
   current+=ch;
  }
  push();
+
+ const out:string[]=[];
+ for(const part of arrowParts){
+  const semi:string[]=[];
+  let piece='',level=0;
+  const flush=()=>{const value=piece.trim();if(value)semi.push(value);piece='';};
+  for(const ch of part){
+   if(ch==='('||ch==='['||ch==='{')level++;
+   if(ch===')'||ch===']'||ch==='}')level=Math.max(0,level-1);
+   if(ch===';'&&level===0){flush();continue;}
+   piece+=ch;
+  }
+  flush();
+  const allEquations=semi.length>1&&semi.every(value=>/[=≈≤≥<>]/.test(value));
+  if(allEquations)out.push(...semi);else out.push(part);
+ }
  return out.length?out:[source];
 }
 
