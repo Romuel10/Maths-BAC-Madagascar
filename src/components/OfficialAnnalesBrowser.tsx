@@ -106,7 +106,7 @@ export function OfficialAnnalesBrowser({ series, onOpenTutor }: Props) {
    <div className="archive-sources mt-3">
     <p className="font-bold">Sources de référence intégrées</p>
     <div className="flex flex-wrap gap-2 mt-2">
-     <a href={series === 'A' ? OFFICIAL_ARCHIVE_SOURCES.educmadA : series === 'C' ? OFFICIAL_ARCHIVE_SOURCES.educmadC : OFFICIAL_ARCHIVE_SOURCES.educmadD} target="_blank" rel="noreferrer">EDUCMAD · Série {series} ↗</a>
+     {series==='S'?<a href={OFFICIAL_ARCHIVE_SOURCES.terminaleSProgramme} target="_blank" rel="noreferrer">Programme MEN · Série S ↗</a>:<a href={series === 'A' ? OFFICIAL_ARCHIVE_SOURCES.educmadA : series === 'C' ? OFFICIAL_ARCHIVE_SOURCES.educmadC : OFFICIAL_ARCHIVE_SOURCES.educmadD} target="_blank" rel="noreferrer">EDUCMAD · Série {series} ↗</a>}
      <a href={OFFICIAL_ARCHIVE_SOURCES.lechaya} target="_blank" rel="noreferrer">Catalogue LeChaya ↗</a>
      <a href={OFFICIAL_ARCHIVE_SOURCES.ministryProgramme} target="_blank" rel="noreferrer">Programme lycée MEN ↗</a>
     </div>
