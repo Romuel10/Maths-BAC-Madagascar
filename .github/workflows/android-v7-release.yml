@@ -39,6 +39,9 @@ jobs:
       - name: Vérifier les vulnérabilités npm
         run: npm audit --audit-level=low
 
+      - name: Vérifier les scripts shell
+        run: bash -n scripts/*.sh
+
       - name: Tester le projet complet
         run: npm run test:full
 
