@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { parseMatrix, analyzeMatrix, mAdd, mSub, mMul, mScale, mRref, mPower, solveLinearSystem, type Matrix } from '../lib/matrix';
+import { parseMatrix, analyzeMatrix, mAdd, mSub, mMul, mScale, mRref, mPower, solveLinearSystem, solveCramer, type Matrix } from '../lib/matrix';
+import type { BacSeries } from '../data/bacSubjects';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { ResultBox, PropBadge, Section, MatrixDisplay } from './ResultCard';
 
-interface Props { onClose: () => void }
+interface Props { onClose: () => void; series?: BacSeries | null }
 
 const fmtValue = (n: number) => {
  if (!Number.isFinite(n)) return 'indéfini';
@@ -22,7 +23,7 @@ const multiplicationSteps = (a: Matrix, b: Matrix, r: Matrix): string[] => {
  return steps;
 };
 
-export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
+export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) => {
  const [mode, setMode] = useState<'analyze' | 'calc' | 'system'>('analyze');
  const [matStr, setMatStr] = useState('1,2;3,4');
  const [mat2Str, setMat2Str] = useState('5,6;7,8');
@@ -157,13 +158,15 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
   if(b.length!==a.length||b.some(v=>!Number.isFinite(v))){setErr('Le vecteur b doit contenir exactement '+a.length+' valeurs.');return;}
   try{
    const solved=solveLinearSystem(a,b);
+   const cramer=solved.status==='unique'?solveCramer(a,b):null;
    const title=solved.status==='unique'?'Solution unique':solved.status==='infinite'?'Infinité de solutions':'Aucune solution';
    const level=solved.status==='unique'&&solved.residualMax!==null&&solved.residualMax<1e-8?'verified':'approximate';
-   const detail=solved.status==='unique'?'Résolution par Gauss-Jordan. Résidu maximal |Ax-b| = '+(solved.residualMax?.toExponential(3)??'n/a')+'.':solved.status==='infinite'?'rang(A)='+solved.rankA+' et rang(A|b)='+solved.rankAugmented+' : système compatible mais sous-déterminé.':'rang(A|b)='+solved.rankAugmented+' > rang(A)='+solved.rankA+' : système incompatible.';
+   const detail=solved.status==='unique'?'Résolution contrôlée par Gauss-Jordan'+(cramer?' et Cramer':'')+'. Résidu maximal |Ax-b| = '+(solved.residualMax?.toExponential(3)??'n/a')+'.':solved.status==='infinite'?'rang(A)='+solved.rankA+' et rang(A|b)='+solved.rankAugmented+' : système compatible mais sous-déterminé.':'rang(A|b)='+solved.rankAugmented+' > rang(A)='+solved.rankA+' : système incompatible.';
    setRes(<div className="space-y-3 animate-scale-in">
     <ReliabilityPanel level={level} title={title} detail={detail} />
     <div className="grid grid-cols-2 gap-2"><PropBadge label="rang(A)" value={String(solved.rankA)} color="indigo"/><PropBadge label="rang(A|b)" value={String(solved.rankAugmented)} color="purple"/></div>
     {solved.solution&&<div className="grid grid-cols-2 gap-2">{solved.solution.map((value,index)=><PropBadge key={index} label={'x'+(index+1)} value={fmtValue(value)} color="emerald"/>)}</div>}
+    {cramer&&<Section icon="Δ" title={series==='L'?'Méthode de Cramer · programme série L':'Contrôle par la méthode de Cramer'} color="emerald"><div className="space-y-1.5 text-xs text-slate-300 font-mono"><p>Δ = det(A) = {fmtValue(cramer.determinant)}</p>{cramer.columnDeterminants.map((d,i)=><p key={i}>Δ{i+1} = {fmtValue(d)} ; x{i+1}=Δ{i+1}/Δ = {fmtValue(cramer.solution[i])}</p>)}<p>Contrôle : max |Ax−b| = {cramer.residualMax.toExponential(2)}</p></div></Section>}
     <MatrixDisplay matrix={solved.augmentedRref} label="Matrice augmentée réduite" />
     <Section icon="∴" title="Étapes de Gauss-Jordan" color="blue"><div className="space-y-1 text-xs text-slate-300 font-mono">{solved.steps.slice(0,40).map((step,i)=><p key={i}>{step}</p>)}</div></Section>
    </div>);
