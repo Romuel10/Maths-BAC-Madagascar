@@ -25,6 +25,8 @@ function normalizeSubscripts(input: string): string {
 
 export function normalizeMathInput(input: string): string {
  let s = input.trim();
+ // Preserve school combinatorics C(n,k) before converting decimal commas.
+ s = s.replace(/\bC\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, 'C($1;$2)');
  s = s.replace(/\*\*/g, '^');
  s = s.replace(/[−–—]/g, '-');
  s = s.replace(/[×·]/g, '*');
