@@ -75,6 +75,12 @@ if(!i18n.includes("navReview")||!i18n.includes("navBac"))errors.push('navigation
 if(!app.includes("['profile', 'book'")||!app.includes("['subjects', 'bac'"))errors.push('ordre de navigation mobile simplifié absent');
 if(app.includes("MiniLesson")||app.includes("UnitConverter")||app.includes("RevisionSheets"))errors.push('anciens outils redondants encore branchés dans App');
 if(/\bV7\b/.test(app)||/['\"]7\.0\.0['\"]/.test(app))errors.push('ancienne version visible dans App.tsx');
+const legacyPaths=['CHANGELOG_V6.md','VALIDATION_V7.md','.github/workflows/android-v7-release.yml'];
+for(const legacy of legacyPaths)if(fs.existsSync(legacy))errors.push('ancien fichier de version encore présent : '+legacy);
+if(packageJson.dependencies?.clsx||packageJson.dependencies?.['tailwind-merge'])errors.push('dépendances UI inutilisées encore déclarées');
+if(!app.includes("type ReviewTab = 'learn' | 'progress' | 'settings'"))errors.push('Réviser doit séparer Cours, Progression et Réglages');
+if(!app.includes("Outils complémentaires")||app.includes("Mini-leçons")||app.includes("Convertisseur d’unités"))errors.push('la page Outils doit rester simplifiée et sans doublons de révision');
+
 
 console.log('Release audit v'+EXPECTED_VERSION);
 console.log('Sources atteignables : '+reachable.size+'/'+sourceSet.size);
