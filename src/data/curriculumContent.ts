@@ -11,8 +11,8 @@ export interface CurriculumEnrichment {
  formulas:CurriculumFormula[];
 }
 
-const ALL:BacSeries[]=['A','C','D'];
-const SCI:BacSeries[]=['C','D'];
+const ALL:BacSeries[]=['A','C','D','S'];
+const SCI:BacSeries[]=['C','D','S'];
 
 export const CURRICULUM_ENRICHMENTS:Record<BacTopic,CurriculumEnrichment>={
  Analyse:{
