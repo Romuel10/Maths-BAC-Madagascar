@@ -76,13 +76,13 @@ const equationIntent=analyzeStudentRequest('Résoudre dans R l’équation x²-5
 ok(equationIntent.topic==='Algèbre'&&equationIntent.goal==='solve','assistant Résoudre : reconnaît une équation algébrique');
 ok(equationIntent.unknown.includes('solutions')&&equationIntent.question.includes('Résoudre'),'assistant Résoudre : identifie l’inconnue et la question');
 
-ok(LEARNING_CHAPTERS.length===8&&new Set(LEARNING_CHAPTERS.map(chapter=>chapter.topic)).size===8,'catalogue adaptatif : huit chapitres uniques');
+ok(LEARNING_CHAPTERS.length===9&&new Set(LEARNING_CHAPTERS.map(chapter=>chapter.topic)).size===9,'catalogue adaptatif : neuf chapitres uniques');
 ok(LEARNING_CHAPTERS.every(chapter=>chapter.objectives.length>=2&&chapter.method.length>=3&&chapter.formulas.length>=1),'catalogue adaptatif : chaque parcours contient objectifs, méthode et formules');
 ok(LEARNING_CHAPTERS.every(chapter=>chapter.definitions.length>=3&&chapter.lessonSections.length>=4&&chapter.pitfalls.length>=4&&chapter.workedExamples.length>=2),'cours enrichis : définitions, quatre sections, pièges et exemples corrigés par chapitre');
 ok(LEARNING_CHAPTERS.reduce((total,chapter)=>total+chapter.formulas.length,0)>=50,'formulaire enrichi : au moins cinquante formules expliquées');
-ok(LEARNING_CHAPTERS.reduce((total,chapter)=>total+chapter.lessonSections.length,0)>=32,'leçons enrichies : au moins trente-deux sections structurées');
+ok(LEARNING_CHAPTERS.reduce((total,chapter)=>total+chapter.lessonSections.length,0) >=36,'leçons enrichies : au moins trente-six sections structurées');
 ok(new Set(LEARNING_CHAPTERS.flatMap(chapter=>chapter.formulas.map(formula=>formula.id))).size===LEARNING_CHAPTERS.flatMap(chapter=>chapter.formulas).length,'formulaire intelligent : identifiants uniques');
-ok(LEARNING_QUESTIONS.length>=56,'exercices de chapitre : au moins cinquante-six questions corrigées');
+ok(LEARNING_QUESTIONS.length>=63,'exercices de chapitre : au moins soixante-trois questions corrigées');
 ok(LEARNING_QUESTIONS.every(question=>question.correctIndex>=0&&question.correctIndex<question.choices.length),'quiz adaptatifs : toutes les réponses attendues sont valides');
 ok(LEARNING_CHAPTERS.every(chapter=>LEARNING_QUESTIONS.filter(question=>question.topic===chapter.topic).length>=7),'exercices de chapitre : au moins sept questions par thème');
 ok(diagnosticQuestions('A').every(question=>question.series.includes('A'))&&diagnosticQuestions('C').every(question=>question.series.includes('C'))&&diagnosticQuestions('D').every(question=>question.series.includes('D')),'diagnostic : filtrage correct par série');
