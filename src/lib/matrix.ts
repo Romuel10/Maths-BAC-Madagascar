@@ -279,7 +279,7 @@ export function mPower(m: Matrix, exponent: number): Matrix | null {
  let base=exponent<0?mInverse(m):m.map(row=>[...row]);
  if(!base)return null;
  let e=Math.abs(exponent);
- let result=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+ let result: Matrix=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
  while(e>0){
   if(e%2===1){const next=mMul(result,base);if(!next)return null;result=next;}
   e=Math.floor(e/2);
