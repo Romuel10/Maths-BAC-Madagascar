@@ -39,6 +39,9 @@ jobs:
       - name: Vérifier les vulnérabilités npm
         run: npm audit --audit-level=low
 
+      - name: Vérifier les scripts shell
+        run: bash -n scripts/*.sh
+
       - name: Tester le projet complet
         run: npm run test:full
 
@@ -120,16 +123,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.MATHS_BAC_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.MATHS_BAC_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.MATHS_BAC_KEY_PASSWORD }}
-        run: |
-          test -n "$KEYSTORE_BASE64" || { echo 'Secret MATHS_BAC_KEYSTORE_BASE64 manquant'; exit 1; }
-          test -n "$KEYSTORE_PASSWORD" || { echo 'Secret MATHS_BAC_KEYSTORE_PASSWORD manquant'; exit 1; }
-          test -n "$KEY_ALIAS" || { echo 'Secret MATHS_BAC_KEY_ALIAS manquant'; exit 1; }
-          test -n "$KEY_PASSWORD" || { echo 'Secret MATHS_BAC_KEY_PASSWORD manquant'; exit 1; }
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/maths-bac-release.jks"
-          echo "MATHS_BAC_KEYSTORE_PATH=$RUNNER_TEMP/maths-bac-release.jks" >> "$GITHUB_ENV"
-          echo "MATHS_BAC_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "MATHS_BAC_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "MATHS_BAC_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+        run: bash ./scripts/prepare-android-signing.sh
 
       - name: Construire le bundle signé
         run: npm run android:bundle
