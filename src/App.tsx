@@ -288,7 +288,7 @@ function App() {
   complex: <ComplexCalculator onClose={closeModal} />,
   matrix: <MatrixCalculator onClose={closeModal} />,
   geometry: <GeometryCalc onClose={closeModal} />,
-  probability: <ProbabilityCalc onClose={closeModal} />,
+  probability: <ProbabilityCalc onClose={closeModal} series={studentSeries} />,
   arithmetic: <ArithmeticCalc onClose={closeModal} />,
   algebra: <AlgebraTools onClose={closeModal} />,
   units: <UnitConverter onClose={closeModal} />,
