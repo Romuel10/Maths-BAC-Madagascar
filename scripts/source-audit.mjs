@@ -61,6 +61,8 @@ const graphSource = fs.readFileSync('src/components/InteractiveGraph.tsx', 'utf8
 const localAnnalesSource = fs.readFileSync('src/lib/localAnnales.ts', 'utf8');
 const learningStoreSource = fs.readFileSync('src/lib/learningStore.ts', 'utf8');
 const progressSource = fs.readFileSync('src/components/BacProgressDashboard.tsx', 'utf8');
+const tutorSource = fs.readFileSync('src/components/BacTutor.tsx', 'utf8');
+const tutorCoachSource = fs.readFileSync('src/lib/tutorCoach.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
 assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
 assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
@@ -92,6 +94,9 @@ assertSource(graphSource.includes('activeData.length === 0') && graphSource.incl
 assertSource(localAnnalesSource.includes("if(!save([normalized,...getLocalAnnales()]))throw"), 'un échec de stockage des annales doit être signalé');
 assertSource(learningStoreSource.includes('function localDayKey') && !learningStoreSource.includes("toISOString().slice(0, 10)"), 'les jours d’étude doivent utiliser la date locale');
 assertSource(progressSource.includes('progression globale') && !progressSource.includes('réussite globale') && progressSource.includes('mastered/totalQuestions'), 'l’indicateur global doit mesurer la progression sur l’ensemble du corpus');
+assertSource(tutorSource.includes('Je n’ai pas compris cette étape') && tutorSource.includes('M’entraîner sur une question similaire') && tutorSource.includes('TutorExplanationLevel'), 'le tuteur doit proposer une aide progressive et un entraînement similaire');
+assertSource(tutorCoachSource.includes("TutorExplanationLevel = 'simple' | 'detail' | 'bac'") && tutorCoachSource.includes('getTutorPractice') && tutorCoachSource.includes('getTutorStepSupport'), 'le moteur pédagogique doit conserver ses trois niveaux d’explication et ses exercices de transfert');
+assertSource(packageJson.scripts?.['test:tutor'] && packageJson.scripts?.['test:full']?.includes('npm run test:tutor'), 'les régressions du tuteur doivent faire partie de la validation complète');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
