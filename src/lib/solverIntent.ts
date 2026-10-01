@@ -42,7 +42,7 @@ export function detectSolverTopic(text: string): SolverTopic {
  if (/suite|u_n|u\(n\)|u\s*[_]?\s*n\s*\+\s*1|recurrence|geometrique|arithmetique.*suite/.test(s)) return 'Suites';
  if (/vecteur|droite|cercle|plan|distance|triangle|orthogonal|barycentre|colineaire/.test(s)) return 'Géométrie';
  if (/pgcd|congru|divisib|nombre premier|bezout|euclide/.test(s)) return 'Arithmétique';
- if (/equation|inequation|factor|developp|polyn|systeme|matrice|trinome/.test(s)) return 'Algèbre';
+ if (/equation|inequation|resou|factor|developp|polyn|systeme|matrice|trinome/.test(s)) return 'Algèbre';
  return 'Général';
 }
 

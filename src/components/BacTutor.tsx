@@ -6,6 +6,7 @@ import { storageGet, storageRemove } from '../lib/safeStorage';
 import { analyzeStudentRequest, type SolverIntent, type SolverTopic } from '../lib/solverIntent';
 import { speakFrench, stopSpeaking } from '../lib/accessibility';
 import { setLastActivity } from '../lib/studentProfile';
+import { getTutorExplanation, getTutorPractice, getTutorStepSupport, type TutorExplanationLevel } from '../lib/tutorCoach';
 
 type HelpMode = 'understand' | 'start' | 'plan';
 type Workspace = 'statement' | 'function' | 'verify' | 'method';
@@ -79,7 +80,14 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
  const [verifyBusy,setVerifyBusy]=useState(false);
  const [blockedStep,setBlockedStep]=useState(0);
  const [hintLevel,setHintLevel]=useState(0);
+ const [explanationLevel,setExplanationLevel]=useState<TutorExplanationLevel>('simple');
+ const [showPractice,setShowPractice]=useState(false);
+ const [showPracticeHint,setShowPracticeHint]=useState(false);
+ const [showPracticeSolution,setShowPracticeSolution]=useState(false);
  const guide = useMemo(() => METHODS[topic], [topic]);
+ const stepSupport = useMemo(() => getTutorStepSupport(topic,blockedStep), [topic,blockedStep]);
+ const stepExplanation = useMemo(() => getTutorExplanation(topic,blockedStep,explanationLevel), [topic,blockedStep,explanationLevel]);
+ const practice = useMemo(() => getTutorPractice(topic), [topic]);
 
  useEffect(()=>{if(prefill.statement)storageRemove('mathbac_tutor_prefill');if(prefill.functionExpr)storageRemove('mathbac_function_prefill');return stopSpeaking;},[prefill.functionExpr,prefill.statement]);
 
@@ -88,7 +96,8 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   setIntent(next);
   setTopic(next.topic);
   setShowGuide(true);
-  setHintLevel(0);setBlockedStep(0);
+  setHintLevel(0);setBlockedStep(0);setExplanationLevel('simple');
+  setShowPractice(false);setShowPracticeHint(false);setShowPracticeSolution(false);
   if (next.functionExpression) setFunctionExpr(next.functionExpression);
   setLastActivity({kind:'solve',label:`Résolution guidée · ${next.topic}`,payload:statement.slice(0,180)});
  };
@@ -129,7 +138,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
  const recommendedTool = TOPIC_TOOL[topic];
 
  return <div className="space-y-4 page-enter">
-  <div><p className="eyebrow">V7 · Résolution adaptative</p><h2 className="page-title">De quoi as-tu besoin ?</h2><p className="page-copy">Choisis ton objectif. L’assistant repère les données, explique la consigne et propose des indices progressifs sans donner immédiatement la réponse.</p></div>
+  <div><p className="eyebrow">V7 · Tuteur BAC</p><h2 className="page-title">Quel exercice te bloque ?</h2><p className="page-copy">Recopie la question. Le tuteur repère le chapitre, explique pourquoi chaque étape est utile et t’aide progressivement sans remplacer ton raisonnement.</p></div>
 
   <section className="grid grid-cols-2 gap-2.5" aria-label="Choisir un besoin de résolution">
    {WORKSPACES.map(item => <button key={item.id} onClick={()=>setWorkspace(item.id)} aria-pressed={workspace===item.id} className={`solve-goal-card ${workspace===item.id?'active':''}`}><span className="solve-goal-symbol" aria-hidden="true">{item.symbol}</span><span><strong>{item.title}</strong><small>{item.copy}</small></span></button>)}
@@ -166,7 +175,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
 
   {workspace === 'function' && onAnalyzeFunction && <section className="surface p-4"><p className="eyebrow">Étude complète</p><h3 className="section-title mt-2">Analyser une fonction</h3><p className="section-copy mt-1">Tu peux saisir seulement l’expression ou écrire « f(x) = ». L’analyseur vérifiera le domaine avant les calculs.</p><div className="mt-3"><MiniKeyboard value={functionExpr} onChange={value=>{setFunctionExpr(value);setFunctionInputError('')}} placeholder="Ex. f(x)=(x²+1)÷(x−1)" />{functionExpr.trim()&&<div className="math-preview mt-2"><p className="math-preview-label">Expression comprise par le moteur</p><MathExpression value={prettyToMath(functionExpr.replace(/^[fgh]\s*\(\s*x\s*\)\s*=\s*/i,''))} block className="math-preview-expression"/></div>}{functionInputError&&<div className="notice notice-danger mt-2" role="alert">{functionInputError}</div>}<button onClick={()=>analyzeFunctionValue(functionExpr)} disabled={!functionExpr.trim()} className="btn btn-primary w-full mt-3">Analyser la fonction maintenant</button><p className="section-copy mt-2 text-center">Le résultat s’ouvre immédiatement dans l’espace d’analyse avec un indicateur de calcul.</p></div></section>}
 
-  {workspace === 'method' && <section className="surface p-4"><p className="eyebrow">Accès par chapitre</p><h3 className="section-title mt-2">Quelle partie du programme ?</h3><div className="grid grid-cols-2 gap-2 mt-3">{(Object.keys(METHODS) as SolverTopic[]).filter(item=>item!=='Général').map(item=><button key={item} onClick={()=>{setTopic(item);setShowGuide(true);setIntent(null)}} aria-pressed={topic===item} className={`chapter-choice ${topic===item?'active':''}`}>{item}</button>)}</div></section>}
+  {workspace === 'method' && <section className="surface p-4"><p className="eyebrow">Accès par chapitre</p><h3 className="section-title mt-2">Quelle partie du programme ?</h3><div className="grid grid-cols-2 gap-2 mt-3">{(Object.keys(METHODS) as SolverTopic[]).filter(item=>item!=='Général').map(item=><button key={item} onClick={()=>{setTopic(item);setShowGuide(true);setIntent(null);setHintLevel(0);setBlockedStep(0);setExplanationLevel('simple');setShowPractice(false);setShowPracticeHint(false);setShowPracticeSolution(false)}} aria-pressed={topic===item} className={`chapter-choice ${topic===item?'active':''}`}>{item}</button>)}</div></section>}
 
   {intent && workspace === 'statement' && <section className="surface p-4" aria-live="polite"><p className="eyebrow">Énoncé décomposé</p><h3 className="section-title mt-2">{intent.goalLabel}</h3><p className="section-copy mt-2">Chapitre probable : <strong>{intent.topic}</strong>.</p>{intent.keywords.length>0&&<div className="flex flex-wrap gap-1.5 mt-3">{intent.keywords.map(word=><span key={word} className="chip chip-info">{word}</span>)}</div>}<div className="grid gap-2 mt-3"><div className="surface-flat p-3"><p className="font-black text-xs">Données repérées</p>{intent.givens.map(item=><p key={item} className="section-copy mt-1">• <MathText auto>{item}</MathText></p>)}</div><div className="surface-flat p-3"><p className="font-black text-xs">Question</p><p className="section-copy mt-1"><MathText auto>{intent.question}</MathText></p></div><div className="surface-flat p-3"><p className="font-black text-xs">Ce qu’il faut obtenir</p><p className="section-copy mt-1">{intent.unknown}</p></div></div><div className="notice notice-info mt-3"><p className="font-black">Plan proposé</p>{intent.suggestedSteps.map((line,index)=><p key={line} className="mt-1">{index+1}. {line}</p>)}</div>{intent.functionExpression&&onAnalyzeFunction&&<button onClick={()=>analyzeFunctionValue(intent.functionExpression!)} className="btn btn-primary w-full mt-3">Étudier automatiquement {intent.functionExpression}</button>}</section>}
 
@@ -176,8 +185,20 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
    <p className="text-[11px] font-extrabold text-brand mt-4">{guide.title}</p>
    <ol className="mt-2 space-y-2">{guide.steps.slice(0, helpMode==='start'?2:guide.steps.length).map((step,i)=><li key={i} className="surface-flat p-3 flex gap-3 text-xs leading-relaxed"><span className="w-6 h-6 shrink-0 rounded-lg grid place-items-center text-[10px] font-black text-brand" style={{background:'var(--brand-soft)'}}>{i+1}</span><span style={{color:'var(--text-soft)'}}><MathText auto>{step}</MathText></span></li>)}</ol>
    <div className="notice notice-warning mt-3"><p className="font-bold">Points de contrôle</p>{guide.reminders.map((r,i)=><p key={i} className="mt-1">• <MathText auto>{r}</MathText></p>)}</div>
-   <button onClick={()=>setHintLevel(level=>level?0:1)} className="btn btn-secondary w-full mt-3">{hintLevel?'Masquer les indices':'Je suis bloqué ici'}</button>
-   {hintLevel>0&&<div className="surface-flat p-3 mt-2"><label className="field-label" htmlFor="blocked-step">Étape où je bloque</label><select id="blocked-step" value={blockedStep} onChange={event=>{setBlockedStep(Number(event.target.value));setHintLevel(1)}} className="field mt-1">{guide.steps.map((step,index)=><option key={step} value={index}>Étape {index+1} · {step}</option>)}</select><div className="notice notice-info mt-2"><p className="font-black">Indice {hintLevel}/3</p><p className="mt-1">{hintLevel===1?guide.questions[Math.min(blockedStep,guide.questions.length-1)]:hintLevel===2?`Commence par ceci : ${guide.steps[blockedStep]}`:guide.reminders[Math.min(blockedStep,guide.reminders.length-1)]}</p></div>{hintLevel<3?<button onClick={()=>setHintLevel(level=>Math.min(3,level+1))} className="btn btn-small btn-primary mt-2">Un indice de plus</button>:<p className="section-copy mt-2">Essaie maintenant une ligne de calcul, puis utilise « Vérifier mes étapes ».</p>}</div>}
+   <button onClick={()=>setHintLevel(level=>level?0:1)} className="btn btn-primary w-full mt-3">{hintLevel?'Masquer l’explication':'Je n’ai pas compris cette étape'}</button>
+   {hintLevel>0&&<div className="surface-flat p-3 mt-2">
+    <label className="field-label" htmlFor="blocked-step">Étape qui te bloque</label>
+    <select id="blocked-step" value={blockedStep} onChange={event=>setBlockedStep(Number(event.target.value))} className="field mt-1">{guide.steps.map((step,index)=><option key={step} value={index}>Étape {index+1} · {step}</option>)}</select>
+    <p className="field-label mt-3">Niveau d’explication</p>
+    <div className="segmented grid-cols-3 mt-1">
+     {([['simple','Très simple'],['detail','Détaillée'],['bac','Méthode BAC']] as Array<[TutorExplanationLevel,string]>).map(([level,label])=><button key={level} onClick={()=>setExplanationLevel(level)} className={explanationLevel===level?'active':''}>{label}</button>)}
+    </div>
+    <div className="notice notice-info mt-2" aria-live="polite"><p className="font-black">{stepSupport.objective}</p>{stepExplanation.slice(1).map((line,index)=><p key={`${explanationLevel}-${index}`} className="mt-1"><MathText auto>{line}</MathText></p>)}</div>
+    {explanationLevel!=='simple'&&<div className="notice notice-warning mt-2"><p className="font-black">Petit exemple</p><p className="mt-1"><MathText auto>{stepSupport.microExample}</MathText></p></div>}
+    <div className="grid grid-cols-2 gap-2 mt-2"><button onClick={()=>{setHintLevel(0);setShowPractice(true);setShowPracticeHint(false);setShowPracticeSolution(false)}} className="btn btn-small btn-primary">J’ai compris · essayer</button><button onClick={()=>setWorkspace('verify')} className="btn btn-small btn-secondary">Vérifier mon calcul</button></div>
+   </div>}
+   <button onClick={()=>{setShowPractice(value=>!value);setShowPracticeHint(false);setShowPracticeSolution(false)}} className="btn btn-secondary w-full mt-3">{showPractice?'Masquer l’entraînement':'M’entraîner sur une question similaire'}</button>
+   {showPractice&&<div className="surface-flat p-3 mt-2"><p className="eyebrow">{practice.title}</p><p className="section-title mt-2"><MathText auto>{practice.prompt}</MathText></p><p className="section-copy mt-2">Essaie d’abord seul sur ton brouillon. N’ouvre l’indice que si tu bloques.</p><div className="grid grid-cols-2 gap-2 mt-3"><button onClick={()=>setShowPracticeHint(value=>!value)} className="btn btn-small btn-secondary">{showPracticeHint?'Masquer l’indice':'Voir un indice'}</button><button onClick={()=>setShowPracticeSolution(value=>!value)} className="btn btn-small btn-secondary">{showPracticeSolution?'Masquer la correction':'Voir la correction'}</button></div>{showPracticeHint&&<div className="notice notice-info mt-2"><strong>Indice :</strong> <MathText auto>{practice.hint}</MathText></div>}{showPracticeSolution&&<div className="notice notice-success mt-2"><p className="font-black">Correction expliquée</p><p className="mt-1"><MathText auto>{practice.solution}</MathText></p><p className="mt-2"><strong>À vérifier :</strong> {practice.checkpoint}</p></div>}</div>}
    {recommendedTool&&onOpenTool&&<button onClick={()=>onOpenTool(recommendedTool)} className="btn btn-secondary w-full mt-3">Ouvrir l’outil {topic.toLowerCase()}</button>}
   </section>}
  </div>;
