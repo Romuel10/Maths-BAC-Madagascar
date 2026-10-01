@@ -42,8 +42,15 @@ validate_private_key() {
 
 selected_alias="$KEY_ALIAS"
 selected_password="$KEY_PASSWORD"
+store_type="$(
+  keytool -list -v -keystore "$keystore_path" -storepass "$KEYSTORE_PASSWORD" 2>/dev/null |
+    awk -F': ' '/^Keystore type: / { print toupper($2); exit }'
+)"
 
-if validate_private_key "$selected_alias" "$selected_password"; then
+if [[ "$store_type" == "PKCS12" ]] && validate_private_key "$selected_alias" "$KEYSTORE_PASSWORD"; then
+  selected_password="$KEYSTORE_PASSWORD"
+  echo "Keystore PKCS12 détecté ; utilisation du mot de passe du magasin pour la clé privée."
+elif validate_private_key "$selected_alias" "$selected_password"; then
   echo "Clé privée de publication vérifiée."
 elif [[ "$KEY_PASSWORD" != "$KEYSTORE_PASSWORD" ]] && validate_private_key "$selected_alias" "$KEYSTORE_PASSWORD"; then
   selected_password="$KEYSTORE_PASSWORD"
