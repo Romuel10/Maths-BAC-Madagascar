@@ -18,7 +18,7 @@ export interface OfficialAnnaleRecord {
 }
 
 const LECHAYA = 'https://www.lechaya.com/madagascar/bac/math';
-const EDUCMAD: Record<BacSeries, string> = {
+const EDUCMAD: Partial<Record<BacSeries, string>> = {
  A: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=817',
  C: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=129',
  D: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=816',
@@ -118,6 +118,7 @@ export const OFFICIAL_ARCHIVE_SOURCES = {
  educmadA: EDUCMAD.A,
  educmadC: EDUCMAD.C,
  educmadD: EDUCMAD.D,
+ terminaleSProgramme: 'https://www.education.gov.mg/wp-content/uploads/2021/09/REPARTITION-TERMINALE-S.pdf',
  lechaya: LECHAYA,
  ministryProgramme: 'https://www.education.gov.mg/systeme-educatif/lycee/',
 };
