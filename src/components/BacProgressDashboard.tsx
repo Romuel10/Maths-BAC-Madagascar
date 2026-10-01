@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { BAC_SUBJECTS } from '../data/bacSubjects';
 import { getBacProgress, resetBacProgress, subjectProgress, topicProgress } from '../lib/bacProgress';
 import { SmartLearningPanel } from './SmartLearningPanel';
+import { getStudentProfile } from '../lib/studentProfile';
 
 interface Props { onOpenQuestion?:(prompt:string)=>void }
 
 export function BacProgressDashboard({onOpenQuestion}:Props) {
  const [version, setVersion] = useState(0);
  const store = useMemo(() => getBacProgress(), [version]);
- const topics = useMemo(() => topicProgress(BAC_SUBJECTS), [version]);
+ const series=getStudentProfile().series;
+ const scopedSubjects=useMemo(()=>series?BAC_SUBJECTS.filter(subject=>subject.series===series):BAC_SUBJECTS,[series]);
+ const topics = useMemo(() => topicProgress(scopedSubjects), [version,scopedSubjects]);
  const questions = Object.values(store.questions);
  const mastered = topics.reduce((sum, topic) => sum + topic.done, 0);
  const totalQuestions = topics.reduce((sum, topic) => sum + topic.total, 0);
@@ -60,8 +63,8 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
    </section>
 
    <section className="space-y-2">
-    <div><p className="eyebrow">Vue d’ensemble</p><h3 className="section-title mt-2">Par série</h3></div>
-    {BAC_SUBJECTS.map(subject => {
+    <div><p className="eyebrow">Entraînements</p><h3 className="section-title mt-2">{series?`Ma série · ${series}`:'Tous les sujets'}</h3></div>
+    {scopedSubjects.map(subject => {
      const p = subjectProgress(subject);
      return (
       <div key={subject.id} className="surface p-3 flex items-center gap-3">

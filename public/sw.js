@@ -1,4 +1,4 @@
-const CACHE_NAME = 'maths-bac-madagascar-v7-0-0-r2';
+const CACHE_NAME = 'maths-bac-madagascar-v1-0-1';
 const CORE_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './asset-manifest.json'];
 
 function scoped(path = '') {

@@ -1,8 +1,8 @@
 # Politique de confidentialité — Maths BAC Madagascar
 
-Dernière mise à jour : 26 août 2026
+Dernière mise à jour : 1 octobre 2026
 
-Maths BAC Madagascar est une application éducative éditée par RATOVOSON Navelanizara Romuel. Cette politique décrit le fonctionnement de la version 7.0.0.
+Maths BAC Madagascar est une application éducative éditée par RATOVOSON Navelanizara Romuel. Cette politique décrit le fonctionnement de la version 1.0.1.
 
 ## Données traitées
 

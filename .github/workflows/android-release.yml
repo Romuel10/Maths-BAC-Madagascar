@@ -1,4 +1,4 @@
-name: Validation et Android V7
+name: Validation et Android
 
 on:
   workflow_dispatch:
@@ -131,7 +131,7 @@ jobs:
       - name: Publier l’artefact AAB
         uses: actions/upload-artifact@v7
         with:
-          name: maths-bac-madagascar-v7-aab
+          name: maths-bac-madagascar-v1.0.1-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14

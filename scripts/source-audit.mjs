@@ -82,10 +82,10 @@ const financialSource = fs.readFileSync('src/lib/financialMathEngine.ts', 'utf8'
 const learningCatalogSource = fs.readFileSync('src/data/learningCatalog.ts', 'utf8');
 const detailedLessonsSource = fs.readFileSync('src/data/detailedLessons.ts', 'utf8');
 const learningCoachSource = fs.readFileSync('src/components/LearningCoach.tsx', 'utf8');
-const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
-assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
-assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
-assertSource(serviceWorker.includes('maths-bac-madagascar-v7-0-0'), 'le cache PWA doit être versionné 7.0.0');
+const workflow = fs.readFileSync('.github/workflows/android-release.yml', 'utf8');
+assertSource(packageJson.version === '1.0.1', 'package.json doit annoncer la version 1.0.1');
+assertSource(protection.includes("APP_VERSION = '1.0.1'"), 'APP_VERSION doit annoncer 1.0.1');
+assertSource(serviceWorker.includes('maths-bac-madagascar-v1-0-1'), 'le cache PWA doit être versionné 1.0.1');
 assertSource(serviceWorker.includes('analysis\\.worker-'), 'le Web Worker d’analyse doit être ajouté au cache hors ligne');
 assertSource(serviceWorker.includes('Object.keys(buildManifest).forEach(addManifestEntry)') && serviceWorker.includes("file.endsWith('.woff2')"), 'le préchargement PWA doit inclure tous les chunks applicatifs et éviter les formats de police redondants');
 assertSource(!/from\s+['"]mathjs['"]/.test(mathNotation), 'le rendu des formules ne doit pas charger MathJS');
@@ -105,14 +105,14 @@ assertSource(packageJson.overrides?.xcode?.uuid === '11.1.1', 'la dépendance uu
 assertSource(packageJson.engines?.node === '>=22.12.0', 'Node.js 22.12 ou ultérieur doit être exigé pour Vite et Capacitor');
 assertSource(capacitorConfig.includes("appId: 'mg.mathsbac.madagascar'") && capacitorConfig.includes("webDir: 'dist'"), 'la configuration Capacitor doit conserver son identifiant et son répertoire web');
 assertSource(androidVariables.includes('minSdkVersion = 24') && androidVariables.includes('compileSdkVersion = 36') && androidVariables.includes('targetSdkVersion = 36'), 'Android doit cibler API 36 avec un minimum API 24');
-assertSource(androidBuild.includes('versionCode 700') && androidBuild.includes('versionName "7.0.0"') && androidBuild.includes('MATHS_BAC_KEYSTORE_PATH'), 'la version Android et la signature de publication doivent être configurées');
+assertSource(androidBuild.includes('versionCode 701') && androidBuild.includes('versionName "1.0.1"') && androidBuild.includes('MATHS_BAC_KEYSTORE_PATH'), 'Android doit annoncer versionCode 701 et versionName 1.0.1 avec signature externe');
 assertSource(androidBuild.includes('minifyEnabled false') && androidBuild.includes('shrinkResources false'), 'la release Android doit conserver R8 désactivé tant que la stabilité Capacitor 8 n’est pas validée sur appareils réels');
 assertSource(androidManifest.includes('android:usesCleartextTraffic="false"'), 'Android ne doit pas autoriser le trafic HTTP en clair');
 assertSource(androidManifest.includes('android:allowBackup="false"'), 'Android ne doit pas sauvegarder automatiquement les données scolaires locales');
 assertSource(androidInstrumentedTest.includes('"mg.mathsbac.madagascar"'), 'le test Android doit vérifier le vrai applicationId');
 assertSource(packageJson.scripts?.start?.includes('vite preview --host 0.0.0.0') && packageJson.scripts?.['cap:sync'], 'les commandes Termux et Capacitor doivent être disponibles');
 assertSource(packageJson.scripts?.['android:bundle']?.startsWith('bash '), 'le script de bundle Android doit être exécutable même sans bit Unix');
-assertSource(workflow.includes('npm run test:full'), 'le workflow Android doit exécuter la validation complète avant publication');
+assertSource(workflow.includes('npm run test:full') && workflow.includes('maths-bac-madagascar-v1.0.1-aab'), 'le workflow Android doit valider la V1.0.1 avant publication');
 assertSource(appSource.includes('analysisRange.xMin') && appSource.includes('setAnalysisRange({ xMin, xMax })'), 'le graphe doit conserver l’intervalle choisi par l’utilisateur');
 assertSource(graphSource.includes('activeData.length === 0') && graphSource.includes('setXMin(initialXMin)'), 'le graphe doit gérer les données vides et synchroniser son intervalle');
 assertSource(localAnnalesSource.includes("if(!save([normalized,...getLocalAnnales()]))throw"), 'un échec de stockage des annales doit être signalé');
@@ -143,6 +143,10 @@ assertSource(financialSource.includes('simpleInterest') && financialSource.inclu
 assertSource(learningCatalogSource.includes("topic: 'Finance'") && learningCatalogSource.includes("series: ['OSE']"), 'le coach OSE doit contenir un chapitre Finance');
 assertSource(tutorSource.includes('Résolution complète · vérifiée') && tutorSource.includes('Méthode guidée seulement'), 'le tuteur doit distinguer une résolution complète d’un simple guidage');
 assertSource(packageJson.scripts?.['test:bac-madagascar'] && packageJson.scripts?.['test:full']?.includes('npm run test:bac-madagascar'), 'le périmètre BAC Madagascar doit être testé dans test:full');
+assertSource(packageJson.scripts?.['test:release'] && packageJson.scripts?.['test:full']?.includes('npm run test:release'), 'l’audit de finition V1.0.1 doit faire partie de test:full');
+assertSource(appSource.includes("t('navReview', lang)") && appSource.includes("t('navBac', lang)"), 'la navigation doit distinguer Réviser et BAC');
+assertSource(appSource.includes("type ReviewTab = 'learn' | 'progress' | 'settings'") && appSource.includes("reviewTab==='learn'") && appSource.includes("reviewTab==='progress'") && appSource.includes("reviewTab==='settings'"), 'Réviser doit séparer cours, progression et réglages');
+assertSource(progressSource.includes('scopedSubjects') && progressSource.includes('getStudentProfile().series'), 'la progression doit se concentrer sur la série choisie');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
@@ -155,7 +159,7 @@ assertSource(androidMasterIcon.subarray(0, 8).equals(Buffer.from([137, 80, 78, 7
 
 const unsafeStorage = files.filter(file => !file.endsWith(`${path.sep}safeStorage.ts`) && /\b(?:localStorage|sessionStorage)\./.test(fs.readFileSync(file, 'utf8')));
 assertSource(unsafeStorage.length === 0, `accès direct au stockage détecté : ${unsafeStorage.map(file => path.relative('.', file)).join(', ')}`);
-const forbiddenFiles = ['AuthScreen.tsx', 'Badges.tsx', 'ClassroomLock.tsx', 'ExamMode.tsx', 'ExerciseMode.tsx', 'ExportButton.tsx', 'FormulaScan.tsx', 'HandwritingPad.tsx', 'Onboarding.tsx', 'SplashScreen.tsx', 'StatsPanel.tsx'];
+const forbiddenFiles = ['AuthScreen.tsx', 'Badges.tsx', 'ClassroomLock.tsx', 'ExamMode.tsx', 'ExerciseMode.tsx', 'ExportButton.tsx', 'FormulaScan.tsx', 'HandwritingPad.tsx', 'Onboarding.tsx', 'SplashScreen.tsx', 'StatsPanel.tsx', 'ActivationGate.tsx', 'MiniLesson.tsx', 'RevisionSheets.tsx', 'UnitConverter.tsx'];
 assertSource(forbiddenFiles.every(name => !fs.existsSync(path.join('src', 'components', name))), 'des écrans hérités supprimés sont revenus');
 assertSource(!files.some(file => /ADMIN_SECRET|2025MS/.test(fs.readFileSync(file, 'utf8'))), 'un secret administrateur historique est encore présent');
 

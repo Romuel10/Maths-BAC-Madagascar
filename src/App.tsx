@@ -1,7 +1,4 @@
-/**
- * Maths BAC Madagascar — évolution de MathSolver Pro
- * © RATOVOSON Navelanizara Romuel
- */
+/** Maths BAC Madagascar · application de révision et résolution BAC. */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -11,7 +8,6 @@ import { BacProgressDashboard } from './components/BacProgressDashboard';
 import { GlobalSearch } from './components/GlobalSearch';
 import { FunctionInput } from './components/FunctionInput';
 import { History } from './components/History';
-import { ActivationGate, isActivated } from './components/ActivationGate';
 import { analyzeFunctionAsync } from './lib/analysisClient';
 import { formatPretty } from './lib/prettyMath';
 import { isLang, LangContext, type Lang, t } from './lib/i18n';
@@ -25,17 +21,16 @@ import { toolProgramBadge, toolRelevance, type BacToolId } from './data/bacMadag
 
 type Page = 'home' | 'subjects' | 'solve' | 'tools' | 'profile';
 type Sub = 'steps' | 'graph' | 'props' | 'calc';
-type ModalId = 'search' | 'compare' | 'revision' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'units' | 'calculator' | 'lessons' | 'ineqxy' | 'ode' | 'conics' | 'finance';
-type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
+type ReviewTab = 'learn' | 'progress' | 'settings';
+type ModalId = 'search' | 'compare' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'calculator' | 'ineqxy' | 'ode' | 'conics' | 'finance';
+type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'bac' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
 
-const REQUIRE_ACTIVATION = import.meta.env.VITE_REQUIRE_ACTIVATION === 'true';
 const PAGES:Page[]=['home','subjects','solve','tools','profile'];
-const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy','ode','conics','finance'];
+const MODALS:ModalId[]=['search','compare','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','calculator','ineqxy','ode','conics','finance'];
 
 const BacTutor=lazy(()=>import('./components/BacTutor').then(module=>({default:module.BacTutor})));
 const LearningCoach=lazy(()=>import('./components/LearningCoach').then(module=>({default:module.LearningCoach})));
 const FunctionCompare=lazy(()=>import('./components/FunctionCompare').then(module=>({default:module.FunctionCompare})));
-const RevisionSheets=lazy(()=>import('./components/RevisionSheets').then(module=>({default:module.RevisionSheets})));
 const SequenceAnalyzer=lazy(()=>import('./components/SequenceAnalyzer').then(module=>({default:module.SequenceAnalyzer})));
 const ParametricExplorer=lazy(()=>import('./components/ParametricExplorer').then(module=>({default:module.ParametricExplorer})));
 const ComplexCalculator=lazy(()=>import('./components/ComplexCalculator').then(module=>({default:module.ComplexCalculator})));
@@ -45,8 +40,6 @@ const ProbabilityCalc=lazy(()=>import('./components/ProbabilityCalc').then(modul
 const ArithmeticCalc=lazy(()=>import('./components/ArithmeticCalc').then(module=>({default:module.ArithmeticCalc})));
 const AlgebraTools=lazy(()=>import('./components/AlgebraTools').then(module=>({default:module.AlgebraTools})));
 const Calculator=lazy(()=>import('./components/Calculator').then(module=>({default:module.Calculator})));
-const UnitConverter=lazy(()=>import('./components/UnitConverter').then(module=>({default:module.UnitConverter})));
-const MiniLesson=lazy(()=>import('./components/MiniLesson').then(module=>({default:module.MiniLesson})));
 const InequalityXY=lazy(()=>import('./components/InequalityXY').then(module=>({default:module.InequalityXY})));
 const DifferentialEquationCalculator=lazy(()=>import('./components/DifferentialEquationCalculator').then(module=>({default:module.DifferentialEquationCalculator})));
 const ConicCalculator=lazy(()=>import('./components/ConicCalculator').then(module=>({default:module.ConicCalculator})));
@@ -95,6 +88,7 @@ function Icon({ name }: { name: IconName }) {
  if (name === 'solve') return <svg {...common}><path d="M4 5h16"/><path d="M7 10h10"/><path d="M9 15h6"/><path d="m8 20 2-2 2 2 4-4"/></svg>;
  if (name === 'tools') return <svg {...common}><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-3-3z"/></svg>;
  if (name === 'progress') return <svg {...common}><path d="M5 19V9"/><path d="M12 19V5"/><path d="M19 19v-7"/><path d="M3 19h18"/></svg>;
+ if (name === 'bac') return <svg {...common}><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><path d="m15.5 16 1.5 1.5 3-3"/></svg>;
  if (name === 'moon') return <svg {...common}><path d="M20 15.5A8 8 0 1 1 8.5 4 6.5 6.5 0 0 0 20 15.5Z"/></svg>;
  if (name === 'sun') return <svg {...common}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.41M17.66 6.34l1.41-1.41"/></svg>;
  if (name === 'calc') return <svg {...common}><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2"/></svg>;
@@ -104,9 +98,9 @@ function Icon({ name }: { name: IconName }) {
 
 function App() {
  const initialRoute=useMemo(readRoute,[]);
- const [activated, setActivated] = useState(() => !REQUIRE_ACTIVATION || isActivated());
  const [page, setPage] = useState<Page>(initialRoute.page);
  const [sub, setSub] = useState<Sub>('steps');
+ const [reviewTab,setReviewTab]=useState<ReviewTab>('learn');
  const [modal, setModal] = useState<ModalId | null>(initialRoute.modal);
  const [result, setResult] = useState<AnalysisResult | null>(null);
  const [analysisRange, setAnalysisRange] = useState({ xMin: -10, xMax: 10 });
@@ -281,9 +275,8 @@ function App() {
  };
 
  const modals: Record<ModalId, ReactNode> = {
-  search: <GlobalSearch onClose={closeModal} onOpenTopic={topic=>{storageSet('mathbac_learning_open',topic);navigate('profile');}} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} onAnalyzeFunction={handleExternal}/>,
+  search: <GlobalSearch onClose={closeModal} onOpenTopic={topic=>{storageSet('mathbac_learning_open',topic);setReviewTab('learn');navigate('profile');}} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} onAnalyzeFunction={handleExternal}/>,
   compare: <FunctionCompare onClose={closeModal} />,
-  revision: <RevisionSheets onClose={closeModal} />,
   sequence: <SequenceAnalyzer onClose={closeModal} />,
   parametric: <ParametricExplorer onClose={closeModal} />,
   complex: <ComplexCalculator onClose={closeModal} />,
@@ -292,16 +285,12 @@ function App() {
   probability: <ProbabilityCalc onClose={closeModal} series={studentSeries} />,
   arithmetic: <ArithmeticCalc onClose={closeModal} />,
   algebra: <AlgebraTools onClose={closeModal} />,
-  units: <UnitConverter onClose={closeModal} />,
   calculator: <Calculator onClose={closeModal} />,
-  lessons: <MiniLesson onClose={closeModal} />,
   ineqxy: <InequalityXY onClose={closeModal} />,
   ode: <DifferentialEquationCalculator onClose={closeModal} />,
   conics: <ConicCalculator onClose={closeModal} />,
   finance: <FinancialMathCalculator onClose={closeModal} />,
  };
-
- if (!activated) return <ActivationGate onActivated={() => setActivated(true)} />;
 
  const ToolCard = ({ symbol, title, desc, onClick, tool }: { symbol: string; title: string; desc: string; onClick: () => void; tool?: BacToolId }) => {
   if(tool&&studentSeries&&toolRelevance(tool,studentSeries)==='extra')return null;
@@ -323,10 +312,10 @@ function App() {
 
  const nav: Array<[Page, IconName, string]> = [
   ['home', 'home', t('navHome', lang)],
-  ['subjects', 'book', t('navLearn', lang)],
+  ['profile', 'book', t('navReview', lang)],
   ['solve', 'solve', t('navSolve', lang)],
+  ['subjects', 'bac', t('navBac', lang)],
   ['tools', 'tools', t('navTools', lang)],
-  ['profile', 'progress', t('navProgress', lang)],
  ];
 
  return (
@@ -355,7 +344,7 @@ function App() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{isLoading?'Analyse en cours.':error?'Analyse terminée avec une erreur.':result?'Analyse terminée.':''}</div>
       {storageWarning && <div className="notice notice-warning mb-3" role="status"><strong>Stockage local indisponible.</strong> La session continue, mais certaines données ne pourront pas être conservées sur cet appareil. <button className="underline" onClick={()=>setStorageWarning(false)}>Masquer</button></div>}
       {updateReady && <div className="notice notice-info mb-3" role="status"><strong>Une mise à jour est prête.</strong> <button className="btn btn-small btn-primary ml-2" onClick={applyUpdate}>Actualiser</button></div>}
-      {!modal && page === 'home' && <BacHome onSubjects={() => navigate('subjects')} onTutor={() => navigate('solve')} onTools={() => navigate('tools')} onProgress={() => navigate('profile')} />}
+      {!modal && page === 'home' && <BacHome onBac={() => navigate('subjects')} onTutor={() => navigate('solve')} onTools={() => navigate('tools')} onReview={() => {setReviewTab('learn');navigate('profile')}} />}
       {!modal && page === 'subjects' && <Suspense fallback={<LoadingPanel/>}><BacLibrary onAnalyzeFunction={handleExternal} onTutor={() => navigate('solve')} /></Suspense>}
       {!modal && page === 'solve' && <Suspense fallback={<LoadingPanel/>}><BacTutor onAnalyzeFunction={handleExternal} onOpenTool={tool=>openModal(tool)} /></Suspense>}
 
@@ -437,31 +426,28 @@ function App() {
         </div>
         {!result && (
          <div className="space-y-5">
-          <div className="notice notice-info"><strong>{studentSeries?`Outils adaptés à la série ${studentSeries}`:'Configure ta série dans Mon coach'}</strong> · Les outils hors programme sont masqués quand une série est choisie. Le périmètre A/C/D/L/OSE/S suit les répartitions officielles MEN 2024-2025.</div>
-          <ToolGroup title="Calcul et algèbre" copy="Résoudre, transformer et contrôler les calculs du programme.">
+          <div className="notice notice-info"><strong>{studentSeries?`Outils du programme · série ${studentSeries}`:'Choisis ta série dans Réviser'}</strong> · Les outils hors programme sont masqués dès que ta série est configurée.</div>
+          <ToolGroup title="Outils de ma série" copy="Les calculateurs les plus utiles pour vérifier et comprendre tes exercices.">
            <ToolCard tool="algebra" symbol="x²" title="Algèbre" desc="Équations, inéquations, factorisation" onClick={() => openModal('algebra')} />
-           <ToolCard tool="complex" symbol="ℂ" title="Complexes" desc="Formes, racines n-ièmes, équations" onClick={() => openModal('complex')} />
-           <ToolCard tool="arithmetic" symbol="≡" title="Arithmétique" desc="Euclide, Bézout, congruences, ℤ" onClick={() => openModal('arithmetic')} />
-           <ToolCard tool="matrix" symbol="[A]" title="Matrices" desc="Gauss-Jordan, puissances et systèmes" onClick={() => openModal('matrix')} />
-           <ToolCard tool="finance" symbol="%" title="Mathématiques financières" desc="Intérêts, escompte, actualisation et annuités" onClick={() => openModal('finance')} />
-          </ToolGroup>
-          <ToolGroup title="Analyse" copy="Fonctions, suites et équations différentielles selon la série.">
-           <ToolCard tool="sequence" symbol="uₙ" title="Suites" desc="Récurrence, monotonie et convergence" onClick={() => openModal('sequence')} />
-           <ToolCard tool="compare" symbol="f≈g" title="Comparer" desc="Comparer deux fonctions sur un intervalle" onClick={() => openModal('compare')} />
-           <ToolCard tool="parametric" symbol="fₐ" title="Paramètres" desc="Explorer une famille f(x,a)" onClick={() => openModal('parametric')} />
-           <ToolCard tool="ode" symbol="y′" title="Équations différentielles" desc="1er/2e ordre et conditions initiales" onClick={() => openModal('ode')} />
-          </ToolGroup>
-          <ToolGroup title="Géométrie et données" copy="Outils appliqués ciblés par le programme de la série.">
+           <ToolCard tool="sequence" symbol="uₙ" title="Suites" desc="Termes, récurrence et convergence" onClick={() => openModal('sequence')} />
+           <ToolCard tool="probability" symbol="P" title="Probabilités & stats" desc="Lois, dénombrement et statistiques" onClick={() => openModal('probability')} />
            <ToolCard tool="geometry" symbol="∠" title="Géométrie" desc="Vecteurs, espace et configurations" onClick={() => openModal('geometry')} />
-           <ToolCard tool="conics" symbol="◯" title="Coniques" desc="Parabole, ellipse, hyperbole, tangentes" onClick={() => openModal('conics')} />
-           <ToolCard tool="probability" symbol="P" title="Probabilités & stats" desc="Dénombrement, lois et ajustements" onClick={() => openModal('probability')} />
+           <ToolCard tool="complex" symbol="ℂ" title="Complexes" desc="Formes, modules, arguments et équations" onClick={() => openModal('complex')} />
+           <ToolCard tool="arithmetic" symbol="≡" title="Arithmétique" desc="Euclide, Bézout et congruences" onClick={() => openModal('arithmetic')} />
+           <ToolCard tool="matrix" symbol="[A]" title="Matrices" desc="Systèmes, Cramer, RREF et puissances" onClick={() => openModal('matrix')} />
+           <ToolCard tool="finance" symbol="%" title="Finance" desc="Intérêts, actualisation et annuités" onClick={() => openModal('finance')} />
+           <ToolCard tool="ode" symbol="y′" title="Équations différentielles" desc="1er/2e ordre et conditions initiales" onClick={() => openModal('ode')} />
+           <ToolCard tool="conics" symbol="◯" title="Coniques" desc="Parabole, ellipse et hyperbole" onClick={() => openModal('conics')} />
            <ToolCard tool="ineqxy" symbol="≤" title="Inéquations XY" desc="Demi-plans et contraintes" onClick={() => openModal('ineqxy')} />
           </ToolGroup>
-          <ToolGroup title="Révision et utilitaires" copy="Rappels rapides et outils complémentaires.">
-           <ToolCard tool="revision" symbol="Σ" title="Fiches" desc="Formules et méthodes essentielles" onClick={() => openModal('revision')} />
-           <ToolCard tool="lessons" symbol="01" title="Mini-leçons" desc="Réviser une notion étape par étape" onClick={() => openModal('lessons')} />
-           <ToolCard tool="units" symbol="↔" title="Unités" desc="Conversions rapides" onClick={() => openModal('units')} />
-          </ToolGroup>
+          <details className="surface p-4">
+           <summary className="font-black cursor-pointer">Outils complémentaires</summary>
+           <p className="section-copy mt-2">À ouvrir seulement si l’exercice le demande.</p>
+           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-3">
+            <ToolCard tool="compare" symbol="f≈g" title="Comparer deux fonctions" desc="Comparer f et g sur un intervalle" onClick={() => openModal('compare')} />
+            <ToolCard tool="parametric" symbol="fₐ" title="Fonction à paramètre" desc="Explorer une famille f(x,a)" onClick={() => openModal('parametric')} />
+           </div>
+          </details>
          </div>
         )}
        </div>
@@ -469,31 +455,42 @@ function App() {
 
       {!modal && page === 'profile' && (
        <div className="space-y-4">
-        <Suspense fallback={<LoadingPanel/>}><LearningCoach onOpenTool={tool=>openModal(tool)} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>
-        <Suspense fallback={<LoadingPanel/>}><BacProgressDashboard onOpenQuestion={(prompt:string)=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>
-        <section className="surface p-4">
-         <p className="eyebrow">Préférences</p>
-         <h3 className="section-title mt-2">Réglages de l’application</h3>
-         <div className="grid grid-cols-2 gap-2.5 mt-3">
-          <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
-          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
-         </div>
-         <p className="section-copy mt-2">Le réglage FR/MG adapte la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie scolaire du BAC.</p>
-         <div className="surface-flat p-3 mt-3 space-y-3">
-          <label className="field-label" htmlFor="text-scale">Taille du texte</label>
-          <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
-          <label className="annale-check-row"><input type="checkbox" checked={accessibility.highContrast} onChange={event=>updateAccessibility({highContrast:event.target.checked})}/><span>Contraste renforcé</span></label>
-          <label className="annale-check-row"><input type="checkbox" checked={accessibility.reduceMotion} onChange={event=>updateAccessibility({reduceMotion:event.target.checked})}/><span>Réduire les animations</span></label>
-         </div>
-         {showInstall && <button onClick={handleInstall} className="btn btn-primary w-full mt-3"><Icon name="install" /> Installer l’application</button>}
-        </section>
-        <section className="surface p-4 text-center">
-         <div className="brand-mark mx-auto">M</div>
-         <p className="section-title mt-3">Maths BAC Madagascar</p>
-         <p className="section-copy mt-1">v{APP_VERSION} · Plateforme de préparation BAC</p>
-         <p className="text-[10px] font-bold text-brand mt-2">{CREATOR}</p>
-         <p className="text-[8px] subtle mt-1">{COPYRIGHT}</p>
-        </section>
+        <div><p className="eyebrow">Réviser</p><h2 className="page-title">Mon espace de révision</h2><p className="page-copy">Cours, progression et réglages sont séparés pour aller directement à l’essentiel.</p></div>
+        <div className="segmented grid-cols-3" role="tablist" aria-label="Espace de révision">
+         <button role="tab" aria-selected={reviewTab==='learn'} onClick={()=>setReviewTab('learn')} className={reviewTab==='learn'?'active':''}>Cours</button>
+         <button role="tab" aria-selected={reviewTab==='progress'} onClick={()=>setReviewTab('progress')} className={reviewTab==='progress'?'active':''}>Progression</button>
+         <button role="tab" aria-selected={reviewTab==='settings'} onClick={()=>setReviewTab('settings')} className={reviewTab==='settings'?'active':''}>Réglages</button>
+        </div>
+
+        {reviewTab==='learn'&&<Suspense fallback={<LoadingPanel/>}><LearningCoach onOpenTool={tool=>openModal(tool)} onOpenQuestion={prompt=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>}
+
+        {reviewTab==='progress'&&<Suspense fallback={<LoadingPanel/>}><BacProgressDashboard onOpenQuestion={(prompt:string)=>{storageSet('mathbac_tutor_prefill',prompt);navigate('solve');}} /></Suspense>}
+
+        {reviewTab==='settings'&&<>
+         <section className="surface p-4">
+          <p className="eyebrow">Préférences</p>
+          <h3 className="section-title mt-2">Affichage et accessibilité</h3>
+          <div className="grid grid-cols-2 gap-2.5 mt-3">
+           <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
+           <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
+          </div>
+          <p className="section-copy mt-2">FR/MG adapte uniquement la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie du BAC.</p>
+          <div className="surface-flat p-3 mt-3 space-y-3">
+           <label className="field-label" htmlFor="text-scale">Taille du texte</label>
+           <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
+           <label className="annale-check-row"><input type="checkbox" checked={accessibility.highContrast} onChange={event=>updateAccessibility({highContrast:event.target.checked})}/><span>Contraste renforcé</span></label>
+           <label className="annale-check-row"><input type="checkbox" checked={accessibility.reduceMotion} onChange={event=>updateAccessibility({reduceMotion:event.target.checked})}/><span>Réduire les animations</span></label>
+          </div>
+          {showInstall && <button onClick={handleInstall} className="btn btn-primary w-full mt-3"><Icon name="install" /> Installer l’application</button>}
+         </section>
+         <section className="surface p-4 text-center">
+          <div className="brand-mark mx-auto">M</div>
+          <p className="section-title mt-3">Maths BAC Madagascar</p>
+          <p className="section-copy mt-1">v{APP_VERSION} · Préparation BAC A/C/D/L/OSE/S</p>
+          <p className="text-[10px] font-bold text-brand mt-2">{CREATOR}</p>
+          <p className="text-[8px] subtle mt-1">{COPYRIGHT}</p>
+         </section>
+        </>}
        </div>
       )}
      </main>
