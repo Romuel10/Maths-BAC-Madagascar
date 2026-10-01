@@ -12,7 +12,7 @@ expectResolution('Résoudre x²−5x+6=0.','equation','2 ; 3');
 expectResolution('Résoudre 2x+4=10.','equation','3');
 expectResolution('On considère f(x)=x²−4x+3. Étudier ses variations.','function-variation','minimum vaut -1');
 expectResolution('Calculer le PGCD de 84 et 30.','pgcd','6');
-expectResolution("Soit f(x)=x^3+2x. Calculer f'(x).",'derivative','3*x^2');
+expectResolution("Soit f(x)=x^3+2x. Calculer f'(x).",'derivative','3x^2 + 2');
 expectResolution("Calculer l'integrale de 0 à 2 de 3x^2+1 dx.",'integral','10');
 expectResolution('On considère la suite u_0=1 et u_(n+1)=u_n+2. Calculer u_4.','sequence','u_4=9');
 expectResolution('X suit B(5;0,4). Calculer P(X=2).','probability','0,3456');
