@@ -2,8 +2,13 @@ import { solveQuadraticReal } from './algebraCore.js';
 import { formatPolynomial, parsePolynomial, polynomialDegree, polynomialDerivative, polynomialSub, polynomialValue } from './polynomialEngine.js';
 import { solveLinearSystem, solveCramer } from './matrix.js';
 import { solveLinearCongruence } from './arithmeticEngine.js';
+import { deriveWithBacEngine } from './derivativeEngine.js';
+import { tryExactDefiniteIntegral } from './integralEngine.js';
+import { analyzeSequenceVerified } from './sequenceEngine.js';
+import { binomialProbability, combinationBigInt } from './probabilityEngine.js';
+import { simpleInterest, compoundFutureValue, presentValue } from './financialMathEngine.js';
 
-export type StatementResolutionKind = 'equation' | 'linear-system' | 'function-variation' | 'pgcd' | 'congruence' | 'orthogonality';
+export type StatementResolutionKind = 'equation' | 'linear-system' | 'derivative' | 'integral' | 'sequence' | 'probability' | 'finance' | 'function-variation' | 'pgcd' | 'congruence' | 'orthogonality';
 
 export interface StatementResolutionStep {
  title: string;
@@ -94,6 +99,136 @@ function extractFunction(statement:string):string|null{
   .replace(/\s+(?:etud|étud|calcul|determin|détermin|montr|resou|trac).*$/i,'')
   .trim().replace(/[.,!?]+$/,'');
  return candidate&&/x/i.test(candidate)?mathExpr(candidate):null;
+}
+
+
+function solveDerivativeStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);
+ if(!/(derive|deriver|dériv|f'\s*\(|derivee)/.test(plain)&&!statement.includes("f'"))return null;
+ const expr=extractFunction(statement);if(!expr)return null;
+ const result=deriveWithBacEngine(expr);if(!result.supported)return null;
+ const steps:StatementResolutionStep[]=[
+  {title:'Identifier la fonction à dériver',work:`f(x)=${expr}`,why:'On fixe exactement l’expression avant d’appliquer les règles de dérivation.'},
+  ...result.steps.slice(0,6).map((step,index)=>({title:step.rule||`Étape de dérivation ${index+1}`,work:step.application||step.formula,why:step.formula||'On applique une règle de dérivation valide.'})),
+  {title:'Simplifier la dérivée',work:`f'(x)=${result.derivative}`,why:'Une forme simplifiée facilite ensuite l’étude du signe ou des variations.'}
+ ];
+ return{kind:'derivative',title:'Dérivée calculée pas à pas',exact:true,givens:[`f(x)=${expr}`],steps,finalAnswer:`f'(x)=${result.derivative}`,verification:'La dérivée est produite par le moteur symbolique déterministe et couverte par les tests de régression.',scope:'Dérivées des expressions prises en charge : polynômes, quotients usuels, puissances, exp, ln, trigonométrie et compositions supportées.'};
+}
+
+function solveIntegralStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);
+ if(!plain.includes('integrale')&&!statement.includes('∫'))return null;
+ let lo:number|null=null,hi:number|null=null,expr:string|null=null;
+ const symbol=statement.match(/∫\s*[_]?[({]?\s*(-?\d+(?:[,.]\d+)?)\s*[)}]?\s*\^\s*[({]?\s*(-?\d+(?:[,.]\d+)?)\s*[)}]?\s*([^\n]+?)\s*d\s*x/i);
+ if(symbol){
+  lo=Number(symbol[1].replace(',','.'));hi=Number(symbol[2].replace(',','.'));expr=symbol[3].replace(/^[({\[]+|[)}\]]+$/g,'').trim();
+ }else{
+  const text=statement.match(/integrale\s+(?:de\s+)?(-?\d+(?:[,.]\d+)?)\s+(?:a|à)\s+(-?\d+(?:[,.]\d+)?)\s+(?:de\s+)?(.+?)(?:\s+d\s*x|[.;!?]|$)/i);
+  if(text){lo=Number(text[1].replace(',','.'));hi=Number(text[2].replace(',','.'));expr=text[3].trim();}
+ }
+ if(lo===null||hi===null||!Number.isFinite(lo)||!Number.isFinite(hi)||!expr)return null;
+ const clean=mathExpr(expr.replace(/\bln\s*\(/gi,'log('));
+ const result=tryExactDefiniteIntegral(clean,lo,hi);if(!result)return null;
+ const steps:StatementResolutionStep[]=result.steps.map((work,index)=>({title:index===0?'Reconnaître la forme':index===1?'Trouver une primitive':index===2?'Appliquer les bornes':'Calculer et conclure',work,why:index===1?'Une primitive exacte permet d’utiliser le théorème fondamental de l’intégration.':'Chaque ligne conserve le calcul de l’intégrale demandée.'}));
+ return{kind:'integral',title:'Intégrale définie calculée exactement',exact:true,givens:[`I=∫[${fmt(lo)},${fmt(hi)}] ${clean} dx`],steps,finalAnswer:`I=${result.exactResultExpr}`,verification:`Primitive utilisée : ${result.primitive}. Méthode : ${result.method}.`,scope:'Intégrales définies reconnues exactement : polynômes et plusieurs formes usuelles/composées simples.'};
+}
+
+function solveSequenceStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);if(!plain.includes('suite')&&!/u\s*[_]?\s*n/i.test(statement))return null;
+ const numericIndices=[...statement.matchAll(/u\s*[_]?\s*(\d+)/gi)].map(m=>Number(m[1]));
+ if(!numericIndices.length)return null;
+ const target=numericIndices[numericIndices.length-1];if(!Number.isSafeInteger(target)||target<0||target>50)return null;
+ const u0match=statement.match(/u\s*[_]?\s*0\s*=\s*(-?\d+(?:[,.]\d+)?)/i);
+ const rec=statement.match(/u\s*[_]?\s*\(?\s*n\s*\+\s*1\s*\)?\s*=\s*([^;\n.]+)/i);
+ if(rec&&u0match){
+  const u0=Number(u0match[1].replace(',','.'));
+  let expr=rec[1].trim().replace(/u\s*[_]?\s*n/gi,'x').replace(/u\s*\(\s*n\s*\)/gi,'x');
+  expr=mathExpr(expr).replace(/(\d)x/gi,'$1*x');
+  const result=analyzeSequenceVerified(expr,u0,'recursive',Math.max(8,target+1),0);
+  if(result.quality.level!=='verified')return null;
+  const term=result.terms.find(t=>t.n===target);if(!term)return null;
+  const displayed=result.terms.filter(t=>t.n<=target).slice(0,8).map(t=>`u_${t.n}=${fmt(t.value)}`).join(' ; ');
+  const steps:StatementResolutionStep[]=[
+   {title:'Identifier la récurrence',work:`u_0=${fmt(u0)} ; u_(n+1)=${expr.replace(/x/g,'u_n')}`,why:'On part du terme initial et de la règle qui donne le terme suivant.'},
+   {title:'Calculer les termes successifs utiles',work:displayed,why:'Chaque terme est obtenu en appliquant exactement la relation de récurrence.'},
+   ...result.proofSteps.slice(0,3).map((work,index)=>({title:`Propriété vérifiée ${index+1}`,work,why:'Le moteur a reconnu algébriquement la forme de la suite.'}))
+  ];
+  return{kind:'sequence',title:`Calcul de u_${target}`,exact:true,givens:[`u_0=${fmt(u0)}`,`u_(n+1)=${expr.replace(/x/g,'u_n')}`],steps,finalAnswer:`u_${target}=${fmt(term.value)}`,verification:result.quality.detail,scope:'Suites récurrentes affines reconnues et termes jusqu’à l’indice 50.'};
+ }
+ const explicit=statement.match(/u\s*[_]?\s*n\s*=\s*([^;\n.]+)/i);
+ if(explicit){
+  const expr=mathExpr(explicit[1].trim());
+  const result=analyzeSequenceVerified(expr,0,'explicit',Math.max(8,target+1),0);
+  if(result.quality.level!=='verified')return null;
+  const term=result.terms.find(t=>t.n===target);if(!term)return null;
+  const steps:StatementResolutionStep[]=[
+   {title:'Identifier la formule explicite',work:`u_n=${expr}`,why:'Une formule explicite permet de remplacer directement n par l’indice demandé.'},
+   {title:`Remplacer n par ${target}`,work:`u_${target}=${expr.replace(/n/g,String(target))}`,why:'On évalue la formule exactement au rang demandé.'},
+   {title:'Calculer',work:`u_${target}=${fmt(term.value)}`,why:'On effectue les opérations dans l’ordre.'}
+  ];
+  return{kind:'sequence',title:`Calcul de u_${target}`,exact:true,givens:[`u_n=${expr}`],steps,finalAnswer:`u_${target}=${fmt(term.value)}`,verification:result.quality.detail,scope:'Suites explicites polynomiales, géométriques et fractions rationnelles reconnues par le moteur.'};
+ }
+ return null;
+}
+
+function solveBinomialStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);if(!/(binomial|suit\s+b\s*\(|loi\s+b\s*\()/i.test(plain))return null;
+ const law=statement.match(/B\s*\(\s*(\d+)\s*[;,]\s*(\d+(?:[,.]\d+)?)\s*\)/i);if(!law)return null;
+ const n=Number(law[1]),p=Number(law[2].replace(',','.'));if(!Number.isSafeInteger(n)||n<0||p<0||p>1)return null;
+ const exact=statement.match(/P\s*\(\s*X\s*=\s*(\d+)\s*\)/i);
+ if(exact){
+  const k=Number(exact[1]);if(!Number.isSafeInteger(k)||k<0||k>n)return null;
+  const comb=combinationBigInt(n,k),value=binomialProbability(n,k,p);
+  const steps:StatementResolutionStep[]=[
+   {title:'Identifier les paramètres',work:`X~B(${n};${fmt(p)}) et k=${k}`,why:'La loi binomiale est déterminée par le nombre d’épreuves n et la probabilité de succès p.'},
+   {title:'Écrire la formule',work:`P(X=${k})=C(${n},${k})×${fmt(p)}^${k}×(1−${fmt(p)})^${n-k}`,why:'On utilise la formule d’une probabilité ponctuelle binomiale.'},
+   {title:'Calculer le coefficient binomial',work:`C(${n},${k})=${comb.toString()}`,why:'Il compte les positions possibles des k succès.'},
+   {title:'Calculer la probabilité',work:`P(X=${k})=${fmt(value)}`,why:'Le résultat doit appartenir à [0,1].',check:value>=0&&value<=1?'Probabilité valide.':'Valeur incohérente.'}
+  ];
+  return{kind:'probability',title:'Probabilité binomiale calculée',exact:true,givens:[`n=${n}`,`p=${fmt(p)}`,`k=${k}`],steps,finalAnswer:`P(X=${k})=${fmt(value)}`,verification:'La formule binomiale et le coefficient combinatoire sont calculés par le moteur testé.',scope:'Probabilités P(X=k) pour une loi binomiale explicitement donnée.'};
+ }
+ if(/esperance|e\s*\(\s*x\s*\)/i.test(plain)){
+  const value=n*p;
+  return{kind:'probability',title:'Espérance d’une loi binomiale',exact:true,givens:[`X~B(${n};${fmt(p)})`],steps:[{title:'Rappeler la formule',work:'E(X)=np',why:'C’est l’espérance d’une variable binomiale.'},{title:'Remplacer les valeurs',work:`E(X)=${n}×${fmt(p)}=${fmt(value)}`,why:'On applique directement la formule.'}],finalAnswer:`E(X)=${fmt(value)}`,verification:'Calcul direct de np.',scope:'Espérance des lois binomiales explicitement données.'};
+ }
+ return null;
+}
+
+function extractMoneyValue(statement:string):number|null{
+ const match=statement.match(/([0-9][0-9\s.]*(?:[,.]\d+)?)\s*(?:Ar|ariary)/i);
+ if(!match)return null;
+ const value=Number(match[1].replace(/\s+/g,'').replace(',','.'));return Number.isFinite(value)?value:null;
+}
+
+function solveFinanceStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);
+ if(!/(interet|escompte|capitalis|actualis|valeur acquise|valeur actuelle)/.test(plain))return null;
+ const amount=extractMoneyValue(statement);
+ const rateMatch=statement.match(/(\d+(?:[,.]\d+)?)\s*%/);
+ const timeMatch=statement.match(/(\d+(?:[,.]\d+)?)\s*(ans?|annees?|années?|mois)/i);
+ if(amount===null||!rateMatch||!timeMatch)return null;
+ const rate=Number(rateMatch[1].replace(',','.'))/100;
+ let duration=Number(timeMatch[1].replace(',','.'));
+ const unit=timeMatch[2].toLowerCase();
+ if(unit.startsWith('mois'))duration/=12;
+ if(!Number.isFinite(rate)||!Number.isFinite(duration)||rate<0||duration<0)return null;
+ let result;
+ let scope='';
+ if(/interet simple|intérêt simple/.test(plain)){
+  result=simpleInterest(amount,rate,duration);scope='Intérêt simple avec taux annuel et durée explicite.';
+ }else if(/actualis|valeur actuelle/.test(plain)){
+  if(!Number.isSafeInteger(duration))return null;
+  result=presentValue(amount,rate,duration);scope='Actualisation composée sur un nombre entier de périodes annuelles.';
+ }else if(/interet compose|intérêt composé|capitalis|valeur acquise/.test(plain)){
+  if(!Number.isSafeInteger(duration))return null;
+  result=compoundFutureValue(amount,rate,duration);scope='Capitalisation composée sur un nombre entier de périodes annuelles.';
+ }else return null;
+ const steps:StatementResolutionStep[]=[
+  {title:'Identifier les données',work:`Montant=${fmt(amount)} Ar ; i=${fmt(rate)} ; durée=${fmt(duration)}`,why:'On transforme le taux en décimal et on harmonise l’unité de temps.'},
+  {title:'Choisir la formule',work:result.formula,why:'La formule dépend du type d’opération financière demandé.'},
+  ...result.steps.map((work,index)=>({title:`Calcul ${index+1}`,work,why:'On remplace les données sans arrondir avant la fin.'}))
+ ];
+ return{kind:'finance',title:result.title,exact:true,givens:[`Montant=${fmt(amount)} Ar`,`taux=${fmt(rate*100)} %`,`durée=${fmt(duration)} an(s)`],steps,finalAnswer:`${fmt(result.result)} Ar`,verification:result.checks.map(check=>`${check.label}: ${check.detail}`).join(' ; '),scope};
 }
 
 function solveFunctionVariation(statement:string):StatementResolution|null{
@@ -252,5 +387,5 @@ function solveOrthogonality(statement:string):StatementResolution|null{
 
 export function solveStatementExactly(statement:string):StatementResolution|null{
  const text=statement.trim();if(!text)return null;
- return solveLinearSystemStatement(text)||solveCongruenceStatement(text)||solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
+ return solveFinanceStatement(text)||solveBinomialStatement(text)||solveSequenceStatement(text)||solveIntegralStatement(text)||solveDerivativeStatement(text)||solveLinearSystemStatement(text)||solveCongruenceStatement(text)||solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
 }
