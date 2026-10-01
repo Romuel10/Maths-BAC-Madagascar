@@ -89,7 +89,7 @@ assertSource(appSource.includes('analysisRange.xMin') && appSource.includes('set
 assertSource(graphSource.includes('activeData.length === 0') && graphSource.includes('setXMin(initialXMin)'), 'le graphe doit gérer les données vides et synchroniser son intervalle');
 assertSource(localAnnalesSource.includes("if(!save([normalized,...getLocalAnnales()]))throw"), 'un échec de stockage des annales doit être signalé');
 assertSource(learningStoreSource.includes('function localDayKey') && !learningStoreSource.includes("toISOString().slice(0, 10)"), 'les jours d’étude doivent utiliser la date locale');
-assertSource(progressSource.includes('progression globale') && !progressSource.includes('réussite globale'), 'l’indicateur global doit décrire une progression et non un taux de réussite');
+assertSource(progressSource.includes('progression globale') && !progressSource.includes('réussite globale') && progressSource.includes('mastered/totalQuestions'), 'l’indicateur global doit mesurer la progression sur l’ensemble du corpus');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
