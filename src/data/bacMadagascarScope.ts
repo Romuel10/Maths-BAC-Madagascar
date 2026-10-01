@@ -17,9 +17,9 @@ export interface ProgramChapter {
 export const BAC_PROGRAM_REFERENCE = {
  country: 'Madagascar',
  authority: 'Ministère de l’Éducation Nationale',
- schoolYear: '2024-2025',
+ schoolYear: 'Références officielles 2024-2025 (A/C/D) et Terminale S officielle disponible 2021-2022',
  edition: 2024,
- note: 'Périmètre de travail fondé sur les répartitions annuelles officielles 2024-2025, complété par la structure observée dans des sujets de BAC malgaches récents.',
+ note: 'A, C et D sont alignées sur les répartitions annuelles MEN 2024-2025. Pour S, la référence officielle publique retrouvée est la répartition Terminale S 2021-2022 ; les outils S sont donc étiquetés sur cette base et devront être revalidés si le MEN publie une répartition plus récente.',
 } as const;
 
 export const PROGRAM_CHAPTERS: ProgramChapter[] = [
@@ -27,13 +27,13 @@ export const PROGRAM_CHAPTERS: ProgramChapter[] = [
  {id:'sequences',title:'Suites numériques : récurrence, monotonie, bornes et convergence',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 des séries C, D et S.'},
  {id:'complex',title:'Nombres complexes : formes, module, argument, Moivre, Euler, racines et équations',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 des séries C, D et S.'},
  {id:'probability',title:'Probabilités, dénombrement, variables aléatoires et lois',series:['C','D','S'],evidence:'Présent dans les répartitions annuelles 2024-2025 ; les contenus diffèrent selon la série.'},
- {id:'statistics-d',title:'Statistique à deux variables, ajustement affine et corrélation',series:['D'],evidence:'Explicitement prévu en Terminale D 2024-2025.'},
- {id:'matrix-s',title:'Matrices : opérations, déterminant, transposée, inverse, trace et puissances',series:['S'],evidence:'Explicitement prévu en Terminale S 2024-2025, matrices carrées jusqu’à l’ordre 4.'},
- {id:'arithmetic-cs',title:'Arithmétique : Euclide, Bézout, Gauss, congruences et équations diophantiennes',series:['C','S'],evidence:'Arithmétique explicitement prévue en Terminale C et S ; les équations diophantiennes figurent en S.'},
- {id:'ode-cs',title:'Équations différentielles linéaires à coefficients constants',series:['C','S'],evidence:'Équations du premier et du second ordre explicitement prévues en Terminale C et S 2024-2025.'},
+ {id:'statistics-ad',title:'Statistiques à une/deux variables et ajustement',series:['A','D'],evidence:'Terminale A 2024-2025 : une variable, nuage de points, point moyen et méthode de Mayer ; Terminale D 2024-2025 : moindres carrés, droites de régression et corrélation.'},
+ {id:'matrix-s',title:'Matrices : opérations et calculs matriciels',series:['S'],evidence:'Explicitement prévu dans la répartition officielle Terminale S 2021-2022, avec opérations sur matrices carrées.'},
+ {id:'arithmetic-cs',title:'Arithmétique : Euclide, PGCD/PPCM, Gauss, congruences et calculs dans ℤ',series:['C','S'],evidence:'Terminale C 2024-2025 couvre division euclidienne, congruences, PGCD/PPCM et théorème de Gauss ; Terminale S officielle couvre divisibilité, congruences, PGCD/PPCM et opérations dans ℤ/nℤ.'},
+ {id:'ode-cs',title:'Équations différentielles linéaires à coefficients constants',series:['C','S'],evidence:'Terminale C 2024-2025 et Terminale S officielle : y′+ay=0, équations du second ordre via équation caractéristique et conditions initiales.'},
  {id:'conics-c',title:'Coniques : parabole, ellipse, hyperbole, équations réduites et tangentes',series:['C'],evidence:'Explicitement prévu en Terminale C 2024-2025.'},
  {id:'space',title:'Géométrie dans l’espace',series:['C','D','S'],evidence:'Présente dans le programme scientifique, avec profondeur variable selon la série.'},
- {id:'continuous-laws-s',title:'Lois continues : uniforme, exponentielle et normale',series:['S'],evidence:'Explicitement prévues en Terminale S 2024-2025.'},
+ {id:'continuous-laws-s',title:'Probabilités et lois',series:['S'],evidence:'La répartition officielle Terminale S retrouvée confirme probabilités et indépendance ; les lois continues ne sont pas étiquetées « programme » tant qu’une référence officielle plus récente n’est pas vérifiée.'},
 ];
 
 const TOOL_RELEVANCE: Record<BacToolId, Partial<Record<BacSeries, ProgramRelevance>>> = {
