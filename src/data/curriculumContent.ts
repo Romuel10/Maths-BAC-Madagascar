@@ -11,8 +11,11 @@ export interface CurriculumEnrichment {
  formulas:CurriculumFormula[];
 }
 
-const ALL:BacSeries[]=['A','C','D'];
-const SCI:BacSeries[]=['C','D'];
+const ALL:BacSeries[]=['A','C','D','S'];
+const SCI:BacSeries[]=['C','D','S'];
+const GEOM:BacSeries[]=['C','D','S'];
+const ARITH:BacSeries[]=['C','S'];
+const STATS:BacSeries[]=['A','D'];
 
 export const CURRICULUM_ENRICHMENTS:Record<BacTopic,CurriculumEnrichment>={
  Analyse:{
@@ -206,19 +209,19 @@ export const EXTRA_LEARNING_QUESTIONS:ExtraLearningQuestion[]=[
  q('q-su-05','Suites',SCI,2,'Une suite décroissante et minorée est :',['Toujours divergente','Convergente','Toujours constante','Périodique'],1,'C’est le théorème de convergence monotone.'),
  q('q-su-06','Suites',SCI,3,'Somme 1+2+4+8 :',['8','12','15','16'],2,'Somme géométrique : 15.'),
  q('q-su-07','Suites',SCI,2,'Pour étudier la croissance de uₙ, on peut étudier :',['uₙ+1','uₙ₊₁−uₙ','uₙ² seulement','n−uₙ'],1,'Le signe de la différence donne le sens de variation.'),
- q('q-ge-03','Géométrie',ALL,1,'Le milieu de A(0,2) et B(4,6) est :',['(4,8)','(2,4)','(1,3)','(2,8)'],1,'On fait la moyenne coordonnée par coordonnée.'),
- q('q-ge-04','Géométrie',ALL,2,'Un vecteur normal à ax+by+c=0 est :',['(−b,a)','(a,b)','(c,0)','(b,a)'],1,'Les coefficients de x et y forment un vecteur normal.'),
+ q('q-ge-03','Géométrie',GEOM,1,'Le milieu de A(0,2) et B(4,6) est :',['(4,8)','(2,4)','(1,3)','(2,8)'],1,'On fait la moyenne coordonnée par coordonnée.'),
+ q('q-ge-04','Géométrie',GEOM,2,'Un vecteur normal à ax+by+c=0 est :',['(−b,a)','(a,b)','(c,0)','(b,a)'],1,'Les coefficients de x et y forment un vecteur normal.'),
  q('q-ge-05','Géométrie',SCI,2,'Si det(u,v)=0, alors u et v sont :',['Orthogonaux','Colinéaires','Unitaires','Opposés obligatoirement'],1,'Le déterminant nul caractérise la colinéarité.'),
- q('q-ge-06','Géométrie',ALL,2,'L’équation du cercle de centre O et rayon 3 est :',['x+y=3','x²+y²=3','x²+y²=9','(x−3)²+y²=1'],2,'Le carré du rayon vaut 9.'),
+ q('q-ge-06','Géométrie',GEOM,2,'L’équation du cercle de centre O et rayon 3 est :',['x+y=3','x²+y²=3','x²+y²=9','(x−3)²+y²=1'],2,'Le carré du rayon vaut 9.'),
  q('q-ge-07','Géométrie',SCI,3,'La distance entre (1,2,3) et (1,2,7) vaut :',['2','3','4','10'],2,'Seule la coordonnée z change : distance 4.'),
- q('q-ar-03','Arithmétique',SCI,1,'Le reste de 23 modulo 5 est :',['2','3','4','5'],1,'23=4×5+3.'),
- q('q-ar-04','Arithmétique',SCI,2,'Deux entiers sont premiers entre eux si leur PGCD vaut :',['0','1','2','Leur produit'],1,'C’est la définition.'),
- q('q-ar-05','Arithmétique',SCI,2,'Si a≡2 [5], alors a²≡ :',['2 [5]','4 [5]','0 [5]','1 [5]'],1,'On peut multiplier les congruences : 2²=4.'),
- q('q-ar-06','Arithmétique',SCI,3,'PPCM(12,18) vaut :',['6','24','30','36'],3,'12=2²×3 et 18=2×3², donc PPCM=2²×3²=36.'),
- q('q-ar-07','Arithmétique',SCI,2,'Dans Euclide, le PGCD est :',['Le premier quotient','Le dernier reste non nul','Le dernier quotient','La somme des restes'],1,'Les divisions s’arrêtent lorsque le reste devient nul.'),
- q('q-st-03','Statistiques',ALL,1,'La somme des fréquences vaut :',['0','1','L’effectif maximal','La moyenne'],1,'Elle vaut 1, soit 100 %.'),
- q('q-st-04','Statistiques',ALL,2,'L’écart-type est :',['La variance au carré','La racine de la variance','La moyenne divisée par 2','Toujours égal à l’étendue'],1,'σ=√V.'),
- q('q-st-05','Statistiques',ALL,2,'La médiane de 1,3,8,10 est :',['3','5,5','8','22'],1,'Pour quatre valeurs, moyenne des deux centrales : (3+8)/2=5,5.'),
- q('q-st-06','Statistiques',ALL,2,'Quel indicateur est le plus sensible aux valeurs extrêmes ?', ['Médiane','Premier quartile','Moyenne','Écart interquartile'],2,'Une valeur extrême modifie fortement la moyenne.'),
- q('q-st-07','Statistiques',SCI,3,'Si V=16, l’écart-type vaut :',['4','8','16','256'],0,'σ=√16=4.'),
+ q('q-ar-03','Arithmétique',ARITH,1,'Le reste de 23 modulo 5 est :',['2','3','4','5'],1,'23=4×5+3.'),
+ q('q-ar-04','Arithmétique',ARITH,2,'Deux entiers sont premiers entre eux si leur PGCD vaut :',['0','1','2','Leur produit'],1,'C’est la définition.'),
+ q('q-ar-05','Arithmétique',ARITH,2,'Si a≡2 [5], alors a²≡ :',['2 [5]','4 [5]','0 [5]','1 [5]'],1,'On peut multiplier les congruences : 2²=4.'),
+ q('q-ar-06','Arithmétique',ARITH,3,'PPCM(12,18) vaut :',['6','24','30','36'],3,'12=2²×3 et 18=2×3², donc PPCM=2²×3²=36.'),
+ q('q-ar-07','Arithmétique',ARITH,2,'Dans Euclide, le PGCD est :',['Le premier quotient','Le dernier reste non nul','Le dernier quotient','La somme des restes'],1,'Les divisions s’arrêtent lorsque le reste devient nul.'),
+ q('q-st-03','Statistiques',STATS,1,'La somme des fréquences vaut :',['0','1','L’effectif maximal','La moyenne'],1,'Elle vaut 1, soit 100 %.'),
+ q('q-st-04','Statistiques',STATS,2,'L’écart-type est :',['La variance au carré','La racine de la variance','La moyenne divisée par 2','Toujours égal à l’étendue'],1,'σ=√V.'),
+ q('q-st-05','Statistiques',STATS,2,'La médiane de 1,3,8,10 est :',['3','5,5','8','22'],1,'Pour quatre valeurs, moyenne des deux centrales : (3+8)/2=5,5.'),
+ q('q-st-06','Statistiques',STATS,2,'Quel indicateur est le plus sensible aux valeurs extrêmes ?', ['Médiane','Premier quartile','Moyenne','Écart interquartile'],2,'Une valeur extrême modifie fortement la moyenne.'),
+ q('q-st-07','Statistiques',STATS,3,'Si V=16, l’écart-type vaut :',['4','8','16','256'],0,'σ=√16=4.'),
 ];

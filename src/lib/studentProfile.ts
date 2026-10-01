@@ -24,7 +24,7 @@ function empty():StudentProfile{
  return {series:null,diagnostic:null,quickSessions:[],chapters:{},lastActivity:null,accessibility:{textScale:'normal',highContrast:false,reduceMotion:false}};
 }
 
-function validSeries(value:unknown):value is BacSeries{return value==='A'||value==='C'||value==='D';}
+function validSeries(value:unknown):value is BacSeries{return value==='A'||value==='C'||value==='D'||value==='S';}
 
 export function getStudentProfile():StudentProfile{
  const raw=storageJsonGet<Partial<StudentProfile>>(KEY,{});

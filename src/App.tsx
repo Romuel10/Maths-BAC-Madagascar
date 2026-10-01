@@ -23,15 +23,16 @@ import { storageGet, storageJsonGet, storageJsonSet, storageRemove, storageSet }
 import type { AnalysisResult } from './lib/mathEngine';
 import { getStudentProfile, saveAccessibility, type AccessibilityPreferences } from './lib/studentProfile';
 import { applyAccessibility } from './lib/accessibility';
+import { toolProgramBadge, toolRelevance, type BacToolId } from './data/bacMadagascarScope';
 
 type Page = 'home' | 'subjects' | 'solve' | 'tools' | 'profile';
 type Sub = 'steps' | 'graph' | 'props' | 'calc';
-type ModalId = 'search' | 'compare' | 'revision' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'units' | 'calculator' | 'lessons' | 'ineqxy';
+type ModalId = 'search' | 'compare' | 'revision' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'units' | 'calculator' | 'lessons' | 'ineqxy' | 'ode' | 'conics';
 type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
 
 const REQUIRE_ACTIVATION = import.meta.env.VITE_REQUIRE_ACTIVATION === 'true';
 const PAGES:Page[]=['home','subjects','solve','tools','profile'];
-const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy'];
+const MODALS:ModalId[]=['search','compare','revision','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','units','calculator','lessons','ineqxy','ode','conics'];
 
 const FunctionCompare=lazy(()=>import('./components/FunctionCompare').then(module=>({default:module.FunctionCompare})));
 const RevisionSheets=lazy(()=>import('./components/RevisionSheets').then(module=>({default:module.RevisionSheets})));
@@ -47,6 +48,8 @@ const Calculator=lazy(()=>import('./components/Calculator').then(module=>({defau
 const UnitConverter=lazy(()=>import('./components/UnitConverter').then(module=>({default:module.UnitConverter})));
 const MiniLesson=lazy(()=>import('./components/MiniLesson').then(module=>({default:module.MiniLesson})));
 const InequalityXY=lazy(()=>import('./components/InequalityXY').then(module=>({default:module.InequalityXY})));
+const DifferentialEquationCalculator=lazy(()=>import('./components/DifferentialEquationCalculator').then(module=>({default:module.DifferentialEquationCalculator})));
+const ConicCalculator=lazy(()=>import('./components/ConicCalculator').then(module=>({default:module.ConicCalculator})));
 const InteractiveGraph=lazy(()=>import('./components/InteractiveGraph').then(module=>({default:module.InteractiveGraph})));
 const TangentCalculator=lazy(()=>import('./components/TangentCalculator').then(module=>({default:module.TangentCalculator})));
 const EquationSolver=lazy(()=>import('./components/EquationSolver').then(module=>({default:module.EquationSolver})));
@@ -117,6 +120,7 @@ function App() {
  const [lang, setLang] = useState<Lang>(() => { const saved=storageGet('mathsolver_lang');return isLang(saved)?saved:'fr'; });
  const [theme, setTheme] = useState<Theme>(() => storageGet('mathsolver_theme') === 'light' ? 'light' : 'dark');
  const [accessibility,setAccessibility]=useState<AccessibilityPreferences>(()=>getStudentProfile().accessibility);
+ const [studentSeries,setStudentSeriesState]=useState(()=>getStudentProfile().series);
  const modalRef=useRef<HTMLDivElement|null>(null);
  const lastFocusRef=useRef<HTMLElement|null>(null);
 
@@ -154,6 +158,7 @@ function App() {
 
  useEffect(() => { applyTheme(theme); }, [theme]);
  useEffect(()=>{applyAccessibility(accessibility);},[accessibility]);
+ useEffect(()=>{const sync=()=>setStudentSeriesState(getStudentProfile().series);window.addEventListener('mathbac-student-profile',sync);return()=>window.removeEventListener('mathbac-student-profile',sync);},[]);
  useEffect(()=>{
   const sync=()=>{const route=readRoute();setPage(route.page);setModal(route.modal);};
   window.addEventListener('popstate',sync);window.addEventListener('hashchange',sync);
@@ -283,24 +288,29 @@ function App() {
   complex: <ComplexCalculator onClose={closeModal} />,
   matrix: <MatrixCalculator onClose={closeModal} />,
   geometry: <GeometryCalc onClose={closeModal} />,
-  probability: <ProbabilityCalc onClose={closeModal} />,
+  probability: <ProbabilityCalc onClose={closeModal} series={studentSeries} />,
   arithmetic: <ArithmeticCalc onClose={closeModal} />,
   algebra: <AlgebraTools onClose={closeModal} />,
   units: <UnitConverter onClose={closeModal} />,
   calculator: <Calculator onClose={closeModal} />,
   lessons: <MiniLesson onClose={closeModal} />,
   ineqxy: <InequalityXY onClose={closeModal} />,
+  ode: <DifferentialEquationCalculator onClose={closeModal} />,
+  conics: <ConicCalculator onClose={closeModal} />,
  };
 
  if (!activated) return <ActivationGate onActivated={() => setActivated(true)} />;
 
- const ToolCard = ({ symbol, title, desc, onClick }: { symbol: string; title: string; desc: string; onClick: () => void }) => (
-  <button onClick={onClick} className="tool-card active:scale-[0.98] transition-transform">
+ const ToolCard = ({ symbol, title, desc, onClick, tool }: { symbol: string; title: string; desc: string; onClick: () => void; tool?: BacToolId }) => {
+  if(tool&&studentSeries&&toolRelevance(tool,studentSeries)==='extra')return null;
+  const badge=tool?toolProgramBadge(tool,studentSeries):null;
+  return <button onClick={onClick} className="tool-card active:scale-[0.98] transition-transform">
    <span className="tool-symbol">{symbol}</span>
    <p className="tool-title">{title}</p>
    <p className="tool-copy">{desc}</p>
-  </button>
- );
+   {badge&&<span className={`chip mt-2 ${badge.tone==='success'?'chip-success':badge.tone==='info'?'chip-info':''}`}>{badge.label}</span>}
+  </button>;
+ };
 
  const ToolGroup = ({ title, copy, children }: { title: string; copy: string; children: ReactNode }) => (
   <section>
@@ -425,26 +435,29 @@ function App() {
         </div>
         {!result && (
          <div className="space-y-5">
-          <ToolGroup title="Calcul et algèbre" copy="Résoudre, transformer et contrôler les calculs symboliques.">
-           <ToolCard symbol="x²" title="Algèbre" desc="Développer, réduire, factoriser" onClick={() => openModal('algebra')} />
-           <ToolCard symbol="ℂ" title="Complexes" desc="Formes, module, argument, équations" onClick={() => openModal('complex')} />
-           <ToolCard symbol="≡" title="Arithmétique" desc="PGCD, divisibilité et congruences" onClick={() => openModal('arithmetic')} />
+          <div className="notice notice-info"><strong>{studentSeries?`Outils adaptés à la série ${studentSeries}`:'Configure ta série dans Mon coach'}</strong> · Les outils hors programme sont masqués quand une série est choisie. Le périmètre A/C/D suit le MEN 2024-2025 ; la série S utilise la référence officielle publique Terminale S retrouvée.</div>
+          <ToolGroup title="Calcul et algèbre" copy="Résoudre, transformer et contrôler les calculs du programme.">
+           <ToolCard tool="algebra" symbol="x²" title="Algèbre" desc="Équations, inéquations, factorisation" onClick={() => openModal('algebra')} />
+           <ToolCard tool="complex" symbol="ℂ" title="Complexes" desc="Formes, racines n-ièmes, équations" onClick={() => openModal('complex')} />
+           <ToolCard tool="arithmetic" symbol="≡" title="Arithmétique" desc="Euclide, Bézout, congruences, ℤ" onClick={() => openModal('arithmetic')} />
+           <ToolCard tool="matrix" symbol="[A]" title="Matrices" desc="Gauss-Jordan, puissances et systèmes" onClick={() => openModal('matrix')} />
           </ToolGroup>
-          <ToolGroup title="Analyse" copy="Étudier les fonctions, suites et relations entre expressions.">
-           <ToolCard symbol="uₙ" title="Suites" desc="Termes, monotonie et convergence" onClick={() => openModal('sequence')} />
-           <ToolCard symbol="f≈g" title="Comparer" desc="Comparer deux fonctions sur un intervalle" onClick={() => openModal('compare')} />
-           <ToolCard symbol="fₐ" title="Paramètres" desc="Explorer une famille f(x,a)" onClick={() => openModal('parametric')} />
+          <ToolGroup title="Analyse" copy="Fonctions, suites et équations différentielles selon la série.">
+           <ToolCard tool="sequence" symbol="uₙ" title="Suites" desc="Récurrence, monotonie et convergence" onClick={() => openModal('sequence')} />
+           <ToolCard tool="compare" symbol="f≈g" title="Comparer" desc="Comparer deux fonctions sur un intervalle" onClick={() => openModal('compare')} />
+           <ToolCard tool="parametric" symbol="fₐ" title="Paramètres" desc="Explorer une famille f(x,a)" onClick={() => openModal('parametric')} />
+           <ToolCard tool="ode" symbol="y′" title="Équations différentielles" desc="1er/2e ordre et conditions initiales" onClick={() => openModal('ode')} />
           </ToolGroup>
-          <ToolGroup title="Géométrie et données" copy="Outils de calcul pour les chapitres appliqués du BAC.">
-           <ToolCard symbol="∠" title="Géométrie" desc="Vecteurs, distances et configurations" onClick={() => openModal('geometry')} />
-           <ToolCard symbol="P" title="Probabilités" desc="Lois, combinatoire et statistiques" onClick={() => openModal('probability')} />
-           <ToolCard symbol="[A]" title="Matrices" desc="Déterminant, inverse et systèmes" onClick={() => openModal('matrix')} />
-           <ToolCard symbol="≤" title="Inéquations XY" desc="Demi-plans et contraintes" onClick={() => openModal('ineqxy')} />
+          <ToolGroup title="Géométrie et données" copy="Outils appliqués ciblés par le programme de la série.">
+           <ToolCard tool="geometry" symbol="∠" title="Géométrie" desc="Vecteurs, espace et configurations" onClick={() => openModal('geometry')} />
+           <ToolCard tool="conics" symbol="◯" title="Coniques" desc="Parabole, ellipse, hyperbole, tangentes" onClick={() => openModal('conics')} />
+           <ToolCard tool="probability" symbol="P" title="Probabilités & stats" desc="Dénombrement, lois et ajustements" onClick={() => openModal('probability')} />
+           <ToolCard tool="ineqxy" symbol="≤" title="Inéquations XY" desc="Demi-plans et contraintes" onClick={() => openModal('ineqxy')} />
           </ToolGroup>
           <ToolGroup title="Révision et utilitaires" copy="Rappels rapides et outils complémentaires.">
-           <ToolCard symbol="Σ" title="Fiches" desc="Formules et méthodes essentielles" onClick={() => openModal('revision')} />
-           <ToolCard symbol="01" title="Mini-leçons" desc="Réviser une notion étape par étape" onClick={() => openModal('lessons')} />
-           <ToolCard symbol="↔" title="Unités" desc="Conversions rapides" onClick={() => openModal('units')} />
+           <ToolCard tool="revision" symbol="Σ" title="Fiches" desc="Formules et méthodes essentielles" onClick={() => openModal('revision')} />
+           <ToolCard tool="lessons" symbol="01" title="Mini-leçons" desc="Réviser une notion étape par étape" onClick={() => openModal('lessons')} />
+           <ToolCard tool="units" symbol="↔" title="Unités" desc="Conversions rapides" onClick={() => openModal('units')} />
           </ToolGroup>
          </div>
         )}

@@ -68,6 +68,12 @@ const calculatorEngineSource = fs.readFileSync('src/lib/calculatorEngine.ts', 'u
 const matrixSource = fs.readFileSync('src/lib/matrix.ts', 'utf8');
 const probabilitySource = fs.readFileSync('src/lib/probabilityEngine.ts', 'utf8');
 const complexSource = fs.readFileSync('src/lib/complex.ts', 'utf8');
+const bacSubjectsSource = fs.readFileSync('src/data/bacSubjects.ts', 'utf8');
+const bacScopeSource = fs.readFileSync('src/data/bacMadagascarScope.ts', 'utf8');
+const arithmeticSource = fs.readFileSync('src/lib/arithmeticEngine.ts', 'utf8');
+const odeSource = fs.readFileSync('src/lib/differentialEquationEngine.ts', 'utf8');
+const conicSource = fs.readFileSync('src/lib/conicEngine.ts', 'utf8');
+const probabilityCalcSource = fs.readFileSync('src/components/ProbabilityCalc.tsx', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
 assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
 assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
@@ -110,6 +116,13 @@ assertSource(matrixSource.includes('solveLinearSystem') && matrixSource.includes
 assertSource(probabilitySource.includes('binomialRangeProbability') && probabilitySource.includes('inverseNormalCdf') && probabilitySource.includes('linearRegression'), 'probabilités/statistiques doivent conserver intervalles, quantiles et régression');
 assertSource(complexSource.includes('cRoots') && complexSource.includes('cFromPolar'), 'la calculatrice complexe doit conserver racines n-ièmes et conversion polaire');
 assertSource(packageJson.scripts?.['test:advanced-calculators'] && packageJson.scripts?.['test:full']?.includes('npm run test:advanced-calculators'), 'les calculatrices avancées doivent faire partie de la validation complète');
+assertSource(bacSubjectsSource.includes("BacSeries = 'A' | 'C' | 'D' | 'S'"), 'la série S doit faire partie du modèle BAC');
+assertSource(bacScopeSource.includes('Terminale S officielle') && bacScopeSource.includes("conics:{C:'core'") && bacScopeSource.includes("matrix:{S:'core'"), 'le périmètre par série doit distinguer C, D, A et S sans présenter les compléments comme programme');
+assertSource(arithmeticSource.includes('extendedGcd') && arithmeticSource.includes('solveLinearCongruence') && arithmeticSource.includes('solveLinearDiophantine'), 'l’arithmétique BAC C/S doit inclure Bézout, congruences et diophantiennes');
+assertSource(odeSource.includes('solveFirstOrderHomogeneous') && odeSource.includes('solveSecondOrderHomogeneous'), 'les équations différentielles BAC C/S doivent être couvertes');
+assertSource(conicSource.includes('analyzeEllipse') && conicSource.includes('analyzeHyperbola') && conicSource.includes('analyzeParabola') && conicSource.includes('conicTangent'), 'les coniques de Terminale C doivent être couvertes');
+assertSource(probabilitySource.includes('mayerRegression') && probabilityCalcSource.includes("series==='A'") && probabilityCalcSource.includes('méthode de Mayer'), 'la série A doit utiliser la méthode de Mayer plutôt que les moindres carrés');
+assertSource(packageJson.scripts?.['test:bac-madagascar'] && packageJson.scripts?.['test:full']?.includes('npm run test:bac-madagascar'), 'le périmètre BAC Madagascar doit être testé dans test:full');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
