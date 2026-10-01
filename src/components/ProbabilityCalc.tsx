@@ -5,19 +5,20 @@
 import React, { useState } from 'react';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
-import { factorialBigInt, combinationBigInt, arrangementsBigInt, binomialProbability, binomialCdf, normalCdf, descriptiveStats } from '../lib/probabilityEngine';
+import { factorialBigInt, combinationBigInt, arrangementsBigInt, binomialProbability, binomialCdf, binomialRangeProbability, normalCdf, normalRangeProbability, inverseNormalCdf, descriptiveStats, linearRegression } from '../lib/probabilityEngine';
 
 interface Props { onClose: () => void }
-type Mode = 'combi' | 'binomial' | 'stats' | 'normal';
+type Mode = 'combi' | 'binomial' | 'stats' | 'normal' | 'regression';
 
 function f(n: number): string { const r = Math.round(n * 100000000) / 100000000; return Number.isInteger(r) ? String(r) : r.toFixed(8).replace(/0+$/, '').replace(/\.$/, ''); }
 function pct(n: number): string { return (n * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + '%'; }
 
 export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
  const [mode, setMode] = useState<Mode>('stats');
- const [n, setN] = useState('10'); const [k, setK] = useState('3'); const [p, setP] = useState('0.5');
+ const [n, setN] = useState('10'); const [k, setK] = useState('3'); const [k2, setK2] = useState('7'); const [p, setP] = useState('0.5');
  const [dataStr, setDataStr] = useState('4, 7, 8, 5, 9, 6, 8, 3, 7, 5');
- const [mu, setMu] = useState('0'); const [sigma, setSigma] = useState('1'); const [xVal, setXVal] = useState('1.96');
+ const [mu, setMu] = useState('0'); const [sigma, setSigma] = useState('1'); const [xVal, setXVal] = useState('-1'); const [xVal2,setXVal2]=useState('1'); const [qVal,setQVal]=useState('0.975');
+ const [regX,setRegX]=useState('1,2,3,4,5'); const [regY,setRegY]=useState('2,4,5,8,10');
  const [res, setRes] = useState<React.ReactNode | null>(null);
 
  const In = ({ label, value, onChange, type = 'number' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) => (
@@ -57,13 +58,14 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
  };
 
  const doBinom = () => {
-  const nv = Number(n), kv = Number(k), pv = Number(p);
-  if (!Number.isSafeInteger(nv) || !Number.isSafeInteger(kv) || nv < 0 || kv < 0 || kv > nv || nv > 1000 || !Number.isFinite(pv) || pv < 0 || pv > 1) {
-   setRes(<ReliabilityPanel level="warning" title="Paramètres invalides" detail="Pour X ~ B(n,p), n et k sont entiers avec 0 ≤ k ≤ n ≤ 1000 et 0 ≤ p ≤ 1. Cette limite évite les calculs flottants trop grands sur téléphone." />); return;
+  const nv = Number(n), kv = Number(k), kv2 = Number(k2), pv = Number(p);
+  if (!Number.isSafeInteger(nv) || !Number.isSafeInteger(kv) || !Number.isSafeInteger(kv2) || nv < 0 || kv < 0 || kv > nv || kv2 < kv || kv2 > nv || nv > 1000 || !Number.isFinite(pv) || pv < 0 || pv > 1) {
+   setRes(<ReliabilityPanel level="warning" title="Paramètres invalides" detail="Pour X ~ B(n,p), utilise 0 ≤ k ≤ b ≤ n ≤ 1000 et 0 ≤ p ≤ 1." />); return;
   }
   const q = 1 - pv;
   const prob = binomialProbability(nv, kv, pv);
   const cumul = binomialCdf(nv, kv, pv);
+  const rangeProb = binomialRangeProbability(nv, kv, kv2, pv);
   const esp = nv * pv, variance = nv * pv * q, ec = Math.sqrt(variance);
 
   setRes(
@@ -83,7 +85,7 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
      <PropBadge label="σ(X) = √V" value={f(ec)} color="cyan" />
      <PropBadge label={`P(X ≤ ${kv})`} value={`${f(cumul)} ≈ ${pct(cumul)}`} color="emerald" />
     </div>
-    <PropBadge label={`P(X > ${kv})`} value={`${f(1 - cumul)} ≈ ${pct(1 - cumul)}`} color="amber" />
+    <div className="grid grid-cols-2 gap-2"><PropBadge label={`P(X > ${kv})`} value={`${f(1 - cumul)} ≈ ${pct(1 - cumul)}`} color="amber" /><PropBadge label={`P(${kv} ≤ X ≤ ${kv2})`} value={`${f(rangeProb)} ≈ ${pct(rangeProb)}`} color="cyan" /></div>
    </div>
   );
  };
@@ -115,6 +117,8 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
     <div className="grid grid-cols-2 gap-2">
      <PropBadge label="Variance σ²" value={f(variance)} color="rose" />
      <PropBadge label="Écart-type σ" value={f(stdDev)} color="rose" />
+     {st.varianceSample!==null&&<PropBadge label="Variance échantillon s²" value={f(st.varianceSample)} color="amber" />}
+     {st.stdSample!==null&&<PropBadge label="Écart-type échantillon s" value={f(st.stdSample)} color="amber" />}
     </div>
     <Section icon="" title="Calculs détaillés" color="blue">
      <div className="space-y-1 text-xs text-slate-300 font-mono">
@@ -128,35 +132,27 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
  };
 
  const doNormal = () => {
-  const m = Number(mu), s = Number(sigma), x = Number(xVal);
-  if (![m, s, x].every(Number.isFinite) || s <= 0) { setRes(<ReliabilityPanel level="warning" title="Paramètres invalides" detail="μ et x doivent être réels et σ doit être strictement positif." />); return; }
-  const z = (x - m) / s;
-  const prob = normalCdf(x, m, s);
-  setRes(
-   <div className="space-y-3 animate-scale-in">
-    <ReliabilityPanel level="approximate" title="Valeur normale approchée" detail="La fonction de répartition Φ est évaluée via une approximation de erf contrôlée. Le résultat reste numérique : conserve l’arrondi demandé par le sujet." checks={[{ label: 'Paramètres valides', ok: s > 0, detail: `σ=${s} > 0` }, { label: 'Probabilité dans [0;1]', ok: prob >= 0 && prob <= 1, detail: `Φ(z)=${prob}` }]} />
-    <ResultBox label={`P(X ≤ ${x})`} value={`${f(prob)} ≈ ${pct(prob)}`} color="emerald" />
-    <StepsList>
-     <Step n={1} title="Loi" content={`X ~ N(μ=${m}, σ²=${f(s * s)})`} color="indigo" />
-     <Step n={2} title="Centrer-réduire" content={`Z = (X − μ) / σ = (${x} − ${m}) / ${s} = ${f(z)}`} color="purple" />
-     <Step n={3} title="Évaluation de Φ" content={`P(Z ≤ ${f(z)}) = ${f(prob)}`} color="cyan" />
-     <Step n="" title="Résultat" content={`P(X ≤ ${x}) ≈ ${pct(prob)}`} color="emerald" />
-    </StepsList>
-    <div className="grid grid-cols-2 gap-2">
-     <PropBadge label={`P(X > ${x})`} value={pct(1 - prob)} color="amber" />
-     <PropBadge label="Z (centré-réduit)" value={f(z)} color="purple" />
-    </div>
-    <Section icon="" title="Rappels — Règle empirique" color="blue">
-     <div className="space-y-1 text-xs text-slate-300">
-      <p>• P(μ−σ ≤ X ≤ μ+σ) ≈ <span className="text-emerald-300 font-bold">68.3%</span></p>
-      <p>• P(μ−2σ ≤ X ≤ μ+2σ) ≈ <span className="text-emerald-300 font-bold">95.4%</span></p>
-      <p>• P(μ−3σ ≤ X ≤ μ+3σ) ≈ <span className="text-emerald-300 font-bold">99.7%</span></p>
-     </div>
-    </Section>
-   </div>
-  );
+  const m=Number(mu),s=Number(sigma),a=Number(xVal),b=Number(xVal2),q=Number(qVal);
+  if(![m,s,a,b,q].every(Number.isFinite)||s<=0||a>b||q<=0||q>=1){setRes(<ReliabilityPanel level="warning" title="Paramètres invalides" detail="Il faut σ>0, a≤b et 0<q<1."/>);return;}
+  const pa=normalCdf(a,m,s), pb=normalCdf(b,m,s), interval=normalRangeProbability(a,b,m,s), quantile=inverseNormalCdf(q,m,s);
+  setRes(<div className="space-y-3 animate-scale-in">
+   <ReliabilityPanel level="approximate" title="Loi normale avancée" detail="CDF, intervalle et quantile sont calculés numériquement puis contrôlés dans [0;1]." checks={[{label:'CDF ordonnées',ok:pa<=pb+1e-12,detail:'F(a)≤F(b)'},{label:'Intervalle valide',ok:interval>=0&&interval<=1,detail:'P='+interval},{label:'Quantile fini',ok:Number.isFinite(quantile),detail:'xq='+quantile}]}/>
+   <div className="grid grid-cols-2 gap-2"><ResultBox label={'P(X≤'+b+')'} value={pct(pb)} color="emerald"/><ResultBox label={'P('+a+'≤X≤'+b+')'} value={pct(interval)} color="cyan"/></div>
+   <div className="grid grid-cols-2 gap-2"><PropBadge label={'P(X>'+b+')'} value={pct(1-pb)} color="amber"/><PropBadge label={'Quantile q='+q} value={f(quantile)} color="purple"/></div>
+   <StepsList><Step n={1} title="Centrer-réduire" content={'z=(x−μ)/σ avec μ='+m+' et σ='+s} color="indigo"/><Step n={2} title="Intervalle" content={'P(a≤X≤b)=F(b)−F(a)='+f(interval)} color="blue"/><Step n={3} title="Quantile" content={'F(xq)='+q+' ⇒ xq≈'+f(quantile)} color="purple"/></StepsList>
+  </div>);
  };
 
+ const doRegression = () => {
+  const parse=(text:string)=>text.split(/[,;\\s]+/).map(v=>v.trim()).filter(Boolean).map(Number);
+  const xs=parse(regX),ys=parse(regY);
+  try{const r=linearRegression(xs,ys);setRes(<div className="space-y-3 animate-scale-in">
+   <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Régression linéaire contrôlée" detail="Ajustement affine par les moindres carrés." checks={r.checks}/>
+   <ResultBox label="Droite de régression" value={'y = '+f(r.slope)+'x '+(r.intercept>=0?'+ ':'− ')+f(Math.abs(r.intercept))} color="indigo"/>
+   <div className="grid grid-cols-2 gap-2"><PropBadge label="Corrélation r" value={f(r.correlation)} color="purple"/><PropBadge label="Coefficient R²" value={f(r.rSquared)} color="cyan"/><PropBadge label="x̄" value={f(r.meanX)} color="slate"/><PropBadge label="ȳ" value={f(r.meanY)} color="slate"/></div>
+   <Section icon="∴" title="Interprétation" color="blue"><p className="text-xs text-slate-300">Plus |r| est proche de 1, plus la liaison linéaire est forte. R² mesure la part de variabilité expliquée par l’ajustement affine.</p></Section>
+  </div>);}catch(error:unknown){setRes(<ReliabilityPanel level="warning" title="Régression impossible" detail={error instanceof Error?error.message:'Données invalides.'}/>);}
+ };
  return (
   <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto">
    <div className="tool-page-container px-4 py-6 min-h-screen">
@@ -165,15 +161,16 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose }) => {
      <button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">×</button>
     </div>
     <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide">
-     {([{ id: 'stats' as Mode, l: ' Stats' }, { id: 'combi' as Mode, l: ' C/A/n!' }, { id: 'binomial' as Mode, l: ' Binomiale' }, { id: 'normal' as Mode, l: ' Normale' }]).map(m => (
+     {([{ id: 'stats' as Mode, l: 'Stats' }, { id: 'combi' as Mode, l: 'C/A/n!' }, { id: 'binomial' as Mode, l: 'Binomiale' }, { id: 'normal' as Mode, l: 'Normale' }, { id: 'regression' as Mode, l: 'Régression' }]).map(m => (
       <button key={m.id} onClick={() => { setMode(m.id); setRes(null); }} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode === m.id ? 'bg-indigo-600 text-white' : 'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>{m.l}</button>
      ))}
     </div>
 
     {mode === 'stats' && <div className="space-y-3"><In label="Données (séparées par virgules)" value={dataStr} onChange={setDataStr} type="textarea" /><button onClick={doStats} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
     {mode === 'combi' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="k =" value={k} onChange={setK} /></div><button onClick={doCombi} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
-    {mode === 'binomial' && <div className="space-y-3"><div className="grid grid-cols-3 gap-2"><In label="n =" value={n} onChange={setN} /><In label="k =" value={k} onChange={setK} /><In label="p =" value={p} onChange={setP} /></div><button onClick={doBinom} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> P(X=k)</button></div>}
-    {mode === 'normal' && <div className="space-y-3"><div className="grid grid-cols-3 gap-2"><In label="μ =" value={mu} onChange={setMu} /><In label="σ =" value={sigma} onChange={setSigma} /><In label="x =" value={xVal} onChange={setXVal} /></div><button onClick={doNormal} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> P(X≤x)</button></div>}
+    {mode === 'binomial' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="p =" value={p} onChange={setP} /><In label="k (borne basse)" value={k} onChange={setK} /><In label="b (borne haute)" value={k2} onChange={setK2} /></div><button onClick={doBinom} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Calculer P(X=k), cumul et intervalle</button></div>}
+    {mode === 'normal' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="μ =" value={mu} onChange={setMu} /><In label="σ =" value={sigma} onChange={setSigma} /><In label="a =" value={xVal} onChange={setXVal} /><In label="b =" value={xVal2} onChange={setXVal2} /></div><In label="Quantile q (ex. 0,975 → saisir 0.975)" value={qVal} onChange={setQVal}/><button onClick={doNormal} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">CDF, intervalle et quantile</button></div>}
+    {mode === 'regression' && <div className="space-y-3"><In label="Valeurs x" value={regX} onChange={setRegX} type="textarea"/><In label="Valeurs y" value={regY} onChange={setRegY} type="textarea"/><button onClick={doRegression} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Calculer la régression</button></div>}
 
     {res && <div className="mt-4">{res}</div>}
    </div>

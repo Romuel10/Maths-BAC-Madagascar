@@ -70,6 +70,25 @@ export function cSqrt(z: Complex): [Complex, Complex] {
  return [z1, { re: clean(-z1.re), im: clean(-z1.im) }];
 }
 
+
+export function cRoots(z: Complex, n: number): Complex[] {
+ if(!finite(z)||!Number.isSafeInteger(n)||n<1||n>100)return[];
+ const r=cMod(z);
+ if(r<EPS)return Array.from({length:n},()=>({re:0,im:0}));
+ const theta=cArg(z);
+ const radius=Math.pow(r,1/n);
+ return Array.from({length:n},(_,k)=>{
+  const angle=(theta+2*Math.PI*k)/n;
+  return{re:clean(radius*Math.cos(angle)),im:clean(radius*Math.sin(angle))};
+ });
+}
+
+export function cFromPolar(modulus: number, angle: number, mode: 'rad'|'deg'='rad'): Complex {
+ if(!Number.isFinite(modulus)||!Number.isFinite(angle)||modulus<0)return{re:NaN,im:NaN};
+ const theta=mode==='deg'?angle*Math.PI/180:angle;
+ return{re:clean(modulus*Math.cos(theta)),im:clean(modulus*Math.sin(theta))};
+}
+
 function fmt(n: number): string {
  if (!Number.isFinite(n)) return String(n);
  const r = Math.abs(n) < 1e-12 ? 0 : Math.round(n * 1e10) / 1e10;

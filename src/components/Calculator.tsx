@@ -17,6 +17,7 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
  const [showSteps, setShowSteps] = useState(true);
  const [lastAnswer, setLastAnswer] = useState('0');
  const [error, setError] = useState('');
+ const [memory, setMemory] = useState(0);
 
  const append = useCallback((s: string) => {
   setDisplay(prev => prev + s);
@@ -43,16 +44,40 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
   setDisplay(calculation.exactExpression || calculation.decimalValue);
   setCalculation(null);
  };
+ const currentNumeric = () => {
+  if (calculation && typeof calculation.rawValue === 'number' && Number.isFinite(calculation.rawValue)) return calculation.rawValue;
+  const ans = Number(lastAnswer);
+  return Number.isFinite(ans) ? ans : null;
+ };
+ const updateMemory = (sign: 1 | -1) => {
+  const value=currentNumeric();
+  if(value===null){setError('Effectue d’abord un calcul numérique avant d’utiliser M+ ou M−.');return;}
+  setMemory(prev=>prev+sign*value);setError('');
+ };
+ const recallMemory = () => append(String(memory));
+
 
  const scientific: BtnDef[][] = [
   [
    { label: mode === 'deg' ? 'DEG' : 'RAD', action: () => { setMode(prev => prev === 'deg' ? 'rad' : 'deg'); setCalculation(null); }, kind: 'action' },
    { label: 'sin', insert: 'sin(', kind: 'fn' }, { label: 'cos', insert: 'cos(', kind: 'fn' }, { label: 'tan', insert: 'tan(', kind: 'fn' },
-   { label: 'ln', insert: 'log(', kind: 'fn' }, { label: 'eˣ', insert: 'exp(', kind: 'fn' },
+   { label: 'sin⁻¹', insert: 'asin(', kind: 'fn' }, { label: 'cos⁻¹', insert: 'acos(', kind: 'fn' },
   ],
   [
-   { label: '√', insert: '√(', kind: 'fn' }, { label: 'x²', insert: '^2', kind: 'fn' }, { label: 'xⁿ', insert: '^', kind: 'fn' },
-   { label: 'π', insert: 'π', kind: 'fn' }, { label: 'e', insert: 'e', kind: 'fn' }, { label: 'ANS', insert: 'ANS', kind: 'action' },
+   { label: 'tan⁻¹', insert: 'atan(', kind: 'fn' }, { label: 'ln', insert: 'log(', kind: 'fn' }, { label: 'log₁₀', insert: 'log10(', kind: 'fn' },
+   { label: 'eˣ', insert: 'exp(', kind: 'fn' }, { label: '10ˣ', insert: '10^(', kind: 'fn' }, { label: '√', insert: '√(', kind: 'fn' },
+  ],
+  [
+   { label: 'x²', insert: '^2', kind: 'fn' }, { label: 'xⁿ', insert: '^', kind: 'fn' }, { label: 'ⁿ√x', insert: 'nthRoot(', kind: 'fn' },
+   { label: 'n!', insert: '!', kind: 'fn' }, { label: 'nCr', insert: 'combinations(', kind: 'fn' }, { label: 'nPr', insert: 'permutations(', kind: 'fn' },
+  ],
+  [
+   { label: 'sinh', insert: 'sinh(', kind: 'fn' }, { label: 'cosh', insert: 'cosh(', kind: 'fn' }, { label: 'tanh', insert: 'tanh(', kind: 'fn' },
+   { label: '⌊x⌋', insert: 'floor(', kind: 'fn' }, { label: '⌈x⌉', insert: 'ceil(', kind: 'fn' }, { label: 'round', insert: 'round(', kind: 'fn' },
+  ],
+  [
+   { label: 'π', insert: 'π', kind: 'fn' }, { label: 'e', insert: 'e', kind: 'fn' }, { label: '|x|', insert: 'abs(', kind: 'fn' },
+   { label: ',', insert: ',', kind: 'action' }, { label: 'ANS', insert: 'ANS', kind: 'action' }, { label: '×10ⁿ', insert: '*10^(', kind: 'fn' },
   ],
  ];
  const mainKeys: BtnDef[][] = [
@@ -60,7 +85,7 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
    { label: '7', insert: '7' }, { label: '8', insert: '8' }, { label: '9', insert: '9' }, { label: '÷', insert: '÷', kind: 'op' }, { label: '(', insert: '(' }, { label: ')', insert: ')' },
   ],
   [
-   { label: '4', insert: '4' }, { label: '5', insert: '5' }, { label: '6', insert: '6' }, { label: '×', insert: '×', kind: 'op' }, { label: '%', insert: '/100' }, { label: '|x|', insert: 'abs(' },
+   { label: '4', insert: '4' }, { label: '5', insert: '5' }, { label: '6', insert: '6' }, { label: '×', insert: '×', kind: 'op' }, { label: '%', insert: '/100' }, { label: '1/x', insert: '^(-1)', kind: 'fn' },
   ],
   [
    { label: '1', insert: '1' }, { label: '2', insert: '2' }, { label: '3', insert: '3' }, { label: '−', insert: '-', kind: 'op' }, { label: 'AC', action: clear, kind: 'action', span: 2 },
@@ -149,8 +174,15 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
 
     <section className="calc-panel">
      <div className="flex items-center justify-between gap-2 mb-3">
-      <div><p className="calc-section-title">Clavier scientifique</p><p className="calc-section-copy">Mode angulaire : {mode === 'deg' ? 'degrés' : 'radians'}</p></div>
+      <div><p className="calc-section-title">Clavier scientifique</p><p className="calc-section-copy">Mode angulaire : {mode === 'deg' ? 'degrés' : 'radians'} · fonctions avancées</p></div>
       {lastAnswer !== '0' && <span className="chip"><MathExpression value={`ANS=${lastAnswer.slice(0, 14)}`} /></span>}
+     </div>
+     <div className="grid grid-cols-5 gap-1.5 mb-3" aria-label="Mémoire de la calculatrice">
+      <button type="button" onClick={()=>setMemory(0)} className="btn btn-small btn-ghost">MC</button>
+      <button type="button" onClick={recallMemory} className="btn btn-small btn-secondary">MR</button>
+      <button type="button" onClick={()=>updateMemory(1)} className="btn btn-small btn-secondary">M+</button>
+      <button type="button" onClick={()=>updateMemory(-1)} className="btn btn-small btn-secondary">M−</button>
+      <span className="chip justify-center overflow-hidden" title={String(memory)}>M={Number.isInteger(memory)?memory:memory.toPrecision(5)}</span>
      </div>
      <div className="calc-keyboard">
       {scientific.map((row, ri) => <div key={`s-${ri}`} className="calc-key-row">{row.map((btn, i) => renderKey(btn, `s-${ri}-${i}`))}</div>)}

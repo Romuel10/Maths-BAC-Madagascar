@@ -4,6 +4,8 @@ export interface DescriptiveStats {
   mean: number;
   variancePopulation: number;
   stdPopulation: number;
+  varianceSample: number | null;
+  stdSample: number | null;
   median: number;
   q1: number;
   q3: number;
@@ -99,6 +101,8 @@ export function descriptiveStats(values: number[]): DescriptiveStats {
   for (const x of values) { const term = (x - mean) ** 2; const y = term - sqComp; const t = sq + y; sqComp = (t - sq) - y; sq = t; }
   const variancePopulation = sq / n;
   const stdPopulation = Math.sqrt(Math.max(0, variancePopulation));
+  const varianceSample = n > 1 ? sq / (n - 1) : null;
+  const stdSample = varianceSample === null ? null : Math.sqrt(Math.max(0, varianceSample));
   const median = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
   // French lycée convention: Q1 = value of rank ceil(n/4), Q3 = rank ceil(3n/4).
   const q1Rank = Math.ceil(n / 4);
@@ -108,5 +112,83 @@ export function descriptiveStats(values: number[]): DescriptiveStats {
     { label: 'Ordre des quartiles', ok: sorted[0] <= q1 && q1 <= median && median <= q3 && q3 <= sorted[n - 1], detail: `min ≤ Q1 ≤ médiane ≤ Q3 ≤ max.` },
     { label: 'Variance non négative', ok: variancePopulation >= -1e-14, detail: `V=${variancePopulation}` },
   ];
-  return { n, sum, mean, variancePopulation, stdPopulation, median, q1, q3, min: sorted[0], max: sorted[n - 1], q1Rank, q3Rank, checks };
+  return { n, sum, mean, variancePopulation, stdPopulation, varianceSample, stdSample, median, q1, q3, min: sorted[0], max: sorted[n - 1], q1Rank, q3Rank, checks };
+}
+
+
+export function binomialRangeProbability(n: number, minK: number, maxK: number, p: number): number {
+  if (!Number.isSafeInteger(n) || !Number.isSafeInteger(minK) || !Number.isSafeInteger(maxK) || n < 0 || minK > maxK || !Number.isFinite(p) || p < 0 || p > 1) return NaN;
+  const lo = Math.max(0, minK);
+  const hi = Math.min(n, maxK);
+  if (lo > hi) return 0;
+  let logSum = -Infinity;
+  for (let k = lo; k <= hi; k++) logSum = logAddExp(logSum, binomialLogProbability(n, k, p));
+  return Math.min(1, Math.max(0, Math.exp(logSum)));
+}
+
+export function normalRangeProbability(a: number, b: number, mu = 0, sigma = 1): number {
+  if (![a, b, mu, sigma].every(Number.isFinite) || sigma <= 0 || a > b) return NaN;
+  const value = normalCdf(b, mu, sigma) - normalCdf(a, mu, sigma);
+  return Math.min(1, Math.max(0, value));
+}
+
+// Approximation de Peter J. Acklam, suivie d'une correction de Newton.
+export function inverseNormalCdf(probability: number, mu = 0, sigma = 1): number {
+  if (!Number.isFinite(probability) || probability <= 0 || probability >= 1 || !Number.isFinite(mu) || !Number.isFinite(sigma) || sigma <= 0) return NaN;
+  const a = [-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b = [-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const cc = [-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d = [7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const plow = 0.02425, phigh = 1 - plow;
+  let x: number;
+  if (probability < plow) {
+    const q = Math.sqrt(-2 * Math.log(probability));
+    x = (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (probability > phigh) {
+    const q = Math.sqrt(-2 * Math.log(1-probability));
+    x = -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else {
+    const q = probability - 0.5, r = q*q;
+    x = (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  const pdf = Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI);
+  if (pdf > 1e-15) x -= (normalCdf(x) - probability) / pdf;
+  return mu + sigma * x;
+}
+
+export interface LinearRegressionResult {
+  n: number;
+  slope: number;
+  intercept: number;
+  correlation: number;
+  rSquared: number;
+  meanX: number;
+  meanY: number;
+  residualMax: number;
+  checks: { label: string; ok: boolean; detail: string }[];
+}
+
+export function linearRegression(xs: number[], ys: number[]): LinearRegressionResult {
+  if (xs.length !== ys.length || xs.length < 2 || xs.some(v => !Number.isFinite(v)) || ys.some(v => !Number.isFinite(v))) {
+    throw new Error('Il faut au moins deux couples (x,y) contenant uniquement des nombres finis.');
+  }
+  const n = xs.length;
+  const meanX = xs.reduce((s,v)=>s+v,0)/n;
+  const meanY = ys.reduce((s,v)=>s+v,0)/n;
+  let sxx=0, syy=0, sxy=0;
+  for(let i=0;i<n;i++){
+    const dx=xs[i]-meanX, dy=ys[i]-meanY;
+    sxx += dx*dx; syy += dy*dy; sxy += dx*dy;
+  }
+  if (sxx <= Number.EPSILON * Math.max(1, Math.abs(meanX)**2) * n) throw new Error('La régression est impossible : toutes les abscisses x sont identiques.');
+  const slope=sxy/sxx, intercept=meanY-slope*meanX;
+  const correlation=syy<=Number.EPSILON?0:sxy/Math.sqrt(sxx*syy);
+  const rSquared=Math.min(1,Math.max(0,correlation*correlation));
+  let residualMax=0, residualSum=0;
+  for(let i=0;i<n;i++){const e=ys[i]-(slope*xs[i]+intercept);residualMax=Math.max(residualMax,Math.abs(e));residualSum+=e;}
+  const checks=[
+    {label:'Droite passant par le point moyen',ok:Math.abs((slope*meanX+intercept)-meanY)<=1e-10*Math.max(1,Math.abs(meanY)),detail:`ŷ( x̄ )=${slope*meanX+intercept}, ȳ=${meanY}`},
+    {label:'Somme des résidus proche de 0',ok:Math.abs(residualSum)<=1e-9*Math.max(1,...ys.map(Math.abs)),detail:`Σ résidus=${residualSum}`}
+  ];
+  return{n,slope,intercept,correlation,rSquared,meanX,meanY,residualMax,checks};
 }

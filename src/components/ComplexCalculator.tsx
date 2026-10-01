@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { parseComplex, cAdd, cSub, cMul, cDiv, cPow, cSqrt, analyzeComplex, cToString, cMod, cArg, solveQuadraticComplex, type Complex } from '../lib/complex';
+import { parseComplex, cAdd, cSub, cMul, cDiv, cPow, cSqrt, cRoots, cFromPolar, analyzeComplex, cToString, cMod, cArg, solveQuadraticComplex, type Complex } from '../lib/complex';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
 
@@ -8,11 +8,12 @@ interface Props { onClose: () => void }
 const fmt = (n: number) => { const r = Math.round(n * 10000) / 10000; return Number.isInteger(r) ? String(r) : r.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''); };
 
 export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
- const [mode, setMode] = useState<'calc' | 'analyze' | 'equation'>('calc');
+ const [mode, setMode] = useState<'calc' | 'analyze' | 'equation' | 'polar'>('calc');
  const [z1s, setZ1s] = useState('3 + 2i');
  const [z2s, setZ2s] = useState('1 - i');
- const [op, setOp] = useState<'+' | '-' | '×' | '÷' | 'zⁿ'>('+');
+ const [op, setOp] = useState<'+' | '-' | '×' | '÷' | 'zⁿ' | 'ⁿ√z'>('+');
  const [pow, setPow] = useState('2');
+ const [polarR,setPolarR]=useState('2'); const [polarTheta,setPolarTheta]=useState('60'); const [polarUnit,setPolarUnit]=useState<'deg'|'rad'>('deg');
  const [eqA, setEqA] = useState('1'); const [eqB, setEqB] = useState('2'); const [eqC, setEqC] = useState('5');
  const [res, setRes] = useState<React.ReactNode | null>(null);
  const [err, setErr] = useState('');
@@ -22,6 +23,20 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
   const z1 = parseComplex(z1s);
   if (!z1) { setErr('z₁ invalide. Ex: 3+2i'); return; }
 
+  if (op === 'ⁿ√z') {
+   const n=Number(pow);
+   if(!Number.isSafeInteger(n)||n<1||n>20){setErr('Le degré n doit être un entier entre 1 et 20.');return;}
+   const roots=cRoots(z1,n);
+   if(!roots.length){setErr('Impossible de calculer ces racines.');return;}
+   const checks=roots.map(root=>{const back=cPow(root,n);return cMod(cSub(back,z1));});
+   setRes(<div className="space-y-3 animate-scale-in">
+    <ReliabilityPanel level={checks.every(v=>v<1e-8)?'verified':'warning'} title="Racines n-ièmes" detail={'Les '+n+' racines sont réparties régulièrement sur le cercle complexe et chacune est vérifiée par élévation à la puissance '+n+'.'} checks={checks.map((v,i)=>({label:'Racine '+(i+1),ok:v<1e-8,detail:'résidu='+v.toExponential(2)}))}/>
+    <ResultBox label={'Nombre de racines'} value={String(roots.length)} color="indigo"/>
+    <div className="grid grid-cols-1 gap-2">{roots.map((root,i)=><PropBadge key={i} label={'z'+(i+1)} value={cToString(root)} color="purple"/>)}</div>
+    <Section icon="∴" title="Méthode" color="blue"><p className="text-xs text-slate-300">Si z=r(cos θ+i sin θ), alors ses racines n-ièmes ont pour module r^(1/n) et pour arguments (θ+2kπ)/n.</p></Section>
+   </div>);
+   return;
+  }
   if (op === 'zⁿ') {
    const n = Number(pow);
    if (!Number.isInteger(n)) { setErr('La puissance n doit être un entier.'); return; }
@@ -160,6 +175,19 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
   );
  };
 
+ const doPolar = () => {
+  setErr('');
+  const r=Number(polarR),theta=Number(polarTheta);
+  if(!Number.isFinite(r)||r<0||!Number.isFinite(theta)){setErr('Le module doit être positif ou nul et l’angle doit être fini.');return;}
+  const z=cFromPolar(r,theta,polarUnit);
+  const analyzed=analyzeComplex(z);
+  setRes(<div className="space-y-3 animate-scale-in">
+   <ReliabilityPanel level="verified" title="Conversion polaire contrôlée" detail="La forme polaire est convertie par z=r(cos θ+i sin θ), puis module et argument sont recalculés."/>
+   <ResultBox label="Forme algébrique" value={cToString(z)} color="indigo"/>
+   <div className="grid grid-cols-2 gap-2"><PropBadge label="Module" value={fmt(analyzed.modulus)} color="purple"/><PropBadge label="Argument" value={analyzed.argumentDeg===null?'non défini':fmt(analyzed.argumentDeg)+'°'} color="cyan"/></div>
+   <Section icon="∴" title="Formes équivalentes" color="blue"><div className="space-y-1 text-xs text-slate-300 font-mono"><p>{analyzed.trigForm}</p><p>{analyzed.exponentialForm}</p></div></Section>
+  </div>);
+ };
  const Input = ({ label, value, onChange, ph }: { label: string; value: string; onChange: (v: string) => void; ph?: string }) => (
   <div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label>
   <input aria-label={label} value={value} onChange={e => onChange(e.target.value)} placeholder={ph} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono focus:border-indigo-500 focus:outline-none" /></div>
@@ -173,8 +201,8 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
      <button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">×</button>
     </div>
 
-    <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-xl">
-     {[{ id: 'calc' as const, l: ' Calcul' }, { id: 'analyze' as const, l: ' Analyser' }, { id: 'equation' as const, l: ' az²+bz+c' }].map(m => (
+    <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-xl overflow-x-auto">
+     {[{ id: 'calc' as const, l: 'Calcul' }, { id: 'analyze' as const, l: 'Analyser' }, { id: 'equation' as const, l: 'az²+bz+c' }, { id: 'polar' as const, l: 'Polaire' }].map(m => (
       <button key={m.id} onClick={() => { setMode(m.id); setRes(null); }}
        className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === m.id ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>{m.l}</button>
      ))}
@@ -183,11 +211,11 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
     {mode === 'calc' && <div className="space-y-3">
      <Input label="z₁ =" value={z1s} onChange={setZ1s} ph="3 + 2i" />
      <div className="flex justify-center gap-2">
-      {(['+', '-', '×', '÷', 'zⁿ'] as const).map(o => (
+      {(['+', '-', '×', '÷', 'zⁿ', 'ⁿ√z'] as const).map(o => (
        <button key={o} onClick={() => setOp(o)} className={`w-11 h-11 rounded-xl text-lg font-bold border transition-all ${op === o ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>{o}</button>
       ))}
      </div>
-     {op === 'zⁿ' ? <Input label="Puissance n =" value={pow} onChange={setPow} />
+     {(op === 'zⁿ' || op === 'ⁿ√z') ? <Input label={op==='zⁿ'?'Puissance n =':'Degré de la racine n ='} value={pow} onChange={setPow} />
       : <Input label="z₂ =" value={z2s} onChange={setZ2s} ph="1 - i" />}
      <button onClick={doCalc} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">= Calculer</button>
     </div>}
@@ -207,6 +235,11 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
      <button onClick={doEquation} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Résoudre dans ℂ</button>
     </div>}
 
+    {mode === 'polar' && <div className="space-y-3">
+     <div className="grid grid-cols-2 gap-2"><Input label="Module r =" value={polarR} onChange={setPolarR}/><Input label={polarUnit==='deg'?'Angle θ (°)':'Angle θ (rad)'} value={polarTheta} onChange={setPolarTheta}/></div>
+     <div className="flex gap-2"><button onClick={()=>setPolarUnit('deg')} className={`flex-1 py-2 rounded-xl text-xs font-bold ${polarUnit==='deg'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400'}`}>Degrés</button><button onClick={()=>setPolarUnit('rad')} className={`flex-1 py-2 rounded-xl text-xs font-bold ${polarUnit==='rad'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400'}`}>Radians</button></div>
+     <button onClick={doPolar} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Convertir en forme algébrique</button>
+    </div>}
     {err && <p className="text-red-400 text-sm mt-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3">{err}</p>}
     {res && <div className="mt-4">{res}</div>}
    </div>

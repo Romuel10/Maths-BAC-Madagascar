@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { parseMatrix, analyzeMatrix, mAdd, mSub, mMul, mScale, type Matrix } from '../lib/matrix';
+import { parseMatrix, analyzeMatrix, mAdd, mSub, mMul, mScale, mRref, mPower, solveLinearSystem, type Matrix } from '../lib/matrix';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { ResultBox, PropBadge, Section, MatrixDisplay } from './ResultCard';
 
@@ -23,11 +23,12 @@ const multiplicationSteps = (a: Matrix, b: Matrix, r: Matrix): string[] => {
 };
 
 export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
- const [mode, setMode] = useState<'analyze' | 'calc'>('analyze');
+ const [mode, setMode] = useState<'analyze' | 'calc' | 'system'>('analyze');
  const [matStr, setMatStr] = useState('1,2;3,4');
  const [mat2Str, setMat2Str] = useState('5,6;7,8');
  const [scalar, setScalar] = useState('2');
- const [op, setOp] = useState<'+' | '−' | '×' | 'kA'>('×');
+ const [vectorB, setVectorB] = useState('5,11');
+ const [op, setOp] = useState<'+' | '−' | '×' | 'kA' | 'Aⁿ'>('×');
  const [rows, setRows] = useState(2);
  const [cols, setCols] = useState(2);
  const [res, setRes] = useState<React.ReactNode | null>(null);
@@ -40,6 +41,7 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
   const m = parseMatrix(matStr);
   if (!m) { setErr('Format : 1,2;3,4 (virgule entre colonnes, point-virgule entre lignes)'); return; }
   const a = analyzeMatrix(m);
+  const reduced = mRref(m);
 
   setRes(
    <div className="space-y-3 animate-scale-in">
@@ -64,6 +66,7 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
 
     <MatrixDisplay matrix={a.transpose} label="Transposée Aᵀ" />
     {a.inverse && <MatrixDisplay matrix={a.inverse} label="Inverse A⁻¹" />}
+    <MatrixDisplay matrix={reduced.rref} label="Forme échelonnée réduite (RREF)" />
 
     {/* Explanation */}
     <Section icon="" title="Comment calculer" color="blue">
@@ -82,6 +85,19 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
   const a = parseMatrix(matStr);
   if (!a) { setErr('Matrice A invalide'); return; }
 
+  if (op === 'Aⁿ') {
+   const exponent=Number(scalar);
+   if(!Number.isSafeInteger(exponent)){setErr('La puissance n doit être un entier.');return;}
+   const r=mPower(a,exponent);
+   if(!r){setErr(exponent<0?'A doit être carrée et inversible pour une puissance négative.':'A doit être une matrice carrée.');return;}
+   setRes(<div className="space-y-3 animate-scale-in">
+    <ReliabilityPanel level="verified" title="Puissance matricielle contrôlée" detail="Le moteur utilise l’exponentiation rapide. Pour n<0, il calcule d’abord A⁻¹ puis élève la matrice à la puissance |n|." />
+    <MatrixDisplay matrix={a} label="Matrice A" />
+    <ResultBox label={'A^'+exponent} value="Voir ci-dessous" color="indigo" />
+    <MatrixDisplay matrix={r} label={'A^'+exponent} />
+   </div>);
+   return;
+  }
   if (op === 'kA') {
    const k = parseFloat(scalar);
    if (isNaN(k)) { setErr('Scalaire invalide'); return; }
@@ -133,6 +149,26 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
   </div>);
  };
 
+ const doSystem = () => {
+  setErr('');setRes(null);
+  const a=parseMatrix(matStr);
+  if(!a){setErr('Matrice A invalide.');return;}
+  const b=vectorB.split(/[,;\\s]+/).map(s=>s.trim()).filter(Boolean).map(Number);
+  if(b.length!==a.length||b.some(v=>!Number.isFinite(v))){setErr('Le vecteur b doit contenir exactement '+a.length+' valeurs.');return;}
+  try{
+   const solved=solveLinearSystem(a,b);
+   const title=solved.status==='unique'?'Solution unique':solved.status==='infinite'?'Infinité de solutions':'Aucune solution';
+   const level=solved.status==='unique'&&solved.residualMax!==null&&solved.residualMax<1e-8?'verified':'approximate';
+   const detail=solved.status==='unique'?'Résolution par Gauss-Jordan. Résidu maximal |Ax-b| = '+(solved.residualMax?.toExponential(3)??'n/a')+'.':solved.status==='infinite'?'rang(A)='+solved.rankA+' et rang(A|b)='+solved.rankAugmented+' : système compatible mais sous-déterminé.':'rang(A|b)='+solved.rankAugmented+' > rang(A)='+solved.rankA+' : système incompatible.';
+   setRes(<div className="space-y-3 animate-scale-in">
+    <ReliabilityPanel level={level} title={title} detail={detail} />
+    <div className="grid grid-cols-2 gap-2"><PropBadge label="rang(A)" value={String(solved.rankA)} color="indigo"/><PropBadge label="rang(A|b)" value={String(solved.rankAugmented)} color="purple"/></div>
+    {solved.solution&&<div className="grid grid-cols-2 gap-2">{solved.solution.map((value,index)=><PropBadge key={index} label={'x'+(index+1)} value={fmtValue(value)} color="emerald"/>)}</div>}
+    <MatrixDisplay matrix={solved.augmentedRref} label="Matrice augmentée réduite" />
+    <Section icon="∴" title="Étapes de Gauss-Jordan" color="blue"><div className="space-y-1 text-xs text-slate-300 font-mono">{solved.steps.slice(0,40).map((step,i)=><p key={i}>{step}</p>)}</div></Section>
+   </div>);
+  }catch(error:unknown){setErr(error instanceof Error?error.message:'Impossible de résoudre ce système.');}
+ };
  const Input = ({ label, value, onChange, area }: { label: string; value: string; onChange: (v: string) => void; area?: boolean }) => (
   <div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label>
   {area ? <textarea aria-label={label} value={value} onChange={e => onChange(e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none resize-none" />
@@ -149,8 +185,9 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
     </div>
 
     <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-xl">
-     <button onClick={() => { setMode('analyze'); setRes(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'analyze' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}> Analyser</button>
-     <button onClick={() => { setMode('calc'); setRes(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'calc' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}> Calcul</button>
+     <button onClick={() => { setMode('analyze'); setRes(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'analyze' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Analyser</button>
+     <button onClick={() => { setMode('calc'); setRes(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'calc' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Calcul</button>
+     <button onClick={() => { setMode('system'); setRes(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'system' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Ax=b</button>
     </div>
 
     {mode === 'analyze' && <div className="space-y-3">
@@ -174,15 +211,21 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose }) => {
     {mode === 'calc' && <div className="space-y-3">
      <Input label="Matrice A" value={matStr} onChange={setMatStr} area />
      <div className="flex justify-center gap-2">
-      {(['+', '−', '×', 'kA'] as const).map(o => (
+      {(['+', '−', '×', 'kA', 'Aⁿ'] as const).map(o => (
        <button key={o} onClick={() => setOp(o)} className={`w-11 h-10 rounded-xl text-sm font-bold border ${op === o ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>{o}</button>
       ))}
      </div>
-     {op === 'kA' ? <Input label="Scalaire k =" value={scalar} onChange={setScalar} />
+     {op === 'kA' ? <Input label="Scalaire k =" value={scalar} onChange={setScalar} /> : op === 'Aⁿ' ? <Input label="Exposant entier n =" value={scalar} onChange={setScalar} />
       : <Input label="Matrice B" value={mat2Str} onChange={setMat2Str} area />}
      <button onClick={doCalc} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">= Calculer</button>
     </div>}
 
+    {mode === 'system' && <div className="space-y-3">
+     <div className="notice notice-info"><strong>Système linéaire :</strong> saisis A et le vecteur b. Le moteur détecte une solution unique, aucune solution ou une infinité de solutions.</div>
+     <Input label="Matrice des coefficients A" value={matStr} onChange={setMatStr} area />
+     <Input label="Vecteur b (ex. 5,11)" value={vectorB} onChange={setVectorB} />
+     <button onClick={doSystem} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Résoudre Ax=b</button>
+    </div>}
     {err && <p className="text-red-400 text-sm mt-3 bg-red-500/10 border border-red-500/30 rounded-xl p-3">{err}</p>}
     {res && <div className="mt-4">{res}</div>}
    </div>

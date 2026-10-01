@@ -229,3 +229,100 @@ export function parseMatrix(s: string): Matrix | null {
 export function matrixToString(m: Matrix): string {
  return m.map(row => '│ ' + row.map(v => fmt(v).padStart(10)).join(' ') + ' │').join('\n');
 }
+
+
+export interface MatrixRrefResult {
+ rref: Matrix;
+ rank: number;
+ pivotColumns: number[];
+ steps: string[];
+}
+
+export function mRref(m: Matrix): MatrixRrefResult {
+ if (!validMatrix(m)) throw new Error('Matrice invalide pour la réduction de Gauss-Jordan.');
+ const a=m.map(row=>[...row]);
+ const tol=matrixTolerance(m);
+ const pivots:number[]=[];
+ const steps:string[]=[];
+ let pivotRow=0;
+ for(let col=0;col<cols(a)&&pivotRow<rows(a);col++){
+  let pivot=pivotRow;
+  for(let r=pivotRow+1;r<rows(a);r++)if(Math.abs(a[r][col])>Math.abs(a[pivot][col]))pivot=r;
+  if(Math.abs(a[pivot][col])<=tol)continue;
+  if(pivot!==pivotRow){
+   [a[pivot],a[pivotRow]]=[a[pivotRow],a[pivot]];
+   steps.push(`L${pivotRow+1} ↔ L${pivot+1}`);
+  }
+  const pv=a[pivotRow][col];
+  if(Math.abs(pv-1)>tol){
+   for(let j=0;j<cols(a);j++)a[pivotRow][j]/=pv;
+   steps.push(`L${pivotRow+1} ← L${pivotRow+1}/(${fmt(pv)})`);
+  }
+  for(let r=0;r<rows(a);r++){
+   if(r===pivotRow)continue;
+   const factor=a[r][col];
+   if(Math.abs(factor)<=tol){a[r][col]=0;continue;}
+   for(let j=0;j<cols(a);j++)a[r][j]-=factor*a[pivotRow][j];
+   steps.push(`L${r+1} ← L${r+1} − (${fmt(factor)})L${pivotRow+1}`);
+  }
+  pivots.push(col);
+  pivotRow++;
+ }
+ for(let i=0;i<rows(a);i++)for(let j=0;j<cols(a);j++)if(Math.abs(a[i][j])<=tol)a[i][j]=0;
+ return{rref:a,rank:pivots.length,pivotColumns:pivots,steps:steps.slice(0,120)};
+}
+
+export function mPower(m: Matrix, exponent: number): Matrix | null {
+ if(!validMatrix(m)||rows(m)!==cols(m)||!Number.isSafeInteger(exponent)||Math.abs(exponent)>100000)return null;
+ const n=rows(m);
+ if(exponent===0)return Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+ let base=exponent<0?mInverse(m):m.map(row=>[...row]);
+ if(!base)return null;
+ let e=Math.abs(exponent);
+ let result: Matrix=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+ while(e>0){
+  if(e%2===1){const next=mMul(result,base);if(!next)return null;result=next;}
+  e=Math.floor(e/2);
+  if(e>0){const squared=mMul(base,base);if(!squared)return null;base=squared;}
+ }
+ return result;
+}
+
+export interface LinearSystemResult {
+ status: 'unique' | 'infinite' | 'none';
+ solution: number[] | null;
+ augmentedRref: Matrix;
+ rankA: number;
+ rankAugmented: number;
+ residualMax: number | null;
+ steps: string[];
+}
+
+export function solveLinearSystem(a: Matrix, b: number[]): LinearSystemResult {
+ if(!validMatrix(a)||b.length!==rows(a)||b.some(v=>!Number.isFinite(v)))throw new Error('Le système Ax=b est invalide.');
+ const augmented=a.map((row,i)=>[...row,b[i]]);
+ const reduction=mRref(augmented);
+ const rankA=mRank(a), rankAugmented=mRank(augmented), variables=cols(a);
+ if(rankAugmented>rankA){
+  return{status:'none',solution:null,augmentedRref:reduction.rref,rankA,rankAugmented,residualMax:null,steps:[...reduction.steps,'rang(A|b) > rang(A) : le système est incompatible.']};
+ }
+ if(rankA<variables){
+  return{status:'infinite',solution:null,augmentedRref:reduction.rref,rankA,rankAugmented,residualMax:null,steps:[...reduction.steps,`rang(A)=${rankA} < ${variables} inconnues : il existe une infinité de solutions.`]};
+ }
+ const solution=Array(variables).fill(0);
+ const tol=matrixTolerance(augmented);
+ for(const row of reduction.rref){
+  let lead=-1;
+  for(let j=0;j<variables;j++){if(Math.abs(row[j])>tol){lead=j;break;}}
+  if(lead>=0)solution[lead]=row[variables];
+ }
+ let residualMax=0;
+ for(let i=0;i<rows(a);i++){
+  const lhs=a[i].reduce((sum,value,j)=>sum+value*solution[j],0);
+  residualMax=Math.max(residualMax,Math.abs(lhs-b[i]));
+ }
+ return{
+  status:'unique',solution,augmentedRref:reduction.rref,rankA,rankAugmented,residualMax,
+  steps:[...reduction.steps,`Solution unique : ${solution.map((v,i)=>`x${i+1}=${fmt(v)}`).join(', ')}`,`Contrôle max |Ax-b| = ${fmt(residualMax)}`]
+ };
+}
