@@ -4,6 +4,9 @@ export interface PrimeFactor { factor: bigint; power: number }
 export interface PrimeFactorizationResult { factors: PrimeFactor[]; divisors: bigint[]; isPrime: boolean; steps: string[]; checks: ArithmeticCheck[] }
 export interface ModuloResult { quotient: bigint; remainder: bigint; steps: string[]; checks: ArithmeticCheck[] }
 export interface BaseConversionResult { decimal: bigint; result: string; steps: string[]; checks: ArithmeticCheck[] }
+export interface BezoutResult { gcd: bigint; u: bigint; v: bigint; steps: string[]; checks: ArithmeticCheck[] }
+export interface LinearCongruenceResult { solvable:boolean; gcd:bigint; representative:bigint|null; solutionModulus:bigint|null; residuesModuloN:bigint[]; steps:string[]; checks:ArithmeticCheck[] }
+export interface DiophantineResult { solvable:boolean; gcd:bigint; x0:bigint|null; y0:bigint|null; stepX:bigint|null; stepY:bigint|null; steps:string[]; checks:ArithmeticCheck[] }
 
 function absBig(n: bigint): bigint { return n < 0n ? -n : n; }
 
@@ -48,6 +51,78 @@ export function gcdLcmDetailed(a0: bigint, b0: bigint): GcdLcmResult {
       { label: 'Identité PGCD × PPCM', ok: productIdentity, detail: `PGCD × PPCM = |a×b| : ${g} × ${l} = ${absBig(a0*b0)}.` },
     ]
   };
+}
+
+
+function modBig(a: bigint, n: bigint): bigint {
+  const r=a%n;
+  return r<0n?r+n:r;
+}
+
+export function extendedGcd(a0: bigint, b0: bigint): BezoutResult {
+  if(a0===0n&&b0===0n)throw new Error('Bézout n’est pas défini pour a=b=0 dans cet outil.');
+  const sa=a0<0n?-1n:1n, sb=b0<0n?-1n:1n;
+  let oldR=absBig(a0),r=absBig(b0),oldS=1n,s=0n,oldT=0n,t=1n;
+  const steps:string[]=[];
+  while(r!==0n){
+    const q=oldR/r;
+    const nextR=oldR-q*r,nextS=oldS-q*s,nextT=oldT-q*t;
+    steps.push(`${oldR} = ${q} × ${r} + ${nextR}`);
+    [oldR,r]=[r,nextR];[oldS,s]=[s,nextS];[oldT,t]=[t,nextT];
+  }
+  const gcd=oldR,u=oldS*sa,v=oldT*sb;
+  steps.push(`Remontée de Bézout : ${a0}×(${u}) + ${b0}×(${v}) = ${gcd}`);
+  return{
+    gcd,u,v,steps,
+    checks:[
+      {label:'Identité de Bézout',ok:a0*u+b0*v===gcd,detail:`${a0}×(${u})+${b0}×(${v})=${a0*u+b0*v}`},
+      {label:'PGCD positif',ok:gcd>0n,detail:`PGCD(${a0},${b0})=${gcd}`}
+    ]
+  };
+}
+
+export function modularInverse(a: bigint, n: bigint): bigint | null {
+  if(n<=1n)return null;
+  const bez=extendedGcd(a,n);
+  if(bez.gcd!==1n)return null;
+  return modBig(bez.u,n);
+}
+
+export function solveLinearCongruence(a: bigint, b: bigint, n: bigint): LinearCongruenceResult {
+  if(n<=0n)throw new Error('Le modulo n doit être strictement positif.');
+  const g=gcdBigInt(a,n);
+  const steps=[`On résout ${a}x ≡ ${b} [${n}].`,`PGCD(${a},${n}) = ${g}.`];
+  if(b%g!==0n){
+    steps.push(`${g} ne divise pas ${b} : aucune solution.`);
+    return{solvable:false,gcd:g,representative:null,solutionModulus:null,residuesModuloN:[],steps,checks:[{label:'Critère de solvabilité',ok:true,detail:`Une congruence ax≡b [n] est soluble ssi PGCD(a,n) divise b ; ici ce n’est pas le cas.`}]};
+  }
+  const ar=a/g,br=b/g,nr=n/g;
+  const inv=modularInverse(modBig(ar,nr),nr);
+  if(inv===null)throw new Error('La réduction devrait donner des coefficients premiers entre eux, mais aucun inverse n’a été trouvé.');
+  const x0=modBig(inv*br,nr);
+  const residues:bigint[]=[];
+  if(g<=1000n)for(let k=0n;k<g;k++)residues.push(modBig(x0+k*nr,n));
+  steps.push(`Après division par ${g} : ${ar}x ≡ ${br} [${nr}].`);
+  steps.push(`Inverse de ${modBig(ar,nr)} modulo ${nr} : ${inv}.`);
+  steps.push(`Donc x ≡ ${x0} [${nr}].`);
+  if(residues.length>1)steps.push(`Résidus modulo ${n} : ${residues.join(', ')}.`);
+  const check=modBig(a*x0-b,n)===0n;
+  return{solvable:true,gcd:g,representative:x0,solutionModulus:nr,residuesModuloN:residues,steps,checks:[{label:'Substitution dans la congruence',ok:check,detail:`${a}×${x0}−${b} est divisible par ${n}.`}]};
+}
+
+export function solveLinearDiophantine(a: bigint, b: bigint, c: bigint): DiophantineResult {
+  if(a===0n&&b===0n)throw new Error('Il faut au moins un coefficient non nul.');
+  const bez=extendedGcd(a,b),g=bez.gcd;
+  const steps=[`Équation : ${a}x + ${b}y = ${c}.`,...bez.steps];
+  if(c%g!==0n){
+    steps.push(`${g} ne divise pas ${c} : aucune solution entière.`);
+    return{solvable:false,gcd:g,x0:null,y0:null,stepX:null,stepY:null,steps,checks:[{label:'Critère de solvabilité',ok:true,detail:`PGCD(a,b)=${g} ne divise pas c=${c}.`}]};
+  }
+  const factor=c/g,x0=bez.u*factor,y0=bez.v*factor,stepX=b/g,stepY=-a/g;
+  steps.push(`On multiplie l’identité de Bézout par ${factor} : une solution est (x₀,y₀)=(${x0},${y0}).`);
+  steps.push(`Solutions : x=${x0}+(${stepX})t ; y=${y0}+(${stepY})t, t∈ℤ.`);
+  const check=a*x0+b*y0===c;
+  return{solvable:true,gcd:g,x0,y0,stepX,stepY,steps,checks:[{label:'Vérification de la solution particulière',ok:check,detail:`${a}×${x0}+${b}×${y0}=${a*x0+b*y0}`}]};
 }
 
 export function primeFactorization(n0: bigint, divisorLimit = 2_000_000n): PrimeFactorizationResult {
