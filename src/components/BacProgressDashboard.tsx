@@ -10,11 +10,12 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
  const store = useMemo(() => getBacProgress(), [version]);
  const topics = useMemo(() => topicProgress(BAC_SUBJECTS), [version]);
  const questions = Object.values(store.questions);
- const mastered = questions.filter(q => q.correct).length;
+ const mastered = topics.reduce((sum, topic) => sum + topic.done, 0);
+ const totalQuestions = topics.reduce((sum, topic) => sum + topic.total, 0);
  const attempts = questions.reduce((sum, q) => sum + q.attempts, 0);
  const lastExam = store.exams[0];
  const examAverage=store.exams.length?Math.round(store.exams.reduce((sum,exam)=>sum+(exam.maxScore?exam.score/exam.maxScore*20:0),0)/store.exams.length*10)/10:0;
- const mastery=questions.length?Math.round(mastered/questions.length*100):0;
+ const mastery=totalQuestions?Math.round(mastered/totalQuestions*100):0;
 
  useEffect(() => {
   const refresh = () => setVersion(v => v + 1);
