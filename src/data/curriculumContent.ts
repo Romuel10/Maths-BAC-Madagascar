@@ -246,4 +246,9 @@ export const EXTRA_LEARNING_QUESTIONS:ExtraLearningQuestion[]=[
  q('q-st-07','Statistiques',STATS,3,'Si V=16, l’écart-type vaut :',['4','8','16','256'],0,'σ=√16=4.'),
  q('q-fi-01','Finance',['OSE'],1,'Un taux de 10 % s’écrit dans une formule :',['10','1','0,10','0,01'],2,'10 %=10/100=0,10.'),
  q('q-fi-02','Finance',['OSE'],2,'Avec intérêts composés, la valeur acquise d’un capital C après n périodes est :',['C(1+ni)','C(1+i)^n','C+i+n','C/(1+i)^n'],1,'Les intérêts sont capitalisés à chaque période : A=C(1+i)^n.'),
+ q('q-fi-03','Finance',['OSE'],2,'Pour actualiser une valeur future VF sur n périodes au taux i, on calcule :',['VF(1+i)^n','VF/(1+i)^n','VF-ni','VF/i'],1,'Actualiser revient à diviser par le facteur de capitalisation (1+i)^n.'),
+ q('q-fi-04','Finance',['OSE'],1,'À intérêt simple, I=C×i×t. Si C=100 000, i=0,08 et t=2, I vaut :',['8 000','16 000','108 000','116 000'],1,'I=100000×0,08×2=16000.'),
+ q('q-fi-05','Finance',['OSE'],2,'Un escompte commercial D se calcule par :',['N+d+t','N×d×t','N/(1+d)^t','N−d'],1,'La formule du programme est D=N×d×t avec des unités de temps cohérentes.'),
+ q('q-fi-06','Finance',['OSE'],3,'1 000 000 Ar placés à 10 % pendant 2 ans à intérêts composés deviennent :',['1 100 000','1 200 000','1 210 000','1 020 000'],2,'A=1 000 000×1,10²=1 210 000 Ar.'),
+ q('q-fi-07','Finance',['OSE'],3,'Pour des annuités constantes de fin de période, la valeur actuelle utilise le facteur :',['((1+i)^n−1)/i','(1−(1+i)^(-n))/i','1+ni','n/i'],1,'La valeur actuelle d’une annuité immédiate est R[1−(1+i)^(-n)]/i.'),
 ];
