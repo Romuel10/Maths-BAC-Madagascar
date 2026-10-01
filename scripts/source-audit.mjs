@@ -145,6 +145,8 @@ assertSource(tutorSource.includes('Résolution complète · vérifiée') && tuto
 assertSource(packageJson.scripts?.['test:bac-madagascar'] && packageJson.scripts?.['test:full']?.includes('npm run test:bac-madagascar'), 'le périmètre BAC Madagascar doit être testé dans test:full');
 assertSource(packageJson.scripts?.['test:release'] && packageJson.scripts?.['test:full']?.includes('npm run test:release'), 'l’audit de finition V1.0.1 doit faire partie de test:full');
 assertSource(appSource.includes("t('navReview', lang)") && appSource.includes("t('navBac', lang)"), 'la navigation doit distinguer Réviser et BAC');
+assertSource(appSource.includes("type ReviewTab = 'learn' | 'progress' | 'settings'") && appSource.includes("reviewTab==='learn'") && appSource.includes("reviewTab==='progress'") && appSource.includes("reviewTab==='settings'"), 'Réviser doit séparer cours, progression et réglages');
+assertSource(progressSource.includes('scopedSubjects') && progressSource.includes('getStudentProfile().series'), 'la progression doit se concentrer sur la série choisie');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
@@ -157,7 +159,7 @@ assertSource(androidMasterIcon.subarray(0, 8).equals(Buffer.from([137, 80, 78, 7
 
 const unsafeStorage = files.filter(file => !file.endsWith(`${path.sep}safeStorage.ts`) && /\b(?:localStorage|sessionStorage)\./.test(fs.readFileSync(file, 'utf8')));
 assertSource(unsafeStorage.length === 0, `accès direct au stockage détecté : ${unsafeStorage.map(file => path.relative('.', file)).join(', ')}`);
-const forbiddenFiles = ['AuthScreen.tsx', 'Badges.tsx', 'ClassroomLock.tsx', 'ExamMode.tsx', 'ExerciseMode.tsx', 'ExportButton.tsx', 'FormulaScan.tsx', 'HandwritingPad.tsx', 'Onboarding.tsx', 'SplashScreen.tsx', 'StatsPanel.tsx', 'MiniLesson.tsx', 'RevisionSheets.tsx', 'UnitConverter.tsx'];
+const forbiddenFiles = ['AuthScreen.tsx', 'Badges.tsx', 'ClassroomLock.tsx', 'ExamMode.tsx', 'ExerciseMode.tsx', 'ExportButton.tsx', 'FormulaScan.tsx', 'HandwritingPad.tsx', 'Onboarding.tsx', 'SplashScreen.tsx', 'StatsPanel.tsx', 'ActivationGate.tsx', 'MiniLesson.tsx', 'RevisionSheets.tsx', 'UnitConverter.tsx'];
 assertSource(forbiddenFiles.every(name => !fs.existsSync(path.join('src', 'components', name))), 'des écrans hérités supprimés sont revenus');
 assertSource(!files.some(file => /ADMIN_SECRET|2025MS/.test(fs.readFileSync(file, 'utf8'))), 'un secret administrateur historique est encore présent');
 
