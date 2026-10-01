@@ -78,7 +78,7 @@ jobs:
 
       - name: Compiler Android, les tests et la release
         working-directory: android
-        run: bash ./gradlew testDebugUnitTest assembleDebug assembleAndroidTest bundleRelease
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleAndroidTest :app:bundleRelease
 
   build-aab:
     name: Bundle Android signé
