@@ -14,7 +14,7 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
  const attempts = questions.reduce((sum, q) => sum + q.attempts, 0);
  const lastExam = store.exams[0];
  const examAverage=store.exams.length?Math.round(store.exams.reduce((sum,exam)=>sum+(exam.maxScore?exam.score/exam.maxScore*20:0),0)/store.exams.length*10)/10:0;
- const accuracy=questions.length?Math.round(mastered/questions.length*100):0;
+ const mastery=questions.length?Math.round(mastered/questions.length*100):0;
 
  useEffect(() => {
   const refresh = () => setVersion(v => v + 1);
@@ -34,7 +34,7 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
     <div className="stat-card"><p className="stat-value text-brand">{mastered}</p><p className="stat-label">questions maîtrisées</p></div>
     <div className="stat-card"><p className="stat-value" style={{ color: 'var(--info)' }}>{attempts}</p><p className="stat-label">tentatives</p></div>
     <div className="stat-card"><p className="stat-value text-success">{store.exams.length}</p><p className="stat-label">examens blancs</p></div>
-    <div className="stat-card"><p className="stat-value" style={{color:'var(--warning)'}}>{accuracy}%</p><p className="stat-label">réussite globale</p></div>
+    <div className="stat-card"><p className="stat-value" style={{color:'var(--warning)'}}>{mastery}%</p><p className="stat-label">progression globale</p></div>
    </div>
 
    {lastExam && (
