@@ -105,6 +105,7 @@ function App() {
  const [sub, setSub] = useState<Sub>('steps');
  const [modal, setModal] = useState<ModalId | null>(initialRoute.modal);
  const [result, setResult] = useState<AnalysisResult | null>(null);
+ const [analysisRange, setAnalysisRange] = useState({ xMin: -10, xMax: 10 });
  const [error, setError] = useState<string | null>(null);
  const [isLoading, setIsLoading] = useState(false);
  const [history, setHistory] = useState<string[]>(() => storageJsonGet('mathsolver_history', []));
@@ -244,6 +245,7 @@ function App() {
   try {
     const next = await analyzeFunctionAsync(expr, xMin, xMax);
     setResult(next);
+    setAnalysisRange({ xMin, xMax });
     setSub('steps');
     setHistory(previous => {
      const updated = [expr, ...previous.filter(item => item !== expr)].slice(0, 12);
@@ -396,7 +398,7 @@ function App() {
 
            {sub === 'steps' && <StepByStep result={result} />}
            {sub === 'graph' && <>
-            <InteractiveGraph data={result.plotData} xMin={-10} xMax={10} criticalPoints={result.variation.criticalPoints} zeros={result.zeros} inflectionPoints={result.convexity.inflectionPoints} asymptotes={result.asymptotes} expression={result.expression} derivativeExpr={result.derivativeExpr} secondDerivativeExpr={result.secondDerivativeExpr} />
+            <InteractiveGraph data={result.plotData} xMin={analysisRange.xMin} xMax={analysisRange.xMax} criticalPoints={result.variation.criticalPoints} zeros={result.zeros} inflectionPoints={result.convexity.inflectionPoints} asymptotes={result.asymptotes} expression={result.expression} derivativeExpr={result.derivativeExpr} secondDerivativeExpr={result.secondDerivativeExpr} />
             <GraphExplanation result={result} />
             <SignTableCard signTable={result.signTable} zeros={result.zeros} expression={result.expression} />
             <VariationTable variation={result.variation} domain={result.domain} derivativeExpr={formatPretty(result.derivativeExpr)} />
