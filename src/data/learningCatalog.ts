@@ -21,7 +21,7 @@ export interface LearningChapter {
  pitfalls:string[];
  workedExamples:WorkedExample[];
  series: BacSeries[];
- tool?: 'algebra' | 'complex' | 'probability' | 'sequence' | 'geometry' | 'arithmetic';
+ tool?: 'algebra' | 'complex' | 'probability' | 'sequence' | 'geometry' | 'arithmetic' | 'finance';
 }
 
 export interface LearningQuestion {
@@ -119,6 +119,17 @@ const CORE_LEARNING_CHAPTERS: CoreLearningChapter[] = [
   formulas: [
    {id:'mean',title:'Moyenne pondérée',expression:'m=(Σ n_i x_i)/(Σ n_i)',meaning:'Chaque valeur est pondérée par son effectif.',example:'2 élèves à 10 et 3 à 14 : m=12.4'},
    {id:'variance',title:'Variance',expression:'V=(Σ n_i(x_i-m)^2)/(Σ n_i)',meaning:'Mesure la dispersion autour de la moyenne.',example:'L’écart-type est sqrt(V).'},
+  ]
+ },
+ {
+  topic: 'Finance', title: 'Mathématiques financières', series: ['OSE'], tool: 'finance',
+  summary: 'Intérêt simple, escompte, capitalisation, actualisation et annuités.',
+  objectives: ['Calculer un intérêt et une valeur acquise', 'Actualiser ou capitaliser une somme', 'Traiter une annuité constante'],
+  method: ['Identifier le capital ou la valeur nominale.', 'Convertir le taux en décimal et vérifier son unité de temps.', 'Choisir intérêt simple, composé, actualisation ou annuité.', 'Calculer sans arrondi intermédiaire puis interpréter en Ariary.'],
+  formulas: [
+   {id:'fin-simple',title:'Intérêt simple',expression:'I=C i t',meaning:'Intérêt proportionnel au capital, au taux et à la durée.',example:'1 000 000 Ar à 10 % pendant 2 ans : I=200 000 Ar'},
+   {id:'fin-compound',title:'Intérêt composé',expression:'A=C(1+i)^n',meaning:'Capital après n périodes avec capitalisation des intérêts.',example:'1 000 000×1,1²=1 210 000'},
+   {id:'fin-present',title:'Valeur actuelle',expression:'VA=VF/(1+i)^n',meaning:'Ramène une valeur future à la date actuelle.',example:'1 210 000/1,1²=1 000 000'},
   ]
  },
 ];
