@@ -460,8 +460,9 @@ function App() {
          <h3 className="section-title mt-2">Réglages de l’application</h3>
          <div className="grid grid-cols-2 gap-2.5 mt-3">
           <button onClick={themeCtx.toggle} className="btn btn-secondary">{dark ? <><Icon name="sun" /> Mode clair</> : <><Icon name="moon" /> Mode sombre</>}</button>
-          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Malagasy' : 'FR · Français'}</button>
+          <button onClick={() => langCtx.setLang(lang === 'fr' ? 'mg' : 'fr')} className="btn btn-secondary">{lang === 'fr' ? 'MG · Navigation' : 'FR · Navigation'}</button>
          </div>
+         <p className="section-copy mt-2">Le réglage FR/MG adapte la navigation générale. Les contenus mathématiques restent en français pour conserver la terminologie scolaire du BAC.</p>
          <div className="surface-flat p-3 mt-3 space-y-3">
           <label className="field-label" htmlFor="text-scale">Taille du texte</label>
           <select id="text-scale" value={accessibility.textScale} onChange={event=>updateAccessibility({textScale:event.target.value as AccessibilityPreferences['textScale']})} className="field"><option value="normal">Normale</option><option value="large">Grande</option><option value="xlarge">Très grande</option></select>
