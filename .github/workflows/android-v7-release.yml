@@ -3,6 +3,8 @@ name: Android V7 release
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -38,6 +40,9 @@ jobs:
 
       - name: Installer les dépendances
         run: npm ci
+
+      - name: Vérifier le projet complet
+        run: npm run test:full
 
       - name: Préparer la clé de signature
         env:
