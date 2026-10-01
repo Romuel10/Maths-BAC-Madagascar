@@ -150,10 +150,10 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
   const parse=(text:string)=>text.split(/[,;\\s]+/).map(v=>v.trim()).filter(Boolean).map(Number);
   const xs=parse(regX),ys=parse(regY);
   try{
-   if(series==='A'){
+   if(series==='A'||series==='L'){
     const r=mayerRegression(xs,ys);
     setRes(<div className="space-y-3 animate-scale-in">
-     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Ajustement par la méthode de Mayer" detail="Méthode du programme Terminale A 2024-2025 : deux groupes ordonnés selon x, deux points moyens G₁ et G₂, puis droite (G₁G₂)." checks={r.checks}/>
+     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Ajustement par la méthode de Mayer" detail={`Méthode du programme Terminale ${series} 2024-2025 : deux groupes ordonnés selon x, deux points moyens G₁ et G₂, puis droite (G₁G₂).`} checks={r.checks}/>
      <ResultBox label="Droite de Mayer" value={'y = '+f(r.slope)+'x '+(r.intercept>=0?'+ ':'− ')+f(Math.abs(r.intercept))} color="indigo"/>
      <div className="grid grid-cols-2 gap-2"><PropBadge label="G₁" value={'('+f(r.firstPoint.x)+' ; '+f(r.firstPoint.y)+')'} color="purple"/><PropBadge label="G₂" value={'('+f(r.secondPoint.x)+' ; '+f(r.secondPoint.y)+')'} color="cyan"/></div>
      <Section icon="∴" title="Méthode" color="blue"><p className="text-xs text-slate-300">Les couples sont classés par abscisse, partagés en deux groupes, puis on calcule le point moyen de chaque groupe. La droite de Mayer passe par ces deux points.</p></Section>
@@ -161,7 +161,7 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
    }else{
     const r=linearRegression(xs,ys);
     setRes(<div className="space-y-3 animate-scale-in">
-     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Régression linéaire contrôlée" detail="Terminale D : ajustement affine par la méthode des moindres carrés et coefficient de corrélation." checks={r.checks}/>
+     <ReliabilityPanel level={r.checks.every(check=>check.ok)?'verified':'warning'} title="Régression linéaire contrôlée" detail={`Terminale ${series==='OSE'?'OSE':'D'} : ajustement affine par la méthode des moindres carrés et coefficient de corrélation.`} checks={r.checks}/>
      <ResultBox label="Droite de régression" value={'y = '+f(r.slope)+'x '+(r.intercept>=0?'+ ':'− ')+f(Math.abs(r.intercept))} color="indigo"/>
      <div className="grid grid-cols-2 gap-2"><PropBadge label="Corrélation r" value={f(r.correlation)} color="purple"/><PropBadge label="Coefficient R²" value={f(r.rSquared)} color="cyan"/><PropBadge label="x̄" value={f(r.meanX)} color="slate"/><PropBadge label="ȳ" value={f(r.meanY)} color="slate"/></div>
      <Section icon="∴" title="Interprétation" color="blue"><p className="text-xs text-slate-300">Plus |r| est proche de 1, plus la liaison linéaire est forte. Le signe indique le sens de la liaison.</p></Section>
@@ -180,14 +180,16 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
     <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-hide">
      {((
       series==='A'?[{id:'stats' as Mode,l:'Stats'},{id:'regression' as Mode,l:'Mayer'}]:
+      series==='L'?[{id:'stats' as Mode,l:'Stats'},{id:'regression' as Mode,l:'Mayer'},{id:'combi' as Mode,l:'Dénombrement'}]:
       series==='D'?[{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]:
+      series==='OSE'?[{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'Dénombrement'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]:
       series==='C'?[{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'}]:
-      series==='S'?[{id:'combi' as Mode,l:'Dénombrement'}]:
+      series==='S'?[{id:'combi' as Mode,l:'Dénombrement'},{id:'binomial' as Mode,l:'Binomiale'},{id:'normal' as Mode,l:'Normale'}]:
       [{id:'stats' as Mode,l:'Stats'},{id:'combi' as Mode,l:'C/A/n!'},{id:'binomial' as Mode,l:'Binomiale'},{id:'regression' as Mode,l:'Régression'}]
      ).map(m => (
       <button key={m.id} onClick={() => { setMode(m.id); setRes(null); }} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode === m.id ? 'bg-indigo-600 text-white' : 'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>{m.l}</button>
      )))}
-     {showExtras&&<button onClick={()=>{setMode('normal');setRes(null)}} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode==='normal'?'bg-indigo-600 text-white':'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>Normale · complément</button>}
+     {showExtras&&series!=='S'&&<button onClick={()=>{setMode('normal');setRes(null)}} className={`shrink-0 py-2 px-3 rounded-xl text-xs font-bold ${mode==='normal'?'bg-indigo-600 text-white':'bg-slate-800/50 text-slate-400 border border-slate-700/30'}`}>Normale · complément</button>}
     </div>
     <button onClick={()=>{setShowExtras(v=>!v);if(showExtras&&mode==='normal'){setMode(primaryMode);setRes(null)}}} className="btn btn-small btn-ghost mb-4">{showExtras?'Masquer les compléments avancés':'Afficher les compléments avancés'}</button>
 
@@ -195,7 +197,7 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
     {mode === 'combi' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="k =" value={k} onChange={setK} /></div><button onClick={doCombi} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]"> Calculer</button></div>}
     {mode === 'binomial' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="n =" value={n} onChange={setN} /><In label="p =" value={p} onChange={setP} /><In label="k (borne basse)" value={k} onChange={setK} /><In label="b (borne haute)" value={k2} onChange={setK2} /></div><button onClick={doBinom} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">Calculer P(X=k), cumul et intervalle</button></div>}
     {mode === 'normal' && <div className="space-y-3"><div className="grid grid-cols-2 gap-2"><In label="μ =" value={mu} onChange={setMu} /><In label="σ =" value={sigma} onChange={setSigma} /><In label="a =" value={xVal} onChange={setXVal} /><In label="b =" value={xVal2} onChange={setXVal2} /></div><In label="Quantile q (ex. 0,975 → saisir 0.975)" value={qVal} onChange={setQVal}/><button onClick={doNormal} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">CDF, intervalle et quantile</button></div>}
-    {mode === 'regression' && <div className="space-y-3"><div className="notice notice-info">{series==='A'?<><strong>Terminale A :</strong> méthode de Mayer.</>:<><strong>Terminale D :</strong> moindres carrés et corrélation linéaire.</>}</div><In label="Valeurs x" value={regX} onChange={setRegX} type="textarea"/><In label="Valeurs y" value={regY} onChange={setRegY} type="textarea"/><button onClick={doRegression} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">{series==='A'?'Calculer la droite de Mayer':'Calculer la régression'}</button></div>}
+    {mode === 'regression' && <div className="space-y-3"><div className="notice notice-info">{series==='A'||series==='L'?<><strong>Terminale {series} :</strong> méthode de Mayer.</>:<><strong>Terminale {series==='OSE'?'OSE':'D'} :</strong> moindres carrés et corrélation linéaire.</>}</div><In label="Valeurs x" value={regX} onChange={setRegX} type="textarea"/><In label="Valeurs y" value={regY} onChange={setRegY} type="textarea"/><button onClick={doRegression} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl active:scale-[0.98]">{series==='A'||series==='L'?'Calculer la droite de Mayer':'Calculer la régression'}</button></div>}
 
     {res && <div className="mt-4">{res}</div>}
    </div>
