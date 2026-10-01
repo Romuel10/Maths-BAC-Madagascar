@@ -149,7 +149,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
  const recommendedTool = TOPIC_TOOL[topic];
 
  return <div className="space-y-4 page-enter">
-  <div><p className="eyebrow">V7 · Tuteur BAC</p><h2 className="page-title">Quel exercice te bloque ?</h2><p className="page-copy">Recopie la question. Le tuteur repère le chapitre, explique pourquoi chaque étape est utile et t’aide progressivement sans remplacer ton raisonnement.</p></div>
+  <div><p className="eyebrow">Tuteur BAC</p><h2 className="page-title">Quel exercice te bloque ?</h2><p className="page-copy">Recopie la question. Le tuteur repère le chapitre, explique pourquoi chaque étape est utile et t’aide progressivement sans remplacer ton raisonnement.</p></div>
 
   <section className="grid grid-cols-2 gap-2.5" aria-label="Choisir un besoin de résolution">
    {WORKSPACES.map(item => <button key={item.id} onClick={()=>setWorkspace(item.id)} aria-pressed={workspace===item.id} className={`solve-goal-card ${workspace===item.id?'active':''}`}><span className="solve-goal-symbol" aria-hidden="true">{item.symbol}</span><span><strong>{item.title}</strong><small>{item.copy}</small></span></button>)}
