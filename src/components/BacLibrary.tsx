@@ -36,8 +36,8 @@ export function BacLibrary({ onAnalyzeFunction, onTutor }: Props) {
     <p className="page-copy">Choisis ta série puis avance question par question avec une méthode, des indices et une correction claire.</p>
    </div>
 
-   <div className="segmented grid-cols-3">
-    {(['A', 'C', 'D'] as BacSeries[]).map(s => (
+   <div className="segmented grid-cols-4">
+    {(['A', 'C', 'D', 'S'] as BacSeries[]).map(s => (
      <button key={s} onClick={() => setSeries(s)} className={series === s ? 'active' : ''}>Série {s}</button>
     ))}
    </div>
