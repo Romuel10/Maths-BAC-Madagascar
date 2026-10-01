@@ -11,11 +11,11 @@ export interface CurriculumEnrichment {
  formulas:CurriculumFormula[];
 }
 
-const ALL:BacSeries[]=['A','C','D','S'];
+const ALL:BacSeries[]=['A','C','D','L','OSE','S'];
 const SCI:BacSeries[]=['C','D','S'];
 const GEOM:BacSeries[]=['C','D','S'];
 const ARITH:BacSeries[]=['C','S'];
-const STATS:BacSeries[]=['A','D'];
+const STATS:BacSeries[]=['A','D','L','OSE'];
 
 export const CURRICULUM_ENRICHMENTS:Record<BacTopic,CurriculumEnrichment>={
  Analyse:{
