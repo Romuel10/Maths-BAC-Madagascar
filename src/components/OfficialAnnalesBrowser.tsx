@@ -41,7 +41,7 @@ export function OfficialAnnalesBrowser({ series, onOpenTutor }: Props) {
     <div>
      <p className="eyebrow">Annales réelles</p>
      <h3 className="section-title mt-2">BAC Madagascar · Série {series}</h3>
-     <p className="section-copy mt-1.5">Les années ci-dessous ont été repérées dans des archives d’annales. L’application sépare volontairement les sources recoupées des copies communautaires récentes.</p>
+     <p className="section-copy mt-1.5">Les années ci-dessous ont été repérées dans des archives d’annales. Quand aucune archive officielle n’est confirmée pour une série, l’application l’indique et renvoie au programme MEN sans inventer de sujet.</p>
     </div>
     <div className="archive-score" aria-label={`${trustedCount} annales de confiance`}>
      <strong>{trustedCount}</strong>
@@ -106,7 +106,7 @@ export function OfficialAnnalesBrowser({ series, onOpenTutor }: Props) {
    <div className="archive-sources mt-3">
     <p className="font-bold">Sources de référence intégrées</p>
     <div className="flex flex-wrap gap-2 mt-2">
-     {series==='S'?<a href={OFFICIAL_ARCHIVE_SOURCES.terminaleSProgramme} target="_blank" rel="noreferrer">Programme MEN · Série S ↗</a>:<a href={series === 'A' ? OFFICIAL_ARCHIVE_SOURCES.educmadA : series === 'C' ? OFFICIAL_ARCHIVE_SOURCES.educmadC : OFFICIAL_ARCHIVE_SOURCES.educmadD} target="_blank" rel="noreferrer">EDUCMAD · Série {series} ↗</a>}
+     {series==='L'?<a href={OFFICIAL_ARCHIVE_SOURCES.terminaleLProgramme} target="_blank" rel="noreferrer">Programme MEN · Série L ↗</a>:series==='OSE'?<a href={OFFICIAL_ARCHIVE_SOURCES.terminaleOSEProgramme} target="_blank" rel="noreferrer">Programme MEN · Série OSE ↗</a>:series==='S'?<a href={OFFICIAL_ARCHIVE_SOURCES.terminaleSProgramme} target="_blank" rel="noreferrer">Programme MEN · Série S ↗</a>:<a href={series === 'A' ? OFFICIAL_ARCHIVE_SOURCES.educmadA : series === 'C' ? OFFICIAL_ARCHIVE_SOURCES.educmadC : OFFICIAL_ARCHIVE_SOURCES.educmadD} target="_blank" rel="noreferrer">EDUCMAD · Série {series} ↗</a>}
      <a href={OFFICIAL_ARCHIVE_SOURCES.lechaya} target="_blank" rel="noreferrer">Catalogue LeChaya ↗</a>
      <a href={OFFICIAL_ARCHIVE_SOURCES.ministryProgramme} target="_blank" rel="noreferrer">Programme lycée MEN ↗</a>
     </div>
