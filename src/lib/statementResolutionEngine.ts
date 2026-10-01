@@ -1,7 +1,9 @@
 import { solveQuadraticReal } from './algebraCore.js';
 import { formatPolynomial, parsePolynomial, polynomialDegree, polynomialDerivative, polynomialSub, polynomialValue } from './polynomialEngine.js';
+import { solveLinearSystem, solveCramer } from './matrix.js';
+import { solveLinearCongruence } from './arithmeticEngine.js';
 
-export type StatementResolutionKind = 'equation' | 'function-variation' | 'pgcd' | 'orthogonality';
+export type StatementResolutionKind = 'equation' | 'linear-system' | 'function-variation' | 'pgcd' | 'congruence' | 'orthogonality';
 
 export interface StatementResolutionStep {
  title: string;
@@ -125,6 +127,85 @@ function solveFunctionVariation(statement:string):StatementResolution|null{
  return{kind:'function-variation',title:'Étude construite à partir de ta fonction',exact:true,givens:[`f(x)=${expr}`],steps,finalAnswer,verification:'Domaine, dérivée et variations obtenus exactement pour ce polynôme.',scope:'Couverture automatique : domaine, dérivée et variations des polynômes de degré ≤ 2.'};
 }
 
+type LinearForm={coeffs:number[];constant:number};
+
+function parseLinearForm(raw:string,variables:string[]):LinearForm|null{
+ let text=raw.replace(/−/g,'-').replace(/(\d),(\d)/g,'$1.$2').replace(/\s+/g,'').replace(/\*/g,'');
+ if(!text)return null;
+ text=text.replace(/-/g,'+-');if(text.startsWith('+'))text=text.slice(1);
+ const coeffs=variables.map(()=>0);let constant=0;
+ for(const token of text.split('+').filter(Boolean)){
+  const variableIndex=variables.findIndex(v=>token.toLowerCase().endsWith(v));
+  if(variableIndex>=0){
+   const rawCoeff=token.slice(0,-1);
+   const coeff=rawCoeff===''?1:rawCoeff==='-'?-1:Number(rawCoeff);
+   if(!Number.isFinite(coeff))return null;
+   coeffs[variableIndex]+=coeff;
+  }else{
+   const value=Number(token);if(!Number.isFinite(value))return null;constant+=value;
+  }
+ }
+ return{coeffs,constant};
+}
+
+function solveLinearSystemStatement(statement:string):StatementResolution|null{
+ const plain=normalizeText(statement);
+ if(!/(systeme|système|resou)/.test(statement.toLowerCase())&&!plain.includes('systeme'))return null;
+ const segments=statement.split(/[;\n]+/).map(part=>part.trim()).filter(part=>part.includes('=')&&/[xyz]/i.test(part));
+ const equations:{left:string;right:string}[]=[];
+ for(const segment of segments){
+  const eqPart=segment.includes(':')?segment.slice(segment.lastIndexOf(':')+1).trim():segment;
+  const pieces=eqPart.split('=');
+  if(pieces.length!==2)continue;
+  const left=pieces[0].replace(/^[^xyz0-9+\-−]+/i,'').trim();
+  const right=(pieces[1].match(/^[\s+\-−0-9.,xyzXYZ*]+/)?.[0]||pieces[1]).trim();
+  if(left&&right)equations.push({left,right});
+ }
+ if(equations.length<2||equations.length>3)return null;
+ const used=['x','y','z'].filter(v=>equations.some(eq=>new RegExp(v,'i').test(eq.left+eq.right)));
+ if(used.length!==equations.length||used.length<2||used.length>3)return null;
+ const a:number[][]=[],b:number[]=[];
+ for(const eq of equations){
+  const left=parseLinearForm(eq.left,used),right=parseLinearForm(eq.right,used);
+  if(!left||!right)return null;
+  a.push(left.coeffs.map((v,i)=>v-right.coeffs[i]));
+  b.push(right.constant-left.constant);
+ }
+ let solved;
+ try{solved=solveLinearSystem(a,b);}catch{return null;}
+ const steps:StatementResolutionStep[]=[
+  {title:'Mettre le système sous forme matricielle',work:`A=${JSON.stringify(a)} ; b=${JSON.stringify(b)}`,why:'On aligne les coefficients de '+used.join(', ')+' dans le même ordre.'}
+ ];
+ const cramer=solved.status==='unique'?solveCramer(a,b):null;
+ if(cramer){
+  steps.push({title:'Calculer le déterminant principal',work:`Δ=det(A)=${fmt(cramer.determinant)}`,why:'Comme Δ≠0, le système possède une solution unique et la méthode de Cramer est applicable.'});
+  steps.push({title:'Appliquer la règle de Cramer',work:cramer.columnDeterminants.map((d,i)=>`Δ${used[i]}=${fmt(d)} ; ${used[i]}=Δ${used[i]}/Δ=${fmt(cramer.solution[i])}`).join(' ; '),why:'On remplace successivement la colonne de chaque inconnue par le second membre.'});
+ }else{
+  steps.push({title:'Réduire par Gauss-Jordan',work:solved.steps.slice(0,8).join(' → '),why:'Les opérations élémentaires sur les lignes conservent les solutions du système.'});
+ }
+ if(solved.status==='unique'&&solved.solution){
+  steps.push({title:'Vérifier par substitution',work:`max |Ax−b|=${fmt(solved.residualMax??0)}`,why:'On remplace les inconnues dans les équations de départ pour contrôler la solution.'});
+  const finalAnswer=used.map((v,i)=>`${v}=${fmt(solved.solution![i])}`).join(' ; ');
+  return{kind:'linear-system',title:'Résolution exacte du système',exact:true,givens:equations.map(eq=>`${eq.left}=${eq.right}`),steps,finalAnswer,verification:'Le résidu numérique de substitution est '+fmt(solved.residualMax??0)+'.',scope:'Systèmes linéaires de 2 ou 3 équations en x, y, z.'};
+ }
+ const finalAnswer=solved.status==='none'?'Le système n’a aucune solution.':'Le système possède une infinité de solutions.';
+ return{kind:'linear-system',title:'Étude exacte du système',exact:true,givens:equations.map(eq=>`${eq.left}=${eq.right}`),steps,finalAnswer,verification:`rang(A)=${solved.rankA} ; rang(A|b)=${solved.rankAugmented}.`,scope:'Systèmes linéaires de 2 ou 3 équations en x, y, z.'};
+}
+
+function solveCongruenceStatement(statement:string):StatementResolution|null{
+ const normalized=statement.replace(/−/g,'-').replace(/(\d),(\d)/g,'$1.$2');
+ if(!/[≡]/.test(normalized)&&!normalizeText(statement).includes('congru'))return null;
+ const match=normalized.match(/([+-]?\d*)\s*x\s*≡\s*([+-]?\d+)\s*(?:\[|mod\s*)(\d+)\]?/i);
+ if(!match)return null;
+ const coeff=match[1]===''||match[1]==='+'?1:match[1]==='-'?-1:Number(match[1]);
+ const rhs=Number(match[2]),modulus=Number(match[3]);
+ if(![coeff,rhs,modulus].every(Number.isSafeInteger)||modulus<=0)return null;
+ const solved=solveLinearCongruence(BigInt(coeff),BigInt(rhs),BigInt(modulus));
+ const steps:StatementResolutionStep[]=solved.steps.map((work,index)=>({title:index===0?'Écrire la congruence':index===1?'Calculer le PGCD':'Poursuivre la résolution',work,why:index===1?'La divisibilité du second membre par le PGCD décide si la congruence est soluble.':'On applique les règles de congruence et l’inverse modulo n lorsque celui-ci existe.'}));
+ const finalAnswer=solved.solvable?`x ≡ ${solved.representative} [${solved.solutionModulus}]`:'Aucune solution.';
+ return{kind:'congruence',title:'Résolution exacte de la congruence',exact:true,givens:[`${coeff}x≡${rhs} [${modulus}]`],steps,finalAnswer,verification:solved.checks.map(check=>check.detail).join(' '),scope:'Congruences linéaires ax≡b [n].'};
+}
+
 function solvePgcd(statement:string):StatementResolution|null{
  const plain=normalizeText(statement);
  if(!plain.includes('pgcd'))return null;
@@ -171,5 +252,5 @@ function solveOrthogonality(statement:string):StatementResolution|null{
 
 export function solveStatementExactly(statement:string):StatementResolution|null{
  const text=statement.trim();if(!text)return null;
- return solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
+ return solveLinearSystemStatement(text)||solveCongruenceStatement(text)||solveFunctionVariation(text)||solveEquationStatement(text)||solvePgcd(text)||solveOrthogonality(text);
 }
