@@ -9,7 +9,8 @@ export type BacTopic =
  | 'Suites'
  | 'Géométrie'
  | 'Arithmétique'
- | 'Statistiques';
+ | 'Statistiques'
+ | 'Finance';
 
 export type AnswerCheck =
  | { kind: 'number'; expected: number; tolerance?: number }
