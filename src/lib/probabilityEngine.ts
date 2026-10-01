@@ -192,3 +192,41 @@ export function linearRegression(xs: number[], ys: number[]): LinearRegressionRe
   ];
   return{n,slope,intercept,correlation,rSquared,meanX,meanY,residualMax,checks};
 }
+
+
+export interface MayerRegressionResult {
+  n:number;
+  firstPoint:{x:number;y:number};
+  secondPoint:{x:number;y:number};
+  slope:number;
+  intercept:number;
+  checks:{label:string;ok:boolean;detail:string}[];
+}
+
+export function mayerRegression(xs:number[],ys:number[]):MayerRegressionResult{
+  if(xs.length!==ys.length||xs.length<4||xs.some(v=>!Number.isFinite(v))||ys.some(v=>!Number.isFinite(v))){
+    throw new Error('La méthode de Mayer demande au moins quatre couples (x,y) valides.');
+  }
+  const pairs=xs.map((x,i)=>({x,y:ys[i]})).sort((a,b)=>a.x-b.x);
+  const cut=Math.floor(pairs.length/2);
+  const first=pairs.slice(0,cut),second=pairs.slice(cut);
+  const mean=(rows:{x:number;y:number}[])=>({
+    x:rows.reduce((s,p)=>s+p.x,0)/rows.length,
+    y:rows.reduce((s,p)=>s+p.y,0)/rows.length
+  });
+  const p1=mean(first),p2=mean(second);
+  if(Math.abs(p2.x-p1.x)<=Number.EPSILON*Math.max(1,Math.abs(p1.x),Math.abs(p2.x))){
+    throw new Error('La méthode de Mayer est impossible : les deux points moyens ont la même abscisse.');
+  }
+  const slope=(p2.y-p1.y)/(p2.x-p1.x);
+  const intercept=p1.y-slope*p1.x;
+  const check1=Math.abs((slope*p1.x+intercept)-p1.y)<=1e-10*Math.max(1,Math.abs(p1.y));
+  const check2=Math.abs((slope*p2.x+intercept)-p2.y)<=1e-10*Math.max(1,Math.abs(p2.y));
+  return{
+    n:pairs.length,firstPoint:p1,secondPoint:p2,slope,intercept,
+    checks:[
+      {label:'Passage par G₁',ok:check1,detail:`G₁=(${p1.x},${p1.y})`},
+      {label:'Passage par G₂',ok:check2,detail:`G₂=(${p2.x},${p2.y})`}
+    ]
+  };
+}
