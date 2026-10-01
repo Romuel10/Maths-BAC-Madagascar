@@ -30,8 +30,12 @@ export interface StatementResolution {
 
 const EPS=1e-12;
 const fmt=(value:number)=>{
- const rounded=Math.abs(value)<1e-12?0:Math.round(value*1e10)/1e10;
- return Number.isInteger(rounded)?String(rounded):String(rounded).replace('.',',');
+ if(!Number.isFinite(value))return String(value);
+ if(Math.abs(value)<=1e-12)return '0';
+ const nearest=Math.round(value);
+ if(Math.abs(value-nearest)<=1e-9*Math.max(1,Math.abs(value)))return String(nearest);
+ const rounded=Math.round(value*1e10)/1e10;
+ return String(rounded).replace('.',',');
 };
 const normalizeText=(text:string)=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const mathExpr=(raw:string)=>raw
