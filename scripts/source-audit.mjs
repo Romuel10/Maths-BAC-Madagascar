@@ -64,6 +64,10 @@ const progressSource = fs.readFileSync('src/components/BacProgressDashboard.tsx'
 const tutorSource = fs.readFileSync('src/components/BacTutor.tsx', 'utf8');
 const tutorCoachSource = fs.readFileSync('src/lib/tutorCoach.ts', 'utf8');
 const statementResolutionSource = fs.readFileSync('src/lib/statementResolutionEngine.ts', 'utf8');
+const calculatorEngineSource = fs.readFileSync('src/lib/calculatorEngine.ts', 'utf8');
+const matrixSource = fs.readFileSync('src/lib/matrix.ts', 'utf8');
+const probabilitySource = fs.readFileSync('src/lib/probabilityEngine.ts', 'utf8');
+const complexSource = fs.readFileSync('src/lib/complex.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/android-v7-release.yml', 'utf8');
 assertSource(packageJson.version === '7.0.0', 'package.json doit annoncer la version 7.0.0');
 assertSource(protection.includes("APP_VERSION = '7.0.0'"), 'APP_VERSION doit annoncer 7.0.0');
@@ -101,6 +105,11 @@ assertSource(packageJson.scripts?.['test:tutor'] && packageJson.scripts?.['test:
 assertSource(tutorSource.includes('Correction construite avec ton énoncé') && tutorSource.includes('revealedResolutionSteps') && tutorSource.includes('solveStatementExactly'), 'le tuteur doit afficher progressivement la résolution calculée depuis l’énoncé réel');
 assertSource(statementResolutionSource.includes("StatementResolutionKind = 'equation' | 'function-variation' | 'pgcd' | 'orthogonality'") && statementResolutionSource.includes('solveStatementExactly'), 'le moteur d’énoncé réel doit conserver ses familles vérifiées');
 assertSource(packageJson.scripts?.['test:statement'] && packageJson.scripts?.['test:full']?.includes('npm run test:statement'), 'les tests des résolutions d’énoncés doivent faire partie de la validation complète');
+assertSource(calculatorEngineSource.includes('convertAngleFunctionsDegrees') && calculatorEngineSource.includes('asin') && calculatorEngineSource.includes('atan'), 'la calculatrice scientifique doit gérer les fonctions trigonométriques réciproques en degrés');
+assertSource(matrixSource.includes('solveLinearSystem') && matrixSource.includes('mRref') && matrixSource.includes('mPower'), 'la calculatrice matricielle doit conserver systèmes, RREF et puissances');
+assertSource(probabilitySource.includes('binomialRangeProbability') && probabilitySource.includes('inverseNormalCdf') && probabilitySource.includes('linearRegression'), 'probabilités/statistiques doivent conserver intervalles, quantiles et régression');
+assertSource(complexSource.includes('cRoots') && complexSource.includes('cFromPolar'), 'la calculatrice complexe doit conserver racines n-ièmes et conversion polaire');
+assertSource(packageJson.scripts?.['test:advanced-calculators'] && packageJson.scripts?.['test:full']?.includes('npm run test:advanced-calculators'), 'les calculatrices avancées doivent faire partie de la validation complète');
 
 for (const [name, expected] of [['icon-192.png', 192], ['icon-512.png', 512]]) {
   const icon = fs.readFileSync(path.join('public', name));
