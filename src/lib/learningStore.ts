@@ -41,8 +41,15 @@ function save(store: LearningStore) {
  if(storageJsonSet(KEY,store))window.dispatchEvent(new CustomEvent('mathbac-learning'));
 }
 
+function localDayKey(date = new Date()): string {
+ const year = date.getFullYear();
+ const month = String(date.getMonth() + 1).padStart(2, '0');
+ const day = String(date.getDate()).padStart(2, '0');
+ return `${year}-${month}-${day}`;
+}
+
 function touchStudyDay(store: LearningStore) {
- const day = new Date().toISOString().slice(0, 10);
+ const day = localDayKey();
  if (!store.studyDays.includes(day)) store.studyDays.push(day);
  store.studyDays = store.studyDays.slice(-90);
 }
@@ -102,7 +109,7 @@ export function studyStreak(days = getLearningStore().studyDays): number {
  let count = 0;
  const d = new Date();
  for (;;) {
-  const key = d.toISOString().slice(0, 10);
+  const key = localDayKey(d);
   if (!set.has(key)) break;
   count++;
   d.setDate(d.getDate() - 1);
