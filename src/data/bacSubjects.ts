@@ -1,6 +1,6 @@
 import { EXTRA_BAC_SUBJECTS } from './extraBacSubjects.js';
 
-export type BacSeries = 'A' | 'C' | 'D';
+export type BacSeries = 'A' | 'C' | 'D' | 'S';
 export type BacTopic =
  | 'Analyse'
  | 'Algèbre'
