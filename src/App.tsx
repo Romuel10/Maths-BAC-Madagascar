@@ -8,7 +8,6 @@ import { BacProgressDashboard } from './components/BacProgressDashboard';
 import { GlobalSearch } from './components/GlobalSearch';
 import { FunctionInput } from './components/FunctionInput';
 import { History } from './components/History';
-import { ActivationGate, isActivated } from './components/ActivationGate';
 import { analyzeFunctionAsync } from './lib/analysisClient';
 import { formatPretty } from './lib/prettyMath';
 import { isLang, LangContext, type Lang, t } from './lib/i18n';
@@ -26,7 +25,6 @@ type ReviewTab = 'learn' | 'progress' | 'settings';
 type ModalId = 'search' | 'compare' | 'sequence' | 'parametric' | 'complex' | 'matrix' | 'geometry' | 'probability' | 'arithmetic' | 'algebra' | 'calculator' | 'ineqxy' | 'ode' | 'conics' | 'finance';
 type IconName = 'home' | 'book' | 'solve' | 'tools' | 'progress' | 'bac' | 'moon' | 'sun' | 'calc' | 'search' | 'install';
 
-const REQUIRE_ACTIVATION = import.meta.env.VITE_REQUIRE_ACTIVATION === 'true';
 const PAGES:Page[]=['home','subjects','solve','tools','profile'];
 const MODALS:ModalId[]=['search','compare','sequence','parametric','complex','matrix','geometry','probability','arithmetic','algebra','calculator','ineqxy','ode','conics','finance'];
 
@@ -100,7 +98,6 @@ function Icon({ name }: { name: IconName }) {
 
 function App() {
  const initialRoute=useMemo(readRoute,[]);
- const [activated, setActivated] = useState(() => !REQUIRE_ACTIVATION || isActivated());
  const [page, setPage] = useState<Page>(initialRoute.page);
  const [sub, setSub] = useState<Sub>('steps');
  const [reviewTab,setReviewTab]=useState<ReviewTab>('learn');
@@ -294,8 +291,6 @@ function App() {
   conics: <ConicCalculator onClose={closeModal} />,
   finance: <FinancialMathCalculator onClose={closeModal} />,
  };
-
- if (!activated) return <ActivationGate onActivated={() => setActivated(true)} />;
 
  const ToolCard = ({ symbol, title, desc, onClick, tool }: { symbol: string; title: string; desc: string; onClick: () => void; tool?: BacToolId }) => {
   if(tool&&studentSeries&&toolRelevance(tool,studentSeries)==='extra')return null;
