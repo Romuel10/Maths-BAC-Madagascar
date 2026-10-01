@@ -1,4 +1,4 @@
-export type SolverTopic = 'Analyse' | 'Algèbre' | 'Complexes' | 'Probabilités' | 'Suites' | 'Géométrie' | 'Arithmétique' | 'Général';
+export type SolverTopic = 'Analyse' | 'Algèbre' | 'Complexes' | 'Probabilités' | 'Suites' | 'Géométrie' | 'Arithmétique' | 'Finance' | 'Général';
 export type SolverGoal = 'understand' | 'calculate' | 'solve' | 'study' | 'prove' | 'represent';
 
 export interface SolverIntent {
@@ -36,6 +36,7 @@ function normalized(text: string): string {
 
 export function detectSolverTopic(text: string): SolverTopic {
  const s = normalized(text);
+ if (/interet|intérêt|escompte|actualis|capitalis|annuit|valeur acquise|valeur actuelle|taux annuel/.test(s)) return 'Finance';
  if (/deriv|limite|variation|asympt|fonction|tangente|primitive|integrale|ensemble de definition/.test(s)) return 'Analyse';
  if (/complex|\bz\b|module|argument|conjugu|partie reelle|partie imaginaire/.test(s)) return 'Complexes';
  if (/probab|binom|evenement|tirage|urne|esperance|ecart.type/.test(s)) return 'Probabilités';
@@ -83,6 +84,7 @@ function detectedKeywords(text: string): string[] {
   [/inequation/, 'inéquation'],
   [/probab|evenement|binom/, 'probabilités'],
   [/suite|recurrence/, 'suite'],
+  [/interet|intérêt|escompte|actualis|capitalis|annuit/, 'mathématiques financières'],
   [/demontr|montrer|prouver|justifier/, 'justification'],
   [/tracer|courbe|graphique/, 'représentation'],
  ];
@@ -98,6 +100,7 @@ function buildAdvice(topic: SolverTopic, goal: SolverGoal): string[] {
   Suites: 'Identifie si la suite est explicite ou définie par récurrence.',
   Géométrie: 'Fais un schéma, relève les données puis choisis la propriété utile.',
   Arithmétique: 'Repère divisibilité, PGCD ou congruence avant de calculer.',
+  Finance: 'Identifie le capital, le taux, la durée et la date de comparaison avant de choisir la formule.',
   Général: 'Sépare les données, la question et la propriété du cours à utiliser.',
  };
  const final = goal === 'prove'
