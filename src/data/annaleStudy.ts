@@ -18,17 +18,17 @@ export interface AnnaleStudyPack {
  checkpoints: string[];
 }
 
-const SOURCES: Record<BacSeries, string> = {
+const SOURCES = {
  A: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=817',
  C: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=129',
  D: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=816',
-};
+} satisfies Partial<Record<BacSeries, string>>;
 
-const CORRECTIONS: Record<BacSeries, string> = {
+const CORRECTIONS = {
  A: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=817&section=2',
  C: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=129&section=2',
  D: 'https://mediatheque.accesmad.org/educmad/course/view.php?id=816&section=2',
-};
+} satisfies Partial<Record<BacSeries, string>>;
 
 const commonWorkflow = [
  { title: 'Lire sans calculer', detail: 'Repère les données, les verbes de consigne et les résultats à démontrer avant de commencer.' },
