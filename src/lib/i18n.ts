@@ -9,10 +9,10 @@ export type Lang = 'fr' | 'mg';
 
 const NAVIGATION = {
  navHome: { fr: 'Accueil', mg: 'Fandraisana' },
- navLearn: { fr: 'Apprendre', mg: 'Hianatra' },
+ navReview: { fr: 'Réviser', mg: 'Famerenana' },
  navSolve: { fr: 'Résoudre', mg: 'Hamaha' },
+ navBac: { fr: 'BAC', mg: 'BAC' },
  navTools: { fr: 'Outils', mg: 'Fitaovana' },
- navProgress: { fr: 'Progression', mg: 'Fandrosoana' },
 } as const;
 
 export type NavigationKey = keyof typeof NAVIGATION;
