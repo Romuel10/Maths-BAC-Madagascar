@@ -152,7 +152,7 @@ function readPoints(statement:string):Map<string,Point>{
 }
 function solveOrthogonality(statement:string):StatementResolution|null{
  const plain=normalizeText(statement);
- if(!/(orthogonal|perpendic)/.test(plain))return null;
+ if(!/(orthogon|perpendic)/.test(plain))return null;
  const vectors=statement.match(/\b([A-Z]{2})\b\s*(?:et|,|;)\s*\b([A-Z]{2})\b/i);if(!vectors)return null;
  const [v1,v2]=[vectors[1].toUpperCase(),vectors[2].toUpperCase()];
  const points=readPoints(statement);
