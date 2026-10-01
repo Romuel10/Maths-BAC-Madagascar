@@ -59,17 +59,21 @@ function numberFromMathResult(value: unknown): number | null {
  return null;
 }
 
-function convertTrigDegrees(expr: string): string {
+function convertAngleFunctionsDegrees(expr: string): string {
  let out='';
+ const direct=['sin','cos','tan'] as const;
+ const inverse=['asin','acos','atan'] as const;
+ const candidates=[...inverse,...direct];
  for(let i=0;i<expr.length;){
-  let name: 'sin'|'cos'|'tan'|null=null;
-  for(const candidate of ['sin','cos','tan'] as const){ if(expr.slice(i,i+candidate.length+1)===`${candidate}(`){name=candidate;break;} }
-  if(!name){ out+=expr[i++]; continue; }
-  const open=i+name.length; let depth=1,j=open+1;
-  while(j<expr.length&&depth>0){ if(expr[j]==='(')depth++; else if(expr[j]===')')depth--; j++; }
-  if(depth!==0){ out+=expr.slice(i); break; }
-  const arg=convertTrigDegrees(expr.slice(open+1,j-1));
-  out+=`${name}(((${arg})*pi)/180)`; i=j;
+  const name=candidates.find(candidate=>expr.slice(i,i+candidate.length+1)===`${candidate}(`);
+  if(!name){out+=expr[i++];continue;}
+  const open=i+name.length;let depth=1,j=open+1;
+  while(j<expr.length&&depth>0){if(expr[j]==='(')depth++;else if(expr[j]===')')depth--;j++;}
+  if(depth!==0){out+=expr.slice(i);break;}
+  const arg=convertAngleFunctionsDegrees(expr.slice(open+1,j-1));
+  if((direct as readonly string[]).includes(name))out+=`${name}(((${arg})*pi)/180)`;
+  else out+=`(${name}(${arg})*180/pi)`;
+  i=j;
  }
  return out;
 }
@@ -88,8 +92,8 @@ export function normalizeCalculatorExpression(input: string, mode: CalculatorMod
 
  const notes: string[] = [];
  if (mode === 'deg') {
-  expression = convertTrigDegrees(expression);
-  if (/sin\(|cos\(|tan\(/.test(input)) notes.push('Les angles trigonométriques sont interprétés en degrés puis convertis en radians pour le calcul.');
+  expression = convertAngleFunctionsDegrees(expression);
+  if (/\b(?:a?sin|a?cos|a?tan)\(/.test(input)) notes.push('En mode degrés, les fonctions trigonométriques directes prennent des degrés et les fonctions réciproques renvoient des degrés.');
  }
  return { expression, notes };
 }
