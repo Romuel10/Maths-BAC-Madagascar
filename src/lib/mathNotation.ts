@@ -25,6 +25,8 @@ function normalizeSubscripts(input: string): string {
 
 export function normalizeMathInput(input: string): string {
  let s = input.trim();
+ // Preserve school combinatorics C(n,k) before converting decimal commas.
+ s = s.replace(/\bC\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, 'C($1;$2)');
  s = s.replace(/\*\*/g, '^');
  s = s.replace(/[−–—]/g, '-');
  s = s.replace(/[×·]/g, '*');
@@ -109,6 +111,22 @@ function fallbackLatex(input: string): string {
  // Powers: x^2, x^(n+1), (... )^2.
  s = s.replace(/([A-Za-z0-9_.'\\]+|\([^()]+\))\^\(([^()]*)\)/g, '{$1}^{$2}');
  s = s.replace(/([A-Za-z0-9_.'\\]+|\([^()]+\))\^([A-Za-z0-9_+\-]+)/g, '{$1}^{$2}');
+
+ // School sets, binomial coefficients and indexed sequences.
+ s = s
+  .replace(/^\{([^{}]*)\}$/g, '\\left\\{$1\\right\\}')
+  .replace(/\bS\s*=\s*\{([^{}]*)\}/g, 'S=\\left\\{$1\\right\\}')
+  .replace(/\bC\s*\(\s*([^,;()]+)\s*[,;]\s*([^()]+)\s*\)/g, '\\binom{$1}{$2}')
+  .replace(/\bPGCD\s*\(/gi, '\\operatorname{PGCD}(')
+  .replace(/\bPPCM\s*\(/gi, '\\operatorname{PPCM}(')
+  .replace(/([A-Za-z])_\(([^()]*)\)/g, '$1_{$2}');
+
+ // French interval notation commonly used in Malagasy BAC papers.
+ s = s
+  .replace(/\]\s*([^;\[\]]+)\s*;\s*([^;\[\]]+)\s*\[/g, '\\left]$1;$2\\right[')
+  .replace(/\[\s*([^;\[\]]+)\s*;\s*([^;\[\]]+)\s*\]/g, '\\left[$1;$2\\right]')
+  .replace(/\[\s*([^;\[\]]+)\s*;\s*([^;\[\]]+)\s*\[/g, '\\left[$1;$2\\right[')
+  .replace(/\]\s*([^;\[\]]+)\s*;\s*([^;\[\]]+)\s*\]/g, '\\left]$1;$2\\right]');
 
  // Function names.
  s = s
@@ -203,6 +221,43 @@ export function looksLikeMath(input: string): boolean {
  if (/(?:[A-Za-z]|\))\s*(?:'{1,2}|′{1,2}|″)/.test(s)) return true;
  if (/^[A-Za-z]\s*\([^)]*\)/.test(s)) return true;
  return false;
+}
+
+export function splitMathWorkLines(input:string):string[]{
+ const source=String(input??'').trim();
+ if(!source)return [];
+ const arrowParts:string[]=[];
+ let current='';
+ let depth=0;
+ const push=()=>{const value=current.trim().replace(/^[→⇒⟺⇔]+\s*/,'');if(value)arrowParts.push(value);current='';};
+ for(let i=0;i<source.length;i++){
+  const ch=source[i];
+  if(ch==='('||ch==='['||ch==='{')depth++;
+  if(ch===')'||ch===']'||ch==='}')depth=Math.max(0,depth-1);
+  const two=source.slice(i,i+2);
+  if(depth===0&&(ch==='→'||ch==='⇒'||ch==='⟺'||ch==='⇔'||two==='=>')){
+   push();if(two==='=>')i++;continue;
+  }
+  current+=ch;
+ }
+ push();
+
+ const out:string[]=[];
+ for(const part of arrowParts){
+  const semi:string[]=[];
+  let piece='',level=0;
+  const flush=()=>{const value=piece.trim();if(value)semi.push(value);piece='';};
+  for(const ch of part){
+   if(ch==='('||ch==='['||ch==='{')level++;
+   if(ch===')'||ch===']'||ch==='}')level=Math.max(0,level-1);
+   if(ch===';'&&level===0){flush();continue;}
+   piece+=ch;
+  }
+  flush();
+  const allEquations=semi.length>1&&semi.every(value=>/[=≈≤≥<>]/.test(value));
+  if(allEquations)out.push(...semi);else out.push(part);
+ }
+ return out.length?out:[source];
 }
 
 export function escapeAsTextLatex(text: string): string {
