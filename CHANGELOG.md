@@ -10,4 +10,5 @@
 - tuteur d’énoncés étendu et corrections mathématiques rendues plus lisibles ;
 - prise en charge explicite des séries A, C, D, L, OSE et S ;
 - audit de release ajouté pour détecter fichiers orphelins et incohérences de version ;
+- workflow de publication fiabilisé : validation applicative/Android séparée de la signature AAB ;
 - version Android : versionName 1.0.1, versionCode 701.
