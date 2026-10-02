@@ -85,6 +85,10 @@ for(const legacy of legacyPaths)if(fs.existsSync(legacy))errors.push('ancien fic
 if(packageJson.dependencies?.clsx||packageJson.dependencies?.['tailwind-merge'])errors.push('dépendances UI inutilisées encore déclarées');
 if(!app.includes("type ReviewTab = 'learn' | 'progress' | 'settings'"))errors.push('Réviser doit séparer Cours, Progression et Réglages');
 if(!app.includes("Outils complémentaires")||app.includes("Mini-leçons")||app.includes("Convertisseur d’unités"))errors.push('la page Outils doit rester simplifiée et sans doublons de révision');
+if(!app.includes("id==='solve'?'nav-item-primary':''"))errors.push('Résoudre doit rester l’action centrale de la navigation mobile');
+const headerActions=(app.match(/<div className="header-actions">([\s\S]*?)<\/div>/)||[])[1]||'';
+if(headerActions.includes('themeCtx.toggle')||headerActions.includes('handleInstall'))errors.push('thème et installation ne doivent pas dupliquer les réglages dans l’en-tête');
+if(!headerActions.includes("openModal('search')")||!headerActions.includes("openModal('calculator')"))errors.push('l’en-tête doit garder seulement les raccourcis Recherche et Calculatrice');
 
 
 console.log('Release audit v'+EXPECTED_VERSION);
