@@ -1188,6 +1188,22 @@ button.chip { min-height: 44px; }
 .nav-item span { max-width: 100%; font-size: .6875rem; line-height: 1.1; font-weight: 800; white-space: nowrap; }
 .nav-item.active { background: var(--brand-soft); color: var(--brand); }
 .nav-item.active::before { display: none; }
+.nav-item-primary {
+  transform: translateY(-4px);
+  background: var(--surface-2);
+  border: 1px solid var(--brand-border);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 14%, transparent);
+}
+.nav-item-primary svg { color: var(--brand); }
+.nav-item-primary.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.nav-item-primary.active svg { color: #fff; }
+@media (max-width: 380px) {
+  .nav-item-primary { transform: translateY(-2px); }
+}
 
 .modal-host {
   position: fixed;

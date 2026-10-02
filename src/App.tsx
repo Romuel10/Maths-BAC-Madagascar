@@ -333,9 +333,7 @@ function App() {
        </button>
        <div className="header-actions">
         <button onClick={() => openModal('search')} className="icon-button" aria-label="Rechercher dans l’application"><Icon name="search" /></button>
-        <button onClick={() => openModal('calculator')} className="icon-button" aria-label="Calculatrice"><Icon name="calc" /></button>
-        <button onClick={themeCtx.toggle} className="icon-button" aria-label={dark ? 'Passer au mode clair' : 'Passer au mode sombre'}><Icon name={dark ? 'sun' : 'moon'} /></button>
-        {showInstall && <button onClick={handleInstall} className="icon-button text-brand" aria-label="Installer l’application"><Icon name="install" /></button>}
+        <button onClick={() => openModal('calculator')} className="icon-button" aria-label="Ouvrir la calculatrice"><Icon name="calc" /></button>
        </div>
       </div>
      </header>
@@ -498,7 +496,7 @@ function App() {
      {!modal && <nav className="bottom-nav" aria-label="Navigation principale">
       <div className="app-container bottom-nav-inner">
        {!modal && nav.map(([id, icon, label]) => (
-        <button key={id} onClick={() => navigate(id)} className={`nav-item ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined}>
+        <button key={id} onClick={() => navigate(id)} className={`nav-item ${id==='solve'?'nav-item-primary':''} ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined}>
          <Icon name={icon} />
          <span lang={lang === 'mg' ? 'mg' : 'fr'}>{label}</span>
         </button>
