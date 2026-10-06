@@ -336,3 +336,5 @@ export function flattenQuestions(subject: BacSubject): BacQuestion[] {
 export function subjectMaxPoints(subject: BacSubject): number {
  return flattenQuestions(subject).reduce((sum, q) => sum + q.points, 0);
 }
+
+export function isBacSeries(value:unknown):value is BacSeries { return value==='A'||value==='C'||value==='D'||value==='L'||value==='OSE'||value==='S'; }

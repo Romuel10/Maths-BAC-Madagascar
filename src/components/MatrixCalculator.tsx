@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { parseMatrix, analyzeMatrix, mAdd, mSub, mMul, mScale, mRref, mPower, solveLinearSystem, solveCramer, type Matrix } from '../lib/matrix';
 import type { BacSeries } from '../data/bacSubjects';
 import { ReliabilityPanel } from './ReliabilityPanel';
@@ -23,6 +23,13 @@ const multiplicationSteps = (a: Matrix, b: Matrix, r: Matrix): string[] => {
  return steps;
 };
 
+const Input = ({ label, value, onChange, area }: { label: string; value: string; onChange: (v: string) => void; area?: boolean }) => (
+  <div><label className="block text-[0.625rem] text-indigo-400 font-bold mb-1">{label}</label>
+  {area ? <textarea aria-label={label} value={value} onChange={e => onChange(e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none resize-none" />
+   : <input aria-label={label} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono focus:border-indigo-500 focus:outline-none" />}
+  </div>
+ );
+
 export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) => {
  const [mode, setMode] = useState<'analyze' | 'calc' | 'system'>('analyze');
  const [matStr, setMatStr] = useState('1,2;3,4');
@@ -33,6 +40,7 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) =>
  const [rows, setRows] = useState(2);
  const [cols, setCols] = useState(2);
  const [res, setRes] = useState<React.ReactNode | null>(null);
+ useEffect(()=>{setRes(null);},[mode,matStr,mat2Str,scalar,vectorB,op,rows,cols]);
  const [err, setErr] = useState('');
 
  const fillTemplate = () => { setMatStr(Array.from({ length: rows }, () => Array(cols).fill('0').join(',')).join(';')); };
@@ -58,11 +66,11 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) =>
 
     {/* Properties */}
     <div className="flex flex-wrap gap-1.5">
-     {a.isSquare && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/25">Carrée</span>}
-     {a.isSymmetric && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-500/15 text-teal-300 border border-teal-500/25">Symétrique</span>}
-     {a.isIdentity && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">Identité</span>}
-     {a.isInvertible && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-500/15 text-green-300 border border-green-500/25">Inversible</span>}
-     {!a.isInvertible && a.isSquare && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/15 text-red-300 border border-red-500/25">Non inversible</span>}
+     {a.isSquare && <span className="px-2.5 py-1 rounded-full text-[0.625rem] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/25">Carrée</span>}
+     {a.isSymmetric && <span className="px-2.5 py-1 rounded-full text-[0.625rem] font-bold bg-teal-500/15 text-teal-300 border border-teal-500/25">Symétrique</span>}
+     {a.isIdentity && <span className="px-2.5 py-1 rounded-full text-[0.625rem] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">Identité</span>}
+     {a.isInvertible && <span className="px-2.5 py-1 rounded-full text-[0.625rem] font-bold bg-green-500/15 text-green-300 border border-green-500/25">Inversible</span>}
+     {!a.isInvertible && a.isSquare && <span className="px-2.5 py-1 rounded-full text-[0.625rem] font-bold bg-red-500/15 text-red-300 border border-red-500/25">Non inversible</span>}
     </div>
 
     <MatrixDisplay matrix={a.transpose} label="Transposée Aᵀ" />
@@ -172,12 +180,7 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) =>
    </div>);
   }catch(error:unknown){setErr(error instanceof Error?error.message:'Impossible de résoudre ce système.');}
  };
- const Input = ({ label, value, onChange, area }: { label: string; value: string; onChange: (v: string) => void; area?: boolean }) => (
-  <div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label>
-  {area ? <textarea aria-label={label} value={value} onChange={e => onChange(e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none resize-none" />
-   : <input aria-label={label} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono focus:border-indigo-500 focus:outline-none" />}
-  </div>
- );
+
 
  return (
   <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto">
@@ -195,10 +198,10 @@ export const MatrixCalculator: React.FC<Props> = ({ onClose, series = null }) =>
 
     {mode === 'analyze' && <div className="space-y-3">
      <div className="flex gap-2 items-end">
-      <div className="flex-1"><label className="block text-[10px] text-slate-400 mb-1">Lignes</label>
+      <div className="flex-1"><label className="block text-[0.625rem] text-slate-400 mb-1">Lignes</label>
        <input aria-label="Nombre de lignes" type="number" value={rows} onChange={e => setRows(Number(e.target.value))} min={1} max={5} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none" /></div>
       <span className="text-slate-500 pb-2">×</span>
-      <div className="flex-1"><label className="block text-[10px] text-slate-400 mb-1">Colonnes</label>
+      <div className="flex-1"><label className="block text-[0.625rem] text-slate-400 mb-1">Colonnes</label>
        <input aria-label="Nombre de colonnes" type="number" value={cols} onChange={e => setCols(Number(e.target.value))} min={1} max={5} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:outline-none" /></div>
       <button onClick={fillTemplate} className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold active:scale-95">Créer</button>
      </div>

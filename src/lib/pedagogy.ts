@@ -1,6 +1,6 @@
 import { evaluate, simplify } from 'mathjs';
-import { prettyToMath } from '../components/MiniKeyboard';
-import { parseRationalPolynomial, rationalEquivalent, rationalExcludedPoints, rationalProportional } from './rationalEngine.js';
+import { prettyToMath } from './mathInput.js';
+import { parseRationalPolynomial, rationalEquivalent, rationalExcludedPoints, rationalProportional, realPolynomialRoots } from './rationalEngine.js';
 
 export type PedagogyMode = 'guided' | 'normal' | 'autonomous';
 export type StepStatus = 'verified' | 'probable' | 'incorrect' | 'unreadable';
@@ -73,7 +73,17 @@ function equationEquivalent(aRaw: string, bRaw: string): StepStatus {
  const arr=parseRationalPolynomial(ar,'x',20),brr=parseRationalPolynomial(br,'x',20);
  if(arr&&brr){
   const ad=rationalExcludedPoints(arr),bd=rationalExcludedPoints(brr);
-  if(ad.complete&&bd.complete) return rationalProportional(arr,brr)?'verified':'incorrect';
+  if(ad.complete&&bd.complete){
+   if(rationalProportional(arr,brr))return 'verified';
+   const aAll=arr.num.every(v=>v===0),bAll=brr.num.every(v=>v===0);
+   if(aAll||bAll)return aAll&&bAll&&ad.points.length===bd.points.length&&ad.points.every((x,i)=>Math.abs(x-bd.points[i])<=1e-9*Math.max(1,Math.abs(x)))?'verified':'incorrect';
+   const aRoots=realPolynomialRoots(arr.num),bRoots=realPolynomialRoots(brr.num);
+   if(aRoots!==null&&bRoots!==null){
+    const allowed=(roots:number[],poles:number[])=>roots.filter(x=>!poles.some(p=>Math.abs(p-x)<=1e-9*Math.max(1,Math.abs(x)))).filter((x,i,list)=>i===0||Math.abs(x-list[i-1])>1e-9*Math.max(1,Math.abs(x)));
+    const a=allowed(aRoots,ad.points),b=allowed(bRoots,bd.points);
+    return a.length===b.length&&a.every((x,i)=>Math.abs(x-b[i])<=1e-9*Math.max(1,Math.abs(x),Math.abs(b[i])))?'verified':'incorrect';
+   }
+  }
  } else {
   // Secondary symbolic route only for expressions outside the exact rational engine.
   try {

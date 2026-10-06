@@ -61,8 +61,127 @@ function escapeTexText(text: string): string {
   .replace(/([{}#$%&_])/g, '\\$1');
 }
 
+// Balanced groups preserve exactly the operand of a root or a power.
+function groupEnd(input: string, start: number): number {
+ let depth = 0;
+ for (let i = start; i < input.length; i++) {
+  if (input[i] === '(') depth++;
+  if (input[i] === ')' && --depth === 0) return i;
+ }
+ return -1;
+}
+
+function powersAndRoots(input: string, depth = 0): string {
+ if (depth > 30) return input;
+ let out = '';
+ for (let i = 0; i < input.length;) {
+  const root = /^(?:sqrt|√)\s*\(/.exec(input.slice(i));
+  if (root) {
+   const start = i + root[0].lastIndexOf('(');
+   const end = groupEnd(input, start);
+   if (end >= 0) {
+    out += `\\sqrt{${powersAndRoots(input.slice(start + 1, end), depth + 1)}}`;
+    i = end + 1;
+    continue;
+   }
+  }
+  if (input[i] === '^') {
+   let start = i + 1;
+   while (input[start] === ' ') start++;
+   let end = start;
+   let exponent = '';
+   if (input[start] === '(') {
+    end = groupEnd(input, start);
+    if (end >= 0) exponent = input.slice(start + 1, end++);
+   } else {
+    const atom = /^[+-]?(?:\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|[A-Za-z]+(?:_\d+)?)/.exec(input.slice(start));
+    if (atom) {
+     exponent = atom[0]; end = start + atom[0].length;
+     if (/^[+-]?[A-Za-z]+$/.test(exponent) && input[end] === '(') {
+      const close = groupEnd(input,end);
+      if (close >= 0) { exponent += input.slice(end,close+1); end = close+1; }
+     }
+    }
+   }
+   if (exponent) {
+    // Exponentiation associates to the right: x^2^3 means x^(2^3).
+    if (input[end] === '^') {
+     const tail = powersAndRoots(input.slice(end), depth + 1);
+     const match = /^\^\{/.exec(tail);
+     if (match) {
+      let level = 0, k = 1;
+      for (; k < tail.length; k++) {
+       if (tail[k] === '{') level++;
+       if (tail[k] === '}' && --level === 0) break;
+      }
+      out += `^{${powersAndRoots(exponent, depth + 1)}${tail.slice(0, k + 1)}}${tail.slice(k + 1)}`;
+      return out;
+     }
+    }
+    out += `^{${powersAndRoots(exponent, depth + 1)}}`;
+    i = end;
+    continue;
+   }
+  }
+  out += input[i++];
+ }
+ return out;
+}
+
+function balancedEnd(input:string,start:number,open:string,close:string):number {
+ let depth=0;
+ for(let i=start;i<input.length;i++) {
+  if(input[i]===open)depth++;
+  if(input[i]===close&&--depth===0)return i+1;
+ }
+ return start;
+}
+
+function atomEnd(input:string,start:number):number {
+ let i=start;
+ const previous=input.slice(0,start).trimEnd().slice(-1);
+ if((input[i]==='-'||input[i]==='+')&&(!previous||/[(/+*=-]/.test(previous)))i++;
+ if(input[i]==='(')i=balancedEnd(input,i,'(',')');
+ else if(input[i]==='\\') {
+  const command=/^\\([A-Za-z]+)/.exec(input.slice(i));
+  if(!command)return start;
+  i+=command[0].length;
+  const groups=command[1]==='frac'?2:command[1]==='sqrt'?1:0;
+  for(let n=0;n<groups;n++){if(input[i]!=='{')return start;i=balancedEnd(input,i,'{','}');}
+ } else {
+  const atom=/^(?:\d+(?:\.\d*)?|[A-Za-z][A-Za-z0-9_.']*)/.exec(input.slice(i));
+  if(!atom)return start;
+  i+=atom[0].length;
+ }
+ if(i<=start)return start;
+ if(input[i]==='(')i=balancedEnd(input,i,'(',')');
+ while(input.slice(i,i+2)==='^{')i=balancedEnd(input,i+1,'{','}');
+ return i;
+}
+
+function fractions(input:string):string {
+ let result=input;
+ for(let count=0,search=0;count<100;count++) {
+  const slash=result.indexOf('/',search);if(slash<0)break;
+  let leftStart=-1,leftEnd=-1;
+  for(let i=0;i<slash;) {
+   const end=atomEnd(result,i);
+   if(end>i){leftStart=i;leftEnd=end;i=end;}else i++;
+  }
+  let rightStart=slash+1;while(result[rightStart]===' ')rightStart++;
+  const rightEnd=atomEnd(result,rightStart);
+  if(leftStart<0||result.slice(leftEnd,slash).trim()||rightEnd<=rightStart){search=slash+1;continue;}
+  const strip=(value:string)=>value.startsWith('(')&&balancedEnd(value,0,'(',')')===value.length?value.slice(1,-1):value;
+  const value=`\\frac{${strip(result.slice(leftStart,leftEnd))}}{${strip(result.slice(rightStart,rightEnd))}}`;
+  result=result.slice(0,leftStart)+value+result.slice(rightEnd);
+  search=leftStart+value.length;
+ }
+ return result;
+}
+
 function fallbackLatex(input: string): string {
- let s = input.trim();
+ const sets = input.trim().replace(/^\{([^{}]*)\}$/g,'\\left\\{$1\\right\\}').replace(/\bS\s*=\s*\{([^{}]*)\}/g,'S=\\left\\{$1\\right\\}');
+ let s = powersAndRoots(sets.replace(/\b(\d+(?:\.\d*)?)[eE]([+-]?\d+)\b/g,'$1*10^($2)'));
  if (!s) return '';
 
  // Common school notation that is not parsed by mathjs.
@@ -97,20 +216,10 @@ function fallbackLatex(input: string): string {
   .replace(/([A-Za-z]|\))\s*(?:'|′)/g, '$1^{\\prime}');
 
  // sqrt(...) / √(...) fallback.
- s = s.replace(/(?:sqrt|√)\(([^()]*)\)/g, '\\sqrt{$1}');
  s = s.replace(/√\s*([A-Za-z0-9]+)/g, '\\sqrt{$1}');
 
- // Simple parenthesized and atomic fractions; run repeatedly for chains.
- for (let i = 0; i < 4; i++) {
-  s = s.replace(/(\([^()]+\)|[A-Za-z0-9_.'\\]+(?:\^\{[^{}]+\}|\^[A-Za-z0-9_+\-]+)?)\s*\/\s*(\([^()]+\)|[A-Za-z0-9_.'\\]+(?:\^\{[^{}]+\}|\^[A-Za-z0-9_+\-]+)?)/g, (_m, a, b) => {
-   const strip = (v: string) => v.startsWith('(') && v.endsWith(')') ? v.slice(1, -1) : v;
-   return `\\frac{${strip(a)}}{${strip(b)}}`;
-  });
- }
-
- // Powers: x^2, x^(n+1), (... )^2.
- s = s.replace(/([A-Za-z0-9_.'\\]+|\([^()]+\))\^\(([^()]*)\)/g, '{$1}^{$2}');
- s = s.replace(/([A-Za-z0-9_.'\\]+|\([^()]+\))\^([A-Za-z0-9_+\-]+)/g, '{$1}^{$2}');
+ // Keep each complete operand together, including roots and powers.
+ s = fractions(s);
 
  // School sets, binomial coefficients and indexed sequences.
  s = s

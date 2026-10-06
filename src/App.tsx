@@ -110,6 +110,7 @@ function App() {
  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
  const [showInstall, setShowInstall] = useState(false);
  const [updateReady,setUpdateReady]=useState(false);
+ const [offlineInstallFailed,setOfflineInstallFailed]=useState(false);
  const [registration,setRegistration]=useState<ServiceWorkerRegistration|null>(null);
  const [storageWarning,setStorageWarning]=useState(false);
  const [lang, setLang] = useState<Lang>(() => { const saved=storageGet('mathsolver_lang');return isLang(saved)?saved:'fr'; });
@@ -194,6 +195,7 @@ function App() {
    setShowInstall(true);
   };
   window.addEventListener('beforeinstallprompt', onInstall);
+  let retryOfflineInstall:()=>void=()=>undefined;
   if ('serviceWorker' in navigator) {
    const isLocalDev = Boolean(import.meta.env?.DEV) || ['localhost', '127.0.0.1'].includes(window.location.hostname);
    if (isLocalDev) {
@@ -206,24 +208,29 @@ function App() {
     }
    } else {
     const swUrl = new URL('sw.js', document.baseURI).toString();
-    navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' }).then(reg=>{
+    retryOfflineInstall=()=>{navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' }).then(reg=>{
      setRegistration(reg);
      const inspect=(worker:ServiceWorker|null)=>{
       if(!worker)return;
       worker.addEventListener('statechange',()=>{
-       if(worker.state==='installed'&&navigator.serviceWorker.controller)setUpdateReady(true);
+       if(worker.state==='installed'){setOfflineInstallFailed(false);if(navigator.serviceWorker.controller)setUpdateReady(true);}
+       if(worker.state==='redundant')setOfflineInstallFailed(true);
       });
      };
      inspect(reg.installing);
      reg.addEventListener('updatefound',()=>inspect(reg.installing));
      if(reg.waiting&&navigator.serviceWorker.controller)setUpdateReady(true);
-    }).catch(() => undefined);
+    }).catch(() => setOfflineInstallFailed(true));};
+    retryOfflineInstall();
    }
   }
+  window.addEventListener('online',retryOfflineInstall);
+  const onOfflineRetry=()=>retryOfflineInstall();
+  window.addEventListener('mathbac-offline-retry',onOfflineRetry);
   let reloading=false;
   const onControllerChange=()=>{if(!reloading){reloading=true;window.location.reload();}};
   navigator.serviceWorker?.addEventListener('controllerchange',onControllerChange);
-  return () => {window.removeEventListener('beforeinstallprompt', onInstall);navigator.serviceWorker?.removeEventListener('controllerchange',onControllerChange);};
+  return () => {window.removeEventListener('online',retryOfflineInstall);window.removeEventListener('mathbac-offline-retry',onOfflineRetry);window.removeEventListener('beforeinstallprompt', onInstall);navigator.serviceWorker?.removeEventListener('controllerchange',onControllerChange);};
  }, []);
 
  const handleInstall = async () => {
@@ -341,6 +348,7 @@ function App() {
      <main className="app-container relative z-[1] px-4 py-5 pb-32">
       <div className="sr-only" aria-live="polite" aria-atomic="true">{isLoading?'Analyse en cours.':error?'Analyse terminée avec une erreur.':result?'Analyse terminée.':''}</div>
       {storageWarning && <div className="notice notice-warning mb-3" role="status"><strong>Stockage local indisponible.</strong> La session continue, mais certaines données ne pourront pas être conservées sur cet appareil. <button className="underline" onClick={()=>setStorageWarning(false)}>Masquer</button></div>}
+      {offlineInstallFailed&&<div className="notice notice-warning mb-3" role="status">Le téléchargement pour utiliser tous les outils hors connexion est incomplet. Garde la connexion puis <button className="btn btn-small btn-secondary" onClick={()=>window.dispatchEvent(new Event('mathbac-offline-retry'))}>Réessayer</button>.</div>}
       {updateReady && <div className="notice notice-info mb-3" role="status"><strong>Une mise à jour est prête.</strong> <button className="btn btn-small btn-primary ml-2" onClick={applyUpdate}>Actualiser</button></div>}
       {!modal && page === 'home' && <BacHome onBac={() => navigate('subjects')} onTutor={() => navigate('solve')} onTools={() => navigate('tools')} onReview={() => {setReviewTab('learn');navigate('profile')}} />}
       {!modal && page === 'subjects' && <Suspense fallback={<LoadingPanel/>}><BacLibrary onAnalyzeFunction={handleExternal} onTutor={() => navigate('solve')} /></Suspense>}
@@ -378,8 +386,8 @@ function App() {
           <div className="space-y-3 mt-3">
            <div className="formula-strip text-center">
             <p className="eyebrow">Fonction analysée</p>
-            <p className="text-[21px] font-serif font-extrabold mt-2" style={{ color: 'var(--text)' }}>f(x) = {formatPretty(result.expression)}</p>
-            <p className="text-[11px] font-serif muted mt-2">f'(x) = {formatPretty(result.derivativeExpr)}</p>
+            <p className="text-[1.3125rem] font-serif font-extrabold mt-2" style={{ color: 'var(--text)' }}>f(x) = {formatPretty(result.expression)}</p>
+            <p className="text-[0.6875rem] font-serif muted mt-2">f'(x) = {formatPretty(result.derivativeExpr)}</p>
            </div>
 
            <div className="segmented grid-cols-4">
@@ -390,7 +398,7 @@ function App() {
              ['calc', '04', 'Calculs'],
             ] as Array<[Sub, string, string]>).map(([id, num, label]) => (
              <button key={id} onClick={() => setSub(id)} className={sub === id ? 'active' : ''}>
-              <span className="text-[8px] block opacity-70">{num}</span><span className="text-[9px] font-bold">{label}</span>
+              <span className="text-[0.5rem] block opacity-70">{num}</span><span className="text-[0.5625rem] font-bold">{label}</span>
              </button>
             ))}
            </div>
@@ -485,8 +493,8 @@ function App() {
           <div className="brand-mark mx-auto">M</div>
           <p className="section-title mt-3">Maths BAC Madagascar</p>
           <p className="section-copy mt-1">v{APP_VERSION} · Préparation BAC A/C/D/L/OSE/S</p>
-          <p className="text-[10px] font-bold text-brand mt-2">{CREATOR}</p>
-          <p className="text-[8px] subtle mt-1">{COPYRIGHT}</p>
+          <p className="text-[0.625rem] font-bold text-brand mt-2">{CREATOR}</p>
+          <p className="text-[0.5rem] subtle mt-1">{COPYRIGHT}</p>
          </section>
         </>}
        </div>

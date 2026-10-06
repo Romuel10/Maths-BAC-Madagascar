@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import { solveFirstOrderHomogeneous, solveSecondOrderHomogeneous } from '../lib/differentialEquationEngine';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { ResultBox, Section, PropBadge } from './ResultCard';
@@ -8,6 +8,8 @@ type Mode='first'|'second';
 const num=(s:string)=>Number(s);
 const finite=(...xs:number[])=>xs.every(Number.isFinite);
 
+const Input=({label,value,onChange}:{label:string;value:string;onChange:(s:string)=>void})=><div><label className="block text-[0.625rem] text-indigo-400 font-bold mb-1">{label}</label><input aria-label={label} type="number" step="any" value={value} onChange={e=>onChange(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 focus:outline-none"/></div>;
+
 export const DifferentialEquationCalculator:React.FC<Props>=({onClose})=>{
  const [mode,setMode]=useState<Mode>('first');
  const [a,setA]=useState('2');
@@ -15,6 +17,7 @@ export const DifferentialEquationCalculator:React.FC<Props>=({onClose})=>{
  const [useInitial,setUseInitial]=useState(true);
  const [x0,setX0]=useState('0'),[y0,setY0]=useState('1'),[dy0,setDy0]=useState('0');
  const [res,setRes]=useState<React.ReactNode|null>(null);
+ useEffect(()=>{setRes(null);},[mode,a,A,B,C,useInitial,x0,y0,dy0]);
  const [err,setErr]=useState('');
 
  const solve=()=>{
@@ -45,10 +48,10 @@ export const DifferentialEquationCalculator:React.FC<Props>=({onClose})=>{
   }catch(e:unknown){setErr(e instanceof Error?e.message:'Résolution impossible.');}
  };
 
- const Input=({label,value,onChange}:{label:string;value:string;onChange:(s:string)=>void})=><div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label><input aria-label={label} type="number" step="any" value={value} onChange={e=>onChange(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 focus:outline-none"/></div>;
+
 
  return <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto"><div className="max-w-lg mx-auto px-4 py-6 min-h-screen">
-  <div className="flex items-center justify-between mb-4"><div><p className="text-[10px] text-indigo-400 font-bold uppercase">Programme BAC C / S</p><h2 className="text-xl font-extrabold text-white">Équations différentielles</h2></div><button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400">×</button></div>
+  <div className="flex items-center justify-between mb-4"><div><p className="text-[0.625rem] text-indigo-400 font-bold uppercase">Programme BAC C / S</p><h2 className="text-xl font-extrabold text-white">Équations différentielles</h2></div><button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400">×</button></div>
   <div className="notice notice-info mb-4">L’outil reste volontairement dans le périmètre du BAC malgache : équations linéaires homogènes du 1er et du 2e ordre à coefficients constants.</div>
   <div className="flex gap-1 p-1 bg-slate-800/50 rounded-xl mb-4"><button onClick={()=>{setMode('first');setRes(null)}} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode==='first'?'bg-indigo-600 text-white':'text-slate-400'}`}>1er ordre</button><button onClick={()=>{setMode('second');setRes(null)}} className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode==='second'?'bg-indigo-600 text-white':'text-slate-400'}`}>2e ordre</button></div>
   {mode==='first'?<div className="space-y-3"><p className="text-sm text-slate-300 text-center font-mono">y′ + ay = 0</p><Input label="a =" value={a} onChange={setA}/></div>:<div className="space-y-3"><p className="text-sm text-slate-300 text-center font-mono">Ay″ + By′ + Cy = 0</p><div className="grid grid-cols-3 gap-2"><Input label="A =" value={A} onChange={setA2}/><Input label="B =" value={B} onChange={setB}/><Input label="C =" value={C} onChange={setC}/></div></div>}

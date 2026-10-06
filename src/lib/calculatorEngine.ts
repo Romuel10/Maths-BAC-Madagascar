@@ -107,6 +107,29 @@ function evaluateNode(node: any): number | null {
  }
 }
 
+// BigInt provides an independent, exact check for integer arithmetic, including
+// values that cannot be represented by a JavaScript Number.
+function exactInteger(node:any,depth=0):bigint|null{
+ if(!node||depth>30)return null;
+ if(node.isParenthesisNode)return exactInteger(node.content,depth+1);
+ if(node.isConstantNode){
+  const text=node.value?.toFixed?.()??String(node.value);
+  return /^-?\d+$/.test(text)&&text.length<=500?BigInt(text):null;
+ }
+ if(!node.isOperatorNode)return null;
+ const a=exactInteger(node.args[0],depth+1);if(a===null)return null;
+ if(node.args.length===1)return node.op==='-'?-a:node.op==='+'?a:null;
+ const b=exactInteger(node.args[1],depth+1);if(b===null)return null;
+ let result:bigint;
+ if(node.op==='+')result=a+b;
+ else if(node.op==='-')result=a-b;
+ else if(node.op==='*')result=a*b;
+ else if(node.op==='/'&&b!==0n&&a%b===0n)result=a/b;
+ else if(node.op==='^'&&b>=0n&&b<=1024n)result=a**b;
+ else return null;
+ return result.toString().length<=500?result:null;
+}
+
 function buildTrace(node: any, steps: CalculationStep[], depth = 0): void {
  if (!node || depth > 12) return;
 
@@ -150,7 +173,8 @@ function highPrecisionCheck(expression: string, standardValue: number): Calculat
   const hpNumber = numberFromMathResult(hp);
   if (hpNumber === null) return { level:'approximate',label:'Résultat numérique',detail:'Le contrôle haute précision n’est pas disponible pour cette expression.',precisionDigits:10 };
   const scale=Math.max(1,Math.abs(hpNumber),Math.abs(standardValue));
-  const hpError=Math.abs(hpNumber-standardValue)/scale;
+  const hpError=typeof hp?.minus==='function'?Number(hp.minus(highPrecisionMath.bignumber(String(standardValue))).abs().div(scale).toString()):Math.abs(hpNumber-standardValue)/scale;
+  if(Number.isInteger(standardValue)&&!Number.isSafeInteger(standardValue))return{level:'approximate',label:'Valeur approchée',detail:'Cette valeur dépasse la précision des entiers JavaScript. Le contrôle numérique ne constitue pas une preuve du chiffre des unités.',precisionDigits:10};
   if(hpError>1e-9)return{level:'warning',label:'À contrôler',detail:'Le calcul standard et le calcul haute précision ne concordent pas suffisamment.',precisionDigits:6};
 
   // Independent evaluator: a separate AST/evaluator, not MathJS. It covers the BAC real-function core.
@@ -186,6 +210,14 @@ function safeExactExpression(expression: string, numericValue: number): string |
 export function computeCalculator(input: string, mode: CalculatorMode, lastAnswer = '0'): CalculatorComputation {
  const { expression, notes } = normalizeCalculatorExpression(input, mode, lastAnswer);
  if (!expression) throw new Error('Expression vide');
+
+ const integer=exactInteger(highPrecisionMath.parse(expression));
+ if(integer!==null&&(integer>BigInt(Number.MAX_SAFE_INTEGER)||integer<BigInt(Number.MIN_SAFE_INTEGER))){
+  const value=integer.toString();
+  const hp=highPrecisionMath.evaluate(expression) as any;
+  const concordant=typeof hp?.eq==='function'&&hp.eq(highPrecisionMath.bignumber(value));
+  return{input,normalizedExpression:expression,exactExpression:value,decimalValue:value,rawValue:value,steps:[{label:'Expression de départ',expression:input},{label:'Calcul entier exact',expression,result:value}],quality:{level:concordant?'verified':'warning',label:concordant?'Entier exact vérifié':'Entier exact à contrôler',detail:concordant?'Calcul entier BigInt et calcul haute précision concordants, sans conversion vers un nombre approché.':'Le contrôle haute précision ne concorde pas avec le calcul entier exact.',precisionDigits:value.replace('-','').length}};
+ }
 
  const parsed = parse(expression);
  const raw = evaluate(expression);

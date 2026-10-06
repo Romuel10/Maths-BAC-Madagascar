@@ -96,7 +96,7 @@ export function PedagogicalWorkspace({ question, answer, onAnswerChange, onFinal
      <button key={id} onClick={() => setMode(id)} className={mode === id ? 'active' : ''} title={MODE_COPY[id].copy}>{MODE_COPY[id].title}</button>
     ))}
    </div>
-   <p className="text-[9px] muted mt-1.5">{MODE_COPY[mode].copy}</p>
+   <p className="text-[0.5625rem] muted mt-1.5">{MODE_COPY[mode].copy}</p>
 
    {steps.length > 0 && (
     <div className="solution-sheet mt-4">
@@ -128,7 +128,7 @@ export function PedagogicalWorkspace({ question, answer, onAnswerChange, onFinal
       <p className="field-label">Méthode de référence</p>
       <button onClick={revealNext} disabled={revealedMethod >= question.method.length} className="btn btn-small btn-ghost">Afficher l’étape suivante</button>
      </div>
-     {revealedMethod === 0 ? <p className="text-[9px] muted mt-2">Essaie d’abord seul. Affiche une étape seulement si tu bloques.</p> : (
+     {revealedMethod === 0 ? <p className="text-[0.5625rem] muted mt-2">Essaie d’abord seul. Affiche une étape seulement si tu bloques.</p> : (
       <ol className="method-timeline mt-2">
        {question.method.slice(0, revealedMethod).map((step, i) => (
         <li key={i}><span className="method-number">{i + 1}</span><div><MathText>{step}</MathText></div></li>
@@ -146,7 +146,7 @@ export function PedagogicalWorkspace({ question, answer, onAnswerChange, onFinal
      <div className={`notice mt-2 ${finalFeedback.correct ? 'notice-success' : 'notice-warning'}`}>
       <p className="font-black">{finalFeedback.correct ? 'Réponse validée' : 'Réponse à reprendre'}</p>
       <p className="mt-1">{finalFeedback.message}</p>
-      <p className="mt-1 text-[9px] font-bold">{finalFeedback.confidence === 'verified' ? 'Contrôle exact' : finalFeedback.confidence === 'probable' ? 'Concordance probable : compare aussi la rédaction' : 'Contrôle insuffisant'}</p>
+      <p className="mt-1 text-[0.5625rem] font-bold">{finalFeedback.confidence === 'verified' ? 'Contrôle exact' : finalFeedback.confidence === 'probable' ? 'Concordance probable : compare aussi la rédaction' : 'Contrôle insuffisant'}</p>
      </div>
     )}
    </div>

@@ -1,4 +1,4 @@
-# Maths BAC Madagascar — v1.0.1
+# Maths BAC Madagascar — v1.0.2
 
 Application web/PWA et Android de révision et de résolution des mathématiques du Baccalauréat à Madagascar.
 
@@ -19,7 +19,7 @@ Le coach couvre 9 grands thèmes : Analyse, Algèbre, Complexes, Probabilités, 
 
 Le tuteur sait calculer complètement les familles qu’il peut vérifier de façon déterministe et affiche alors une **résolution complète vérifiée**. Pour une formulation non couverte ou ambiguë, il reste en **méthode guidée** plutôt que d’inventer une correction.
 
-## Navigation v1.0.1
+## Navigation v1.0.2
 
 La barre principale est volontairement limitée à cinq entrées :
 
@@ -62,8 +62,8 @@ Le bundle signé de publication utilise les variables de signature documentées 
 
 ## Version Android
 
-- `versionName` : **1.0.1**
-- `versionCode` : **701**
+- `versionName` : **1.0.2**
+- `versionCode` : **702**
 
 Le `versionCode` reste supérieur à l’ancien code 700 afin de conserver la possibilité de mettre à jour une installation Android antérieure.
 

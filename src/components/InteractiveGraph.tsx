@@ -368,8 +368,8 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
      <p className="section-copy mt-1">Échelle verticale automatique · ruptures aux discontinuités · repère lisible</p>
     </div>
     <div className="text-right">
-     <p className="text-[9px] muted">Fenêtre x</p>
-     <p className="text-[10px] font-bold" style={{color:'var(--text)'}}>[{fmtAx(xMin)} ; {fmtAx(xMax)}]</p>
+     <p className="text-[0.5625rem] muted">Fenêtre x</p>
+     <p className="text-[0.625rem] font-bold" style={{color:'var(--text)'}}>[{fmtAx(xMin)} ; {fmtAx(xMax)}]</p>
     </div>
    </div>
    <div ref={containerRef} className="graph-shell relative">
@@ -381,11 +381,11 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
     {/* Touch info overlay */}
     {touchPt && animated && (
      <div className="absolute top-2 right-2 glass rounded-xl px-3 py-2 border border-purple-500/20 animate-fade-in">
-      <p className="text-[11px] text-purple-300 font-mono font-bold">
+      <p className="text-[0.6875rem] text-purple-300 font-mono font-bold">
        f({fmtAx(touchPt.x)}) = {fmtAx(touchPt.fx)}
       </p>
       {tangent && showTangent && (
-       <p className="text-[10px] text-cyan-300 font-mono mt-0.5">{tangent.equation}</p>
+       <p className="text-[0.625rem] text-cyan-300 font-mono mt-0.5">{tangent.equation}</p>
       )}
      </div>
     )}
@@ -414,26 +414,26 @@ export const InteractiveGraph: React.FC<InteractiveGraphProps> = ({
    <div className="flex flex-wrap gap-1">
     {expression && derivativeExpr && (
      <button onClick={() => setShowTangent(!showTangent)}
-      className={`px-2.5 h-7 rounded-lg text-[10px] font-bold border active:scale-90 ${showTangent ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
+      className={`px-2.5 h-7 rounded-lg text-[0.625rem] font-bold border active:scale-90 ${showTangent ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
        Tangente
      </button>
     )}
     {derivativeExpr && (
      <button onClick={() => setShowFPrime(!showFPrime)}
-      className={`px-2.5 h-7 rounded-lg text-[10px] font-bold border active:scale-90 ${showFPrime ? 'bg-orange-600/20 text-orange-300 border-orange-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
+      className={`px-2.5 h-7 rounded-lg text-[0.625rem] font-bold border active:scale-90 ${showFPrime ? 'bg-orange-600/20 text-orange-300 border-orange-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
       f'(x)
      </button>
     )}
     {secondDerivativeExpr && secondDerivativeExpr !== 'Non calculable' && (
      <button onClick={() => setShowFDoublePrime(!showFDoublePrime)}
-      className={`px-2.5 h-7 rounded-lg text-[10px] font-bold border active:scale-90 ${showFDoublePrime ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
+      className={`px-2.5 h-7 rounded-lg text-[0.625rem] font-bold border active:scale-90 ${showFDoublePrime ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' : 'bg-slate-800/60 text-slate-400 border-slate-700/30'}`}>
       f''(x)
      </button>
     )}
    </div>
 
    {/* Legend */}
-   <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] px-1">
+   <div className="flex flex-wrap gap-x-3 gap-y-1 text-[0.625rem] px-1">
     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> <span className="text-slate-400">f(x)</span></span>
     {showFPrime && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400"></span> <span className="text-slate-400">f'(x)</span></span>}
     {showFDoublePrime && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> <span className="text-slate-400">f''(x)</span></span>}

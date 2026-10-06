@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const EXPECTED_VERSION='1.0.1';
-const EXPECTED_ANDROID_CODE=701;
+const EXPECTED_VERSION='1.0.2';
+const EXPECTED_ANDROID_CODE=702;
 const srcRoot=path.resolve('src');
 
 function walk(dir){
@@ -69,13 +69,13 @@ if(packageLock.version!==EXPECTED_VERSION||packageLock.packages?.['']?.version!=
 if(!protection.includes("APP_VERSION = '"+EXPECTED_VERSION+"'"))errors.push('APP_VERSION doit être '+EXPECTED_VERSION);
 if(!androidBuild.includes('versionCode '+EXPECTED_ANDROID_CODE))errors.push('Android versionCode doit être '+EXPECTED_ANDROID_CODE);
 if(!androidBuild.includes('versionName "'+EXPECTED_VERSION+'"'))errors.push('Android versionName doit être '+EXPECTED_VERSION);
-if(!sw.includes('maths-bac-madagascar-v1-0-1'))errors.push('cache PWA doit être versionné 1.0.1');
+if(!sw.includes('maths-bac-madagascar-v1-0-2'))errors.push('cache PWA doit être versionné 1.0.2');
 if(orphans.length)errors.push('fichiers source orphelins : '+orphans.join(', '));
 if(!i18n.includes("navReview")||!i18n.includes("navBac"))errors.push('navigation principale doit distinguer Réviser et BAC');
 if(!app.includes("['profile', 'book'")||!app.includes("['subjects', 'bac'"))errors.push('ordre de navigation mobile simplifié absent');
 if(app.includes("MiniLesson")||app.includes("UnitConverter")||app.includes("RevisionSheets"))errors.push('anciens outils redondants encore branchés dans App');
 if(/\bV7\b/.test(app)||/['\"]7\.0\.0['\"]/.test(app))errors.push('ancienne version visible dans App.tsx');
-const ownedReleaseFiles=['README.md','CAPACITOR_ANDROID.md','PRIVACY_POLICY.md','CHANGELOG.md','RELEASE_V1.0.1.md','src/lib/protection.ts','public/sw.js','android/app/build.gradle','.github/workflows/android-release.yml'];
+const ownedReleaseFiles=['README.md','CAPACITOR_ANDROID.md','PRIVACY_POLICY.md','CHANGELOG.md','RELEASE_V1.0.2.md','src/lib/protection.ts','public/sw.js','android/app/build.gradle','.github/workflows/android-release.yml'];
 for(const file of ownedReleaseFiles){
  const text=fs.readFileSync(file,'utf8');
  if(/7\.0\.0|\bV7\b/.test(text))errors.push('ancienne référence de version dans '+file);

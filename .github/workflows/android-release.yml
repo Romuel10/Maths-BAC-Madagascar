@@ -45,6 +45,12 @@ jobs:
       - name: Tester le projet complet
         run: npm run test:full
 
+      - name: Installer Chromium pour les parcours d’interface
+        run: npx playwright install --with-deps chromium
+
+      - name: Vérifier les interfaces et le mode hors connexion
+        run: npm run test:ui
+
   android-check:
     name: Vérification Android
     needs: validate
@@ -86,13 +92,13 @@ jobs:
       - name: Préparer l’APK téléchargeable
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/Maths-BAC-Madagascar-v1.0.1.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/Maths-BAC-Madagascar-v1.0.2.apk
 
       - name: Publier l’APK
         uses: actions/upload-artifact@v7
         with:
-          name: Maths-BAC-Madagascar-v1.0.1-apk
-          path: artifacts/Maths-BAC-Madagascar-v1.0.1.apk
+          name: Maths-BAC-Madagascar-v1.0.2-apk
+          path: artifacts/Maths-BAC-Madagascar-v1.0.2.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -144,7 +150,7 @@ jobs:
       - name: Publier l’artefact AAB
         uses: actions/upload-artifact@v7
         with:
-          name: maths-bac-madagascar-v1.0.1-aab
+          name: maths-bac-madagascar-v1.0.2-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14

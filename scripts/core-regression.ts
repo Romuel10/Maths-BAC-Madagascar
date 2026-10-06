@@ -13,7 +13,7 @@ function matrixNear(a:number[][]|null,b:number[][],t=1e-9){if(!a||a.length!==b.l
 
 // Equations: stable roots + substitution
 for(const [a,b,c,roots] of [
- [1,-5,6,[2,3]],[1,2,1,[-1]],[2,5,-3,[-3,0.5]],[1e-12,1,-1,[1]],[1,1e8,1,[-1e8,-1e-8]]
+ [1,-5,6,[2,3]],[1,2,1,[-1]],[2,5,-3,[-3,0.5]],[1e-12,1,-1,[-1e12-1,1-1e-12]],[1,1e8,1,[-1e8,-1e-8]]
 ] as Array<[number,number,number,number[]]>){
  const r=solveQuadraticReal(a,b,c); ok(r.roots.length===roots.length,`quadratic count ${a},${b},${c}`);
  roots.forEach((x,i)=>ok(near(r.roots[i],x,1e-7),`quadratic root ${a},${b},${c} #${i}`));

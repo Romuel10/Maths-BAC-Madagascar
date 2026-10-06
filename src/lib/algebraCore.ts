@@ -39,18 +39,16 @@ export function polynomial2Value(a: number, b: number, c: number, x: number): nu
 }
 
 function cleanZero(x: number): number {
-  return Math.abs(x) < 1e-14 ? 0 : x;
+  return x === 0 ? 0 : x;
 }
 
 export function solveQuadraticReal(a: number, b: number, c: number): QuadraticRealResult {
   if (![a, b, c].every(Number.isFinite)) throw new Error('Coefficients non finis.');
-  const scale = Math.max(1, Math.abs(a), Math.abs(b), Math.abs(c));
-  const coefTol = EPS * scale;
   const steps: string[] = [];
 
-  if (Math.abs(a) <= coefTol) {
-    if (Math.abs(b) <= coefTol) {
-      if (Math.abs(c) <= coefTol) return { kind: 'all', roots: [], delta: null, steps: ['0 = 0 : toute valeur réelle convient.'], verification: [] };
+  if (a === 0) {
+    if (b === 0) {
+      if (c === 0) return { kind: 'all', roots: [], delta: null, steps: ['0 = 0 : toute valeur réelle convient.'], verification: [] };
       return { kind: 'none', roots: [], delta: null, steps: [`${c} = 0 est impossible.`], verification: [] };
     }
     const x = cleanZero(-c / b);
@@ -64,7 +62,7 @@ export function solveQuadraticReal(a: number, b: number, c: number): QuadraticRe
   }
 
   const delta = b * b - 4 * a * c;
-  const deltaTol = 8 * Number.EPSILON * Math.max(1, Math.abs(b * b), Math.abs(4 * a * c));
+  const deltaTol = 8 * Number.EPSILON * Math.max(Math.abs(b * b), Math.abs(4 * a * c));
   steps.push(`Δ = b² - 4ac = ${delta}`);
   if (delta < -deltaTol) return { kind: 'none', roots: [], delta, steps: [...steps, 'Δ < 0 : aucune solution réelle.'], verification: [] };
 
@@ -115,7 +113,7 @@ export function solvePolynomialInequality(a: number, b: number, c: number, relat
   const steps: string[] = [];
   const nonStrict = relation === '>=' || relation === '<=';
 
-  if (eq.kind === 'all' || eq.kind === 'none' && Math.abs(a) < EPS && Math.abs(b) < EPS) {
+  if (eq.kind === 'all' || eq.kind === 'none' && a === 0 && b === 0) {
     const satisfied = relationSatisfied(c, relation);
     steps.push(`Expression constante : ${c}.`);
     steps.push(satisfied ? 'La condition est vraie pour tout réel.' : 'La condition est fausse pour tout réel.');

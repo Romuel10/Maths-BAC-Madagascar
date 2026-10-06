@@ -31,15 +31,15 @@ export const ValueTable: React.FC<Props> = ({ expression, derivativeExpr, second
 
    {/* Controls */}
    <div className="grid grid-cols-3 gap-2 mb-3">
-    <div><label className="block text-[10px] text-slate-400 mb-1">Début</label>
+    <div><label className="block text-[0.625rem] text-slate-400 mb-1">Début</label>
      <input aria-label="Début du tableau" type="number" value={start} onChange={e => setStart(Number(e.target.value))} className="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-sm font-mono focus:border-indigo-500 focus:outline-none" /></div>
-    <div><label className="block text-[10px] text-slate-400 mb-1">Fin</label>
+    <div><label className="block text-[0.625rem] text-slate-400 mb-1">Fin</label>
      <input aria-label="Fin du tableau" type="number" value={end} onChange={e => setEnd(Number(e.target.value))} className="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-sm font-mono focus:border-indigo-500 focus:outline-none" /></div>
-    <div><label className="block text-[10px] text-slate-400 mb-1">Pas</label>
+    <div><label className="block text-[0.625rem] text-slate-400 mb-1">Pas</label>
      <input aria-label="Pas du tableau" type="number" value={step} onChange={e => setStep(Number(e.target.value) || 1)} min={0.1} step={0.5} className="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-sm font-mono focus:border-indigo-500 focus:outline-none" /></div>
    </div>
    <div className="mb-4">
-    <label className="block text-[10px] text-slate-400 mb-1">Valeurs spécifiques (séparées par des virgules)</label>
+    <label className="block text-[0.625rem] text-slate-400 mb-1">Valeurs spécifiques (séparées par des virgules)</label>
     <input aria-label="Valeurs spécifiques" type="text" value={customX} onChange={e => setCustomX(e.target.value)} placeholder="ex: 0.5, 1.5, π" className="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-3 py-1.5 text-white text-sm font-mono focus:border-indigo-500 focus:outline-none" />
    </div>
 
@@ -68,7 +68,7 @@ export const ValueTable: React.FC<Props> = ({ expression, derivativeExpr, second
      </tbody>
     </table>
    </div>
-   <div className="text-[10px] text-slate-500 mt-2"><MathExpression value={`f(x)=${expression}`} /></div>
+   <div className="text-[0.625rem] text-slate-500 mt-2"><MathExpression value={`f(x)=${expression}`} /></div>
   </div>
  );
 };

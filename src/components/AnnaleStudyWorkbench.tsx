@@ -89,7 +89,7 @@ export function AnnaleStudyWorkbench({ series, onOpenTutor }: Props) {
     {selected.workflow.map((step, index) => (
      <div key={step.title} className="annale-workflow-step">
       <div className="annale-workflow-index">{index + 1}</div>
-      <div><p className="font-extrabold text-[10px] text-main">{step.title}</p><p className="section-copy mt-1">{step.detail}</p></div>
+      <div><p className="font-extrabold text-[0.625rem] text-main">{step.title}</p><p className="section-copy mt-1">{step.detail}</p></div>
      </div>
     ))}
    </div>
@@ -123,7 +123,7 @@ export function AnnaleStudyWorkbench({ series, onOpenTutor }: Props) {
     <h4 className="section-title mt-2">Ce que je dois refaire</h4>
     <label className="field-label mt-3 block" htmlFor="annale-error-notes">Mes notes</label>
     <textarea id="annale-error-notes" className="field min-h-[100px] mt-2" value={saved.notes} onChange={e => setSaved(prev => ({ ...prev, notes: e.target.value.slice(0,10000) }))} placeholder="Ex. : j’ai oublié le domaine ; erreur de signe dans la dérivée ; résultat arrondi trop tôt…" />
-    <p className="text-[8px] muted mt-2">Sauvegardé automatiquement hors ligne sur cet appareil.</p>
+    <p className="text-[0.5rem] muted mt-2">Sauvegardé automatiquement hors ligne sur cet appareil.</p>
    </div>
   </section>
  );

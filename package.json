@@ -1,7 +1,7 @@
 {
   "name": "maths-bac-madagascar",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -25,7 +25,7 @@
     "test:utilities": "tsc scripts/utilities-regression.ts src/lib/arithmeticEngine.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .utilities-test --skipLibCheck && node .utilities-test/scripts/utilities-regression.js",
     "test:integration": "tsc scripts/tools-regression.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .integration-test --skipLibCheck && node .integration-test/scripts/tools-regression.js",
     "test:build": "npm run build && node scripts/build-audit.mjs",
-    "test:full": "npm run typecheck && npm run test:source && npm run test:release && npm run test:notation && npm run test:tutor && npm run test:lessons && npm run test:statement && npm run test:advanced-calculators && npm run test:bac-madagascar && npm run test:all-math && npm run test:integration && npm run test:build",
+    "test:full": "npm run typecheck && npm run test:source && npm run test:release && npm run test:notation && npm run test:tutor && npm run test:lessons && npm run test:statement && npm run test:advanced-calculators && npm run test:bac-madagascar && npm run test:all-math && npm run test:integration && npm run test:audit && npm run test:build",
     "test:source": "node scripts/source-audit.mjs",
     "test:tutor": "tsc scripts/tutor-regression.ts src/lib/solverIntent.ts src/lib/tutorCoach.ts --target ES2022 --module ES2022 --moduleResolution bundler --outDir .tutor-test --skipLibCheck && node .tutor-test/scripts/tutor-regression.js",
     "test:statement": "tsc scripts/statement-resolution-regression.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .statement-test --skipLibCheck && node .statement-test/scripts/statement-resolution-regression.js",
@@ -33,13 +33,15 @@
     "test:bac-madagascar": "tsc scripts/bac-madagascar-regression.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .bac-madagascar-test --skipLibCheck && node .bac-madagascar-test/scripts/bac-madagascar-regression.js",
     "test:lessons": "tsc scripts/detailed-lessons-regression.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .lessons-test --skipLibCheck && node .lessons-test/scripts/detailed-lessons-regression.js",
     "test:notation": "tsc scripts/math-notation-regression.ts src/lib/mathNotation.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .notation-test --skipLibCheck && node .notation-test/scripts/math-notation-regression.js",
-    "test:release": "node scripts/release-audit.mjs"
+    "test:release": "node scripts/release-audit.mjs",
+    "test:audit": "tsc scripts/audit-regression.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .audit-test --skipLibCheck && node .audit-test/scripts/audit-regression.js",
+    "test:ui": "node scripts/ui-regression.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",
     "@capacitor/app": "8.1.1",
     "@capacitor/core": "8.5.2",
-    "katex": "0.16.22",
+    "katex": "0.19.0",
     "mathjs": "15.2.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -51,6 +53,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.1.1",
+    "playwright": "1.62.1",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
     "vite": "8.3.2"
