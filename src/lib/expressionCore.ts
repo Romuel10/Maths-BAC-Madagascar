@@ -1,4 +1,5 @@
 import { parseDerivativeExpression, type DNode } from './derivativeEngine.js';
+import { realPower } from './realPower.js';
 
 export type ExpressionScope = Record<string, number>;
 
@@ -24,7 +25,7 @@ export function evaluateExpressionAst(node: DNode, scope: ExpressionScope = {}):
       if (node.op === '-') return a - b;
       if (node.op === '*') return a * b;
       if (node.op === '/') return a / b;
-      return Math.pow(a, b);
+      return realPower(a, b);
     }
     case 'func': {
       const u = evaluateExpressionAst(node.arg, scope);
@@ -33,6 +34,10 @@ export function evaluateExpressionAst(node: DNode, scope: ExpressionScope = {}):
       if (node.name === 'tan') return Math.tan(u);
       if (node.name === 'exp') return Math.exp(u);
       if (node.name === 'log') return Math.log(u);
+      if (node.name === 'log10') return Math.log10(u);
+      if (node.name === 'asin') return Math.asin(u);
+      if (node.name === 'acos') return Math.acos(u);
+      if (node.name === 'atan') return Math.atan(u);
       if (node.name === 'sqrt') return Math.sqrt(u);
       return Math.abs(u);
     }

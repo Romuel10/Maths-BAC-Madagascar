@@ -3,6 +3,7 @@ import { MathExpression, MathText } from './MathNotation';
 import { MathSolutionWork } from './MathSolutionWork';
 import { MiniKeyboard, prettyToMath } from './MiniKeyboard';
 import type { StepFeedback } from '../lib/pedagogy';
+import { getTutorDraft, saveTutorDraft } from '../lib/tutorDraft';
 import { storageGet, storageRemove } from '../lib/safeStorage';
 import { analyzeStudentRequest, type SolverIntent, type SolverTopic } from '../lib/solverIntent';
 import { speakFrench, stopSpeaking } from '../lib/accessibility';
@@ -65,32 +66,33 @@ interface Props {
 }
 
 export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
- const [prefill]=useState(()=>({statement:storageGet('mathbac_tutor_prefill')||'',functionExpr:storageGet('mathbac_function_prefill')||''}));
- const [statement, setStatement] = useState(prefill.statement);
- const [workspace, setWorkspace] = useState<Workspace>(prefill.functionExpr?'function':'statement');
- const [topic, setTopic] = useState<SolverTopic>('Général');
- const [intent, setIntent] = useState<SolverIntent | null>(null);
- const [showGuide, setShowGuide] = useState(false);
+ const [prefill]=useState(()=>{const statement=storageGet('mathbac_tutor_prefill')||'',functionExpr=storageGet('mathbac_function_prefill')||'';return{statement,functionExpr,draft:statement||functionExpr?null:getTutorDraft()};});
+ const [statement, setStatement] = useState(prefill.statement||prefill.draft?.statement||'');
+ const [workspace, setWorkspace] = useState<Workspace>(prefill.functionExpr?'function':prefill.draft?.workspace||'statement');
+ const [topic, setTopic] = useState<SolverTopic>(prefill.draft?.topic||'Général');
+ const [intent, setIntent] = useState<SolverIntent | null>(()=>prefill.draft?.showGuide?analyzeStudentRequest(prefill.draft.statement):null);
+ const [showGuide, setShowGuide] = useState(prefill.draft?.showGuide||false);
  const [photo, setPhoto] = useState<string | null>(null);
  const [photoConfirmed, setPhotoConfirmed] = useState(false);
  const [photoError,setPhotoError]=useState('');
  const [photoBusy,setPhotoBusy]=useState(false);
- const [functionExpr, setFunctionExpr] = useState(prefill.functionExpr);
+ const [functionExpr, setFunctionExpr] = useState(prefill.functionExpr||prefill.draft?.functionExpr||'');
  const [functionInputError, setFunctionInputError] = useState('');
- const [helpMode, setHelpMode] = useState<HelpMode>('understand');
- const [previousStep, setPreviousStep] = useState('');
- const [nextStep, setNextStep] = useState('');
+ const [helpMode, setHelpMode] = useState<HelpMode>(prefill.draft?.helpMode||'understand');
+ const [previousStep, setPreviousStep] = useState(prefill.draft?.previousStep||'');
+ const [nextStep, setNextStep] = useState(prefill.draft?.nextStep||'');
  const [stepFeedback, setStepFeedback] = useState<StepFeedback | null>(null);
  const [verifyBusy,setVerifyBusy]=useState(false);
- const [blockedStep,setBlockedStep]=useState(0);
- const [hintLevel,setHintLevel]=useState(0);
- const [explanationLevel,setExplanationLevel]=useState<TutorExplanationLevel>('simple');
+ const [blockedStep,setBlockedStep]=useState(prefill.draft?.blockedStep||0);
+ const [hintLevel,setHintLevel]=useState(prefill.draft?.hintLevel||0);
+ const [explanationLevel,setExplanationLevel]=useState<TutorExplanationLevel>(prefill.draft?.explanationLevel||'simple');
  const [showPractice,setShowPractice]=useState(false);
  const [showPracticeHint,setShowPracticeHint]=useState(false);
  const [showPracticeSolution,setShowPracticeSolution]=useState(false);
- const [statementResolution,setStatementResolution]=useState<StatementResolution|null>(null);
- const [revealedResolutionSteps,setRevealedResolutionSteps]=useState(0);
- const [showResolutionAnswer,setShowResolutionAnswer]=useState(false);
+ const [statementResolution,setStatementResolution]=useState<StatementResolution|null>(()=>prefill.draft?.showGuide?solveStatementExactly(prefill.draft.statement):null);
+ const [revealedResolutionSteps,setRevealedResolutionSteps]=useState(prefill.draft?.revealedResolutionSteps||0);
+ const [showResolutionAnswer,setShowResolutionAnswer]=useState(prefill.draft?.showResolutionAnswer||false);
+ useEffect(()=>{saveTutorDraft({statement,functionExpr,workspace,topic,showGuide,helpMode,previousStep,nextStep,blockedStep,hintLevel,explanationLevel,revealedResolutionSteps,showResolutionAnswer});},[statement,functionExpr,workspace,topic,showGuide,helpMode,previousStep,nextStep,blockedStep,hintLevel,explanationLevel,revealedResolutionSteps,showResolutionAnswer]);
  const guide = useMemo(() => METHODS[topic], [topic]);
  const stepSupport = useMemo(() => getTutorStepSupport(topic,blockedStep), [topic,blockedStep]);
  const stepExplanation = useMemo(() => getTutorExplanation(topic,blockedStep,explanationLevel), [topic,blockedStep,explanationLevel]);
@@ -110,7 +112,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   setHintLevel(0);setBlockedStep(0);setExplanationLevel('simple');
   setShowPractice(false);setShowPracticeHint(false);setShowPracticeSolution(false);
   if (next.functionExpression) setFunctionExpr(next.functionExpression);
-  setLastActivity({kind:'solve',label:`Résolution guidée · ${next.topic}`,payload:statement.slice(0,180)});
+  setLastActivity({kind:'solve',label:`Résolution guidée · ${next.topic}`,payload:statement.slice(0,10000),workspace:'statement'});
  };
  const onPhoto = async (file?: File) => {
   if (!file) return;
@@ -136,7 +138,7 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   const closes = (withoutDefinition.match(/\)/g) || []).length;
   if (opens !== closes) { setFunctionInputError('Vérifie les parenthèses : il en manque une ou il y en a une en trop.'); return; }
   setFunctionInputError('');
-  setLastActivity({kind:'solve',label:'Étude de fonction',payload:withoutDefinition.slice(0,180)});
+  setLastActivity({kind:'solve',label:'Étude de fonction',payload:withoutDefinition.slice(0,10000),workspace:'function'});
   onAnalyzeFunction?.(prettyToMath(withoutDefinition));
  };
 
@@ -207,8 +209,8 @@ export function BacTutor({ onAnalyzeFunction, onOpenTool }: Props) {
   {showGuide && (workspace === 'statement' || workspace === 'method') && <section className="surface p-4">
    <div className="flex items-start justify-between gap-3"><div><p className="eyebrow">{intent?'Chapitre détecté':'Chapitre choisi'}</p><h3 className="section-title mt-2">{topic}</h3></div><label><span className="sr-only">Chapitre</span><select aria-label="Chapitre" value={topic} onChange={e=>setTopic(e.target.value as SolverTopic)} className="field !w-auto !py-2 !px-3 text-xs">{Object.keys(METHODS).map(t=><option key={t}>{t}</option>)}</select></label></div>
    {(helpMode==='understand'||helpMode==='start') && <div className="notice notice-info mt-3"><p className="font-bold">Questions à te poser</p>{guide.questions.map((q,i)=><p key={i} className="mt-1">• {q}</p>)}</div>}
-   <p className="text-[11px] font-extrabold text-brand mt-4">{guide.title}</p>
-   <ol className="mt-2 space-y-2">{guide.steps.slice(0, helpMode==='start'?2:guide.steps.length).map((step,i)=><li key={i} className="surface-flat p-3 flex gap-3 text-xs leading-relaxed"><span className="w-6 h-6 shrink-0 rounded-lg grid place-items-center text-[10px] font-black text-brand" style={{background:'var(--brand-soft)'}}>{i+1}</span><span style={{color:'var(--text-soft)'}}><MathText auto>{step}</MathText></span></li>)}</ol>
+   <p className="text-[0.6875rem] font-extrabold text-brand mt-4">{guide.title}</p>
+   <ol className="mt-2 space-y-2">{guide.steps.slice(0, helpMode==='start'?2:guide.steps.length).map((step,i)=><li key={i} className="surface-flat p-3 flex gap-3 text-xs leading-relaxed"><span className="w-6 h-6 shrink-0 rounded-lg grid place-items-center text-[0.625rem] font-black text-brand" style={{background:'var(--brand-soft)'}}>{i+1}</span><span style={{color:'var(--text-soft)'}}><MathText auto>{step}</MathText></span></li>)}</ol>
    <div className="notice notice-warning mt-3"><p className="font-bold">Points de contrôle</p>{guide.reminders.map((r,i)=><p key={i} className="mt-1">• <MathText auto>{r}</MathText></p>)}</div>
    <button onClick={()=>setHintLevel(level=>level?0:1)} className="btn btn-primary w-full mt-3">{hintLevel?'Masquer l’explication':'Je n’ai pas compris cette étape'}</button>
    {hintLevel>0&&<div className="surface-flat p-3 mt-2">

@@ -5,7 +5,7 @@ import { MathExpression, MathText } from './MathNotation';
  * trinôme du second degré, étapes détaillées.
  * © 2025 RATOVOSON Navelanizara Romuel
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MiniKeyboard, prettyToMath } from './MiniKeyboard';
 import { ReliabilityPanel, type ReliabilityLevel } from './ReliabilityPanel';
 import { parsePolynomial, formatPolynomial, polynomialDegree } from '../lib/polynomialEngine';
@@ -158,7 +158,7 @@ const StepCard = ({ step, index }: { step: StepData; index: number | string }) =
    <div className="flex-1 min-w-0">
     <p className={`text-xs font-bold text-${step.color}-300`}>{step.title}</p>
     {step.math && <div className="text-sm text-white mt-1 overflow-x-auto leading-relaxed"><MathExpression value={step.math} /></div>}
-    {step.text && <p className="text-[11px] text-slate-400 mt-1 leading-relaxed"><MathText auto>{step.text}</MathText></p>}
+    {step.text && <p className="text-[0.6875rem] text-slate-400 mt-1 leading-relaxed"><MathText auto>{step.text}</MathText></p>}
    </div>
   </div>
  </div>
@@ -166,7 +166,7 @@ const StepCard = ({ step, index }: { step: StepData; index: number | string }) =
 
 const ResultBanner = ({ label, value, color = 'emerald' }: { label: string; value: string; color?: string }) => (
  <div className={`bg-gradient-to-r from-${color}-600/15 to-${color}-800/15 rounded-2xl p-5 border border-${color}-500/20 text-center`}>
-  <p className={`text-[10px] text-${color}-400 font-bold uppercase tracking-widest mb-1`}>{label}</p>
+  <p className={`text-[0.625rem] text-${color}-400 font-bold uppercase tracking-widest mb-1`}>{label}</p>
   <div className="text-xl text-white font-extrabold overflow-x-auto math-answer"><MathExpression value={value} /></div>
  </div>
 );
@@ -425,6 +425,7 @@ export const AlgebraTools: React.FC<Props> = ({ onClose }) => {
  const [eqC, setEqC] = useState('6');
  const [res, setRes] = useState<{ banner: { label: string; value: string; color: string }; steps: StepData[]; quality: { level: ReliabilityLevel; detail: string } } | null>(null);
  const [err, setErr] = useState('');
+ useEffect(()=>{setRes(null);setErr('');},[mode,expr,eqA,eqB,eqC]);
 
  const handleAction = () => {
   setErr('');
@@ -527,7 +528,7 @@ export const AlgebraTools: React.FC<Props> = ({ onClose }) => {
       {examples[mode].length > 0 && (
        <div className="flex gap-1.5 flex-wrap mb-3">
         {examples[mode].map((ex, i) => (
-         <button key={i} onClick={() => setExpr(ex.val)} className="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[11px] text-slate-300 active:scale-95">
+         <button key={i} onClick={() => setExpr(ex.val)} className="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[0.6875rem] text-slate-300 active:scale-95">
           <MathExpression value={ex.val} />
          </button>
         ))}

@@ -15,8 +15,8 @@ const mathNode = (value: React.ReactNode, className = '') => {
 };
 
 export const ResultBox = ({ label, value, color = 'indigo' }: { label: string; value: string; color?: string }) => (
- <div className={`bg-gradient-to-r from-${color}-600/15 to-${color}-800/15 rounded-xl p-4 border border-${color}-500/25 text-center animate-scale-in`}>
-  <p className={`text-[10px] text-${color}-400 mb-1 font-bold uppercase tracking-wider`}>{label}</p>
+ <div className={`tool-result-box bg-gradient-to-r from-${color}-600/15 to-${color}-800/15 rounded-xl p-4 border border-${color}-500/25 text-center animate-scale-in`}>
+  <p className={`tool-result-label text-[0.625rem] text-${color}-400 mb-1 font-bold uppercase tracking-wider`}>{label}</p>
   <div className="text-xl font-extrabold text-white break-words math-answer">
    <MathSolutionWork value={value} compact answer/>
   </div>
@@ -25,7 +25,7 @@ export const ResultBox = ({ label, value, color = 'indigo' }: { label: string; v
 
 export const Step = ({ n, title, content, color = 'slate' }: { n: number | string; title: string; content: string; color?: string }) => (
  <div className="flex items-start gap-2.5">
-  <span className={`w-6 h-6 rounded-full bg-${color}-600/50 text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold`}>{n}</span>
+  <span className={`w-6 h-6 rounded-full bg-${color}-600/50 text-white text-[0.625rem] flex items-center justify-center shrink-0 mt-0.5 font-bold`}>{n}</span>
   <div className="flex-1 min-w-0">
    <p className="text-xs font-bold text-slate-300">{title}</p>
    <div className="mt-1 break-words leading-relaxed">
@@ -47,7 +47,7 @@ export const Formula = ({ children, color = 'indigo' }: { children: React.ReactN
 
 export const PropBadge = ({ label, value, color = 'slate' }: { label: string; value: string; color?: string }) => (
  <div className={`bg-${color}-500/10 border border-${color}-500/25 rounded-lg p-2.5`}>
-  <p className={`text-[10px] text-${color}-400 font-bold`}>{label}</p>
+  <p className={`text-[0.625rem] text-${color}-400 font-bold`}>{label}</p>
   <div className="text-sm text-white font-bold mt-1"><MathText auto>{value}</MathText></div>
  </div>
 );
@@ -65,7 +65,7 @@ export const StepsList = ({ children }: { children: React.ReactNode }) => (
 
 export const MatrixDisplay = ({ matrix, label }: { matrix: number[][]; label?: string }) => (
  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/20">
-  {label && <p className="text-[10px] text-slate-400 font-bold mb-2">{label}</p>}
+  {label && <p className="text-[0.625rem] text-slate-400 font-bold mb-2">{label}</p>}
   <div className="flex items-center justify-center gap-1">
    <span className="text-slate-500 text-2xl font-thin">(</span>
    <table className="border-collapse">

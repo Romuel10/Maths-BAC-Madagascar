@@ -30,7 +30,7 @@ export const SignTableCard: React.FC<SignTableCardProps> = ({ signTable, zeros, 
 
    {zeros.length > 0 && (
     <div className="flex flex-wrap items-center gap-2 mt-3">
-     <span className="text-[9px] muted font-bold">Zéros :</span>
+     <span className="text-[0.5625rem] muted font-bold">Zéros :</span>
      {zeros.map((z, i) => <span key={i} className="chip chip-success"><MathExpression value={`x=${fmt(z.x)}`} /></span>)}
     </div>
    )}

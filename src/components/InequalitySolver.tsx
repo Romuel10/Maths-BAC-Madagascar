@@ -19,6 +19,7 @@ export const InequalitySolver: React.FC<Props> = ({ expression }) => {
  const [result, setResult] = useState<InequalityResult | null>(null);
  const [xMin, setXMin] = useState('-20');
  const [xMax, setXMax] = useState('20');
+ useEffect(()=>{setResult(null);},[expression,k,ineqType,xMin,xMax]);
  const canvasRef = useRef<HTMLCanvasElement>(null);
  const containerRef = useRef<HTMLDivElement>(null);
 
@@ -189,7 +190,7 @@ export const InequalitySolver: React.FC<Props> = ({ expression }) => {
     <span className="text-2xl"></span>
     <div>
      <h3 className="text-lg font-bold text-white">Résolution d'inéquation</h3>
-     <p className="text-[10px] text-slate-500">Méthode graphique avec axe gradué</p>
+     <p className="text-[0.625rem] text-slate-500">Méthode graphique avec axe gradué</p>
     </div>
    </div>
 
@@ -215,7 +216,7 @@ export const InequalitySolver: React.FC<Props> = ({ expression }) => {
    {/* K input + solve */}
    <div className="flex gap-2 mb-4">
     <div className="flex-1">
-     <label className="block text-[10px] text-slate-400 mb-1">Valeur k =</label>
+     <label className="block text-[0.625rem] text-slate-400 mb-1">Valeur k =</label>
      <input aria-label="Valeur k" type="number" value={k} onChange={e => setK(e.target.value)} step="0.5"
       className="w-full bg-slate-900/80 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white font-mono text-center focus:border-indigo-500 focus:outline-none" />
     </div>
@@ -224,8 +225,8 @@ export const InequalitySolver: React.FC<Props> = ({ expression }) => {
     </button>
    </div>
    <div className="grid grid-cols-2 gap-2 mb-4">
-    <div><label className="block text-[9px] text-slate-500 mb-1">Recherche x min</label><input aria-label="Borne minimale de recherche" type="number" value={xMin} onChange={e => setXMin(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-white text-center text-xs" /></div>
-    <div><label className="block text-[9px] text-slate-500 mb-1">Recherche x max</label><input aria-label="Borne maximale de recherche" type="number" value={xMax} onChange={e => setXMax(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-white text-center text-xs" /></div>
+    <div><label className="block text-[0.5625rem] text-slate-500 mb-1">Recherche x min</label><input aria-label="Borne minimale de recherche" type="number" value={xMin} onChange={e => setXMin(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-white text-center text-xs" /></div>
+    <div><label className="block text-[0.5625rem] text-slate-500 mb-1">Recherche x max</label><input aria-label="Borne maximale de recherche" type="number" value={xMax} onChange={e => setXMax(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-white text-center text-xs" /></div>
    </div>
 
    {/* Result */}
@@ -288,9 +289,9 @@ export const InequalitySolver: React.FC<Props> = ({ expression }) => {
      {/* Solution set */}
      {result.solutionIntervals.length > 0 ? (
       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
-       <p className="text-[10px] text-emerald-400 mb-1 font-bold uppercase tracking-wider">{result.scope === 'R' ? 'Ensemble solution sur ℝ' : `Zones solution sur [${result.searchInterval[0]} ; ${result.searchInterval[1]}]`}</p>
+       <p className="text-[0.625rem] text-emerald-400 mb-1 font-bold uppercase tracking-wider">{result.scope === 'R' ? 'Ensemble solution sur ℝ' : `Zones solution sur [${result.searchInterval[0]} ; ${result.searchInterval[1]}]`}</p>
        <p className="text-xl font-mono font-extrabold text-white">{result.scope === 'R' ? `S = ${result.solutionSet}` : result.solutionSet}</p>
-       {result.scope === 'window' && <p className="text-[10px] text-slate-400 mt-2">Résultat numérique limité à la fenêtre choisie ; il ne décrit pas automatiquement les solutions sur tout ℝ.</p>}
+       {result.scope === 'window' && <p className="text-[0.625rem] text-slate-400 mt-2">Résultat numérique limité à la fenêtre choisie ; il ne décrit pas automatiquement les solutions sur tout ℝ.</p>}
       </div>
      ) : (
       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">

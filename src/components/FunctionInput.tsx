@@ -169,7 +169,7 @@ export const FunctionInput: React.FC<FunctionInputProps> = ({ onAnalyze, isLoadi
     {tokens.length === 0 ? (
      <span className="text-sm muted select-none">Commence par saisir une expression.</span>
     ) : (
-     <span className="text-[22px] whitespace-nowrap math-hero flex items-center">
+     <span className="text-[1.375rem] whitespace-nowrap math-hero flex items-center">
       <MathExpression value={mathExpression || displayText} />
      </span>
     )}
@@ -192,7 +192,7 @@ export const FunctionInput: React.FC<FunctionInputProps> = ({ onAnalyze, isLoadi
     <div className="grid grid-cols-2 gap-2 mt-3">
      {PRESET_EXAMPLES.map((ex, i) => (
       <button key={i} onClick={() => loadExample(ex)} className="surface-flat px-3 py-2.5 text-left active:scale-[0.98]">
-       <div className="flex items-center gap-2"><span className="chip chip-info">{ex.code}</span><p className="text-[10px] font-bold" style={{ color: 'var(--text-soft)' }}>{ex.label}</p></div>
+       <div className="flex items-center gap-2"><span className="chip chip-info">{ex.code}</span><p className="text-[0.625rem] font-bold" style={{ color: 'var(--text-soft)' }}>{ex.label}</p></div>
        <div className="text-sm mt-2 overflow-x-auto" style={{ color: 'var(--text)' }}><MathExpression value={tokensToMathjs(ex.tokens)} /></div>
       </button>
      ))}

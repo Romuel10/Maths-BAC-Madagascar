@@ -19,14 +19,14 @@ function polynomialRange(expr:string,a:number,b:number):{min:number;max:number}|
 }
 function certifyPositive(node:DNode,a:number,b:number,allowZero:boolean):IntervalDomainCertificate{
  const expr=serializeNode(node),range=polynomialRange(expr,a,b);
- if(range){const ok=allowZero?range.min>=-EPS:range.min>EPS;return{ok,proven:true,detail:ok?`L’expression ${expr} reste ${allowZero?'positive ou nulle':'strictement positive'} sur l’intervalle (minimum prouvé : ${range.min}).`:`La condition ${allowZero?'≥ 0':'> 0'} échoue sur l’intervalle (minimum : ${range.min}).`,badX:null};}
+ if(range){const ok=allowZero?range.min>=0:range.min>0;return{ok,proven:true,detail:ok?`L’expression ${expr} reste ${allowZero?'positive ou nulle':'strictement positive'} sur l’intervalle (minimum prouvé : ${range.min}).`:`La condition ${allowZero?'≥ 0':'> 0'} échoue sur l’intervalle (minimum : ${range.min}).`,badX:null};}
  const c=evaluateConstantNode(node);if(c!==null){const ok=allowZero?c>=0:c>0;return{ok,proven:true,detail:`L’expression est constante : ${c}.`,badX:null};}
  return{ok:false,proven:false,detail:`Le signe de ${expr} n’est pas prouvé automatiquement sur tout l’intervalle.`,badX:null};
 }
 function certifyNonZero(node:DNode,a:number,b:number):IntervalDomainCertificate{
  const expr=serializeNode(node),range=polynomialRange(expr,a,b);
- if(range){const ok=range.min>EPS||range.max<-EPS;return{ok,proven:true,detail:ok?`Le dénominateur ${expr} garde un signe strict sur l’intervalle.`:`Le dénominateur ${expr} peut s’annuler ou changer de signe sur l’intervalle.`,badX:null};}
- const c=evaluateConstantNode(node);if(c!==null)return{ok:Math.abs(c)>EPS,proven:true,detail:`Dénominateur constant : ${c}.`,badX:null};
+ if(range){const ok=range.min>0||range.max<0;return{ok,proven:true,detail:ok?`Le dénominateur ${expr} garde un signe strict sur l’intervalle.`:`Le dénominateur ${expr} peut s’annuler ou changer de signe sur l’intervalle.`,badX:null};}
+ const c=evaluateConstantNode(node);if(c!==null)return{ok:c!==0,proven:true,detail:`Dénominateur constant : ${c}.`,badX:null};
  return{ok:false,proven:false,detail:`L’absence de zéro de ${expr} n’est pas prouvée automatiquement sur tout l’intervalle.`,badX:null};
 }
 function merge(parts:IntervalDomainCertificate[],label:string):IntervalDomainCertificate{
@@ -58,13 +58,18 @@ function certifyNode(node:DNode,a:number,b:number):IntervalDomainCertificate{
   return merge([left,right],`Opération ${node.op}`);
  }
  const arg=certifyNode(node.arg,a,b);if(!arg.ok)return arg;
- if(node.name==='sin'||node.name==='cos'||node.name==='exp'||node.name==='abs')return merge([arg],node.name);
+ if(node.name==='sin'||node.name==='cos'||node.name==='exp'||node.name==='abs'||node.name==='atan')return merge([arg],node.name);
  if(node.name==='sqrt'){const p=certifyPositive(node.arg,a,b,true);return p.ok?merge([arg,p],'Racine carrée'):p;}
- if(node.name==='log'){const p=certifyPositive(node.arg,a,b,false);return p.ok?merge([arg,p],'Logarithme'):p;}
+ if(node.name==='log'||node.name==='log10'){const p=certifyPositive(node.arg,a,b,false);return p.ok?merge([arg,p],'Logarithme'):p;}
+ if(node.name==='asin'||node.name==='acos'){
+  const range=polynomialRange(serializeNode(node.arg),a,b);
+  if(!range)return{ok:false,proven:false,detail:'Le domaine de la fonction trigonométrique réciproque n’est pas certifié.',badX:null};
+  return{ok:range.min>=-1&&range.max<=1,proven:true,detail:'L’argument doit appartenir à [-1 ; 1] sur tout l’intervalle.',badX:null};
+ }
  if(node.name==='tan'){
   // Prove tan(ax+b) has no pole when the inner expression is affine.
   const inner=parsePolynomial(serializeNode(node.arg),'x',1);if(!inner)return{ok:false,proven:false,detail:'Les pôles de la tangente composée ne sont pas prouvés automatiquement.',badX:null};
-  const slope=inner[1]||0,intercept=inner[0]||0;if(Math.abs(slope)<EPS){const c=Math.cos(intercept);return{ok:Math.abs(c)>EPS,proven:true,detail:'Argument constant de tan contrôlé.',badX:null};}
+  const slope=inner[1]||0,intercept=inner[0]||0;if(Math.abs(slope)<EPS){const c=Math.cos(intercept);return{ok:c!==0,proven:true,detail:'Argument constant de tan contrôlé.',badX:null};}
   const lo=Math.min(slope*a+intercept,slope*b+intercept),hi=Math.max(slope*a+intercept,slope*b+intercept);
   const kMin=Math.ceil((lo-Math.PI/2)/Math.PI-EPS),kMax=Math.floor((hi-Math.PI/2)/Math.PI+EPS);
   if(kMin<=kMax){const u=Math.PI/2+kMin*Math.PI,x=(u-intercept)/slope;return{ok:false,proven:true,detail:`tan n’est pas définie pour x=${x} dans l’intervalle.`,badX:x};}

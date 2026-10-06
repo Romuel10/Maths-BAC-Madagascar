@@ -1,4 +1,4 @@
-import type { BacSeries, BacTopic } from '../data/bacSubjects';
+import { isBacSeries, type BacSeries, type BacTopic } from '../data/bacSubjects';
 import type { LearningQuestion } from '../data/learningCatalog';
 import { storageJsonGet, storageJsonSet } from './safeStorage';
 
@@ -8,7 +8,7 @@ export interface TopicScore { correct:number; total:number; percent:number }
 export interface DiagnosticResult { completedAt:string; totalCorrect:number; total:number; byTopic:Partial<Record<BacTopic,TopicScore>> }
 export interface QuickSession { id:string; completedAt:string; correct:number; total:number; topics:BacTopic[] }
 export interface ChapterProgress { attempts:number; bestPercent:number; completed:boolean; updatedAt:string }
-export interface LastActivity { kind:'diagnostic'|'quick'|'chapter'|'solve'|'exam'; label:string; payload?:string; at:string }
+export interface LastActivity { kind:'diagnostic'|'quick'|'chapter'|'solve'|'exam'; label:string; payload?:string; workspace?:'statement'|'function'; at:string }
 export interface AccessibilityPreferences { textScale:'normal'|'large'|'xlarge'; highContrast:boolean; reduceMotion:boolean }
 
 export interface StudentProfile {
@@ -24,13 +24,12 @@ function empty():StudentProfile{
  return {series:null,diagnostic:null,quickSessions:[],chapters:{},lastActivity:null,accessibility:{textScale:'normal',highContrast:false,reduceMotion:false}};
 }
 
-function validSeries(value:unknown):value is BacSeries{return value==='A'||value==='C'||value==='D'||value==='L'||value==='OSE'||value==='S';}
 
 export function getStudentProfile():StudentProfile{
  const raw=storageJsonGet<Partial<StudentProfile>>(KEY,{});
  const base=empty();
  return {
-  series:validSeries(raw.series)?raw.series:null,
+  series:isBacSeries(raw.series)?raw.series:null,
   diagnostic:raw.diagnostic&&typeof raw.diagnostic==='object'?raw.diagnostic as DiagnosticResult:null,
   quickSessions:Array.isArray(raw.quickSessions)?raw.quickSessions.slice(0,30):[],
   chapters:raw.chapters&&typeof raw.chapters==='object'?raw.chapters:{},

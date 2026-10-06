@@ -13,24 +13,8 @@ interface Props {
  autoConvert?: boolean;
 }
 
-export function prettyToMath(s: string): string {
- return s
-  .replace(/²/g, '^2')
-  .replace(/³/g, '^3')
-  .replace(/×/g, '*')
-  .replace(/÷/g, '/')
-  .replace(/√\(/g, 'sqrt(')
-  .replace(/√/g, 'sqrt')
-  .replace(/π/g, 'pi')
-  .replace(/−/g, '-')
-  .replace(/ln\(/g, 'log(')
-  .replace(/e\^\(/g, 'exp(')
-  .replace(/\|([^|]+)\|/g, 'abs($1)')
-  .replace(/(\d)([a-zA-Z])/g, '$1*$2')
-  .replace(/(\d)\(/g, '$1*(')
-  .replace(/\)\(/g, ')*(')
-  .replace(/\)(\d)/g, ')*$1');
-}
+import { prettyToMath } from '../lib/mathInput';
+export { prettyToMath } from '../lib/mathInput';
 
 type KBtn = { label: string; insert: string; kind?: 'number' | 'operator' | 'function' | 'symbol' };
 

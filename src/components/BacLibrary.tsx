@@ -72,7 +72,7 @@ export function BacLibrary({ onAnalyzeFunction, onTutor }: Props) {
         </div>
         <div className="shrink-0 text-right">
          <p className="text-xl font-black text-brand">{p.percent}%</p>
-         <p className="text-[8px] muted">maîtrisé</p>
+         <p className="text-[0.5rem] muted">maîtrisé</p>
         </div>
        </div>
        <div className="progress-track mt-3"><div className="progress-fill" style={{ width: `${p.percent}%` }} /></div>

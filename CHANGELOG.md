@@ -1,3 +1,7 @@
+# Version 1.0.2 — 6 octobre 2026
+
+Correction des 20 anomalies mathématiques et d’interface de l’audit. Les détails et commandes de validation sont dans [RELEASE_V1.0.2.md](RELEASE_V1.0.2.md).
+
 # Changelog
 
 ## 1.0.1 — finition et simplification

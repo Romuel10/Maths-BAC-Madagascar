@@ -134,7 +134,7 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
       <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
        {history.map((h, i) => (
         <button key={i} onClick={() => { setDisplay(h.input); setCalculation(null); setShowHistory(false); }} className="w-full text-left py-2.5">
-         <div className="text-[10px] muted"><MathExpression value={h.input} /></div>
+         <div className="text-[0.625rem] muted"><MathExpression value={h.input} /></div>
          <div className="text-sm font-bold mt-1" style={{ color: 'var(--text)' }}><MathExpression value={`=${h.exact || h.result}`} /></div>
         </button>
        ))}
@@ -191,7 +191,7 @@ export const Calculator: React.FC<Props> = ({ onClose }) => {
      </div>
     </section>
 
-    <p className="text-[9px] muted text-center mt-4 leading-relaxed">Une valeur approchée reste signalée comme telle. En cas de contrôle insuffisant, l’application ne présente pas le résultat comme une certitude.</p>
+    <p className="text-[0.5625rem] muted text-center mt-4 leading-relaxed">Une valeur approchée reste signalée comme telle. En cas de contrôle insuffisant, l’application ne présente pas le résultat comme une certitude.</p>
    </div>
   </div>
  );

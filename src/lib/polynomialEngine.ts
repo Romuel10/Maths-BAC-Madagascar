@@ -6,8 +6,8 @@ const EPS = 1e-12;
 
 function trim(p: Polynomial): Polynomial {
  const out = p.slice();
- while (out.length > 1 && Math.abs(out[out.length - 1]) < EPS) out.pop();
- return out.map(v => Math.abs(v) < EPS ? 0 : v);
+ while (out.length > 1 && out[out.length - 1] === 0) out.pop();
+ return out;
 }
 function add(a: Polynomial, b: Polynomial, sign = 1): Polynomial {
  const n = Math.max(a.length, b.length), out = Array(n).fill(0);
@@ -58,7 +58,7 @@ function visitPolynomial(node: DNode, variable: string, maxDegree: number): Poly
  if (node.op === '-') return add(a, b, -1);
  if (node.op === '*') return mul(a, b, maxDegree);
  if (node.op === '/') {
-  if (b.length !== 1 || Math.abs(b[0]) <= EPS) return null;
+  if (b.length !== 1 || b[0] === 0) return null;
   return trim(a.map(x => x / b[0]));
  }
  return null;
@@ -86,6 +86,7 @@ export function polynomialScale(a: Polynomial, k: number): Polynomial { return t
 export function polynomialPow(a: Polynomial, n:number, maxDegree=20): Polynomial|null { return pow(a,n,maxDegree); }
 
 function fmtCoef(v: number): string {
+ if(v!==0&&Math.abs(v)<1e-8)return String(v);
  const r = Math.abs(v - Math.round(v)) < 1e-10 ? Math.round(v) : Math.round(v * 1e10) / 1e10;
  return String(r);
 }
@@ -93,7 +94,7 @@ export function formatPolynomial(p0: Polynomial, variable = 'x'): string {
  const p = trim(p0);
  const terms: string[] = [];
  for (let i = p.length - 1; i >= 0; i--) {
-  const c = p[i]; if (Math.abs(c) < EPS) continue;
+  const c = p[i]; if (c === 0) continue;
   const sign = c < 0 ? '-' : '+'; const a = Math.abs(c);
   let body: string;
   if (i === 0) body = fmtCoef(a);

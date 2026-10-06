@@ -1,3 +1,4 @@
+import { numericRoots } from './numericRoots.js';
 import { parseRationalPolynomial, rationalExcludedPoints } from './rationalEngine.js';
 import { polynomialSub, polynomialScale, polynomialDegree } from './polynomialEngine.js';
 import { solveQuadraticReal } from './algebraCore.js';
@@ -8,11 +9,10 @@ export interface EquationResult {
  solutions:number[]; method:string; steps:string[]; verifications:EquationVerification[]; exact:boolean;
  searchInterval:[number,number]; warning?:string; quality:'verified'|'approximate'|'warning'; allDomain?:boolean;
 }
-const fmt=(n:number)=>{const r=Math.abs(n)<1e-13?0:Math.round(n*1e10)/1e10;return Number.isInteger(r)?String(r):String(r);};
+const fmt=(n:number)=>n!==0&&Math.abs(n)<1e-8?String(n):String(Math.round(n*1e10)/1e10);
 function evalExpr(expr:string,x:number){return safeEvaluateExpression(expr,{x});}
 function verify(expr:string,k:number,roots:number[]):EquationVerification[]{return roots.map(x=>{const fx=evalExpr(expr,x),residual=fx===null?null:Math.abs(fx-k),tol=1e-7*Math.max(1,Math.abs(k),Math.abs(fx??0));return{x,fx,residual,ok:residual!==null&&residual<=tol};});}
-function refine(expr:string,k:number,a:number,b:number):number|null{let lo=a,hi=b,fl=evalExpr(expr,lo);if(fl===null)return null;for(let i=0;i<80;i++){const mid=(lo+hi)/2,fm=evalExpr(expr,mid);if(fm===null)return null;const gm=fm-k,gl=fl-k;if(Math.abs(gm)<=1e-12)return mid;if(gl*gm<=0)hi=mid;else{lo=mid;fl=fm;}}return(lo+hi)/2;}
-function numericCandidates(expr:string,k:number,xMin:number,xMax:number):number[]{const out:number[]=[];const n=16000,h=(xMax-xMin)/n;let px=xMin,pv=evalExpr(expr,px);for(let i=1;i<=n;i++){const x=xMin+i*h,v=evalExpr(expr,x);if(v===null){pv=null;px=x;continue;}const g=v-k;if(Math.abs(g)<=1e-7*Math.max(1,Math.abs(v),Math.abs(k))){if(!out.some(r=>Math.abs(r-x)<h*2))out.push(x);}if(pv!==null){const pg=pv-k;if(pg*g<0){const r=refine(expr,k,px,x);if(r!==null&&!out.some(z=>Math.abs(z-r)<1e-6))out.push(r);}}pv=v;px=x;}return out.sort((a,b)=>a-b);}
+function numericCandidates(expr:string,k:number,xMin:number,xMax:number):number[]{return numericRoots(`(${expr})-(${k})`,xMin,xMax);}
 
 export function solveEquationVerified(expr:string,k:number,xMin=-20,xMax=20):EquationResult{
  if(!(xMin<xMax)||!Number.isFinite(k))throw new Error('Paramètres invalides.');
@@ -28,7 +28,7 @@ export function solveEquationVerified(expr:string,k:number,xMin=-20,xMax=20):Equ
    if(sol.kind==='none')return{solutions:[],method:'Résolution rationnelle exacte',steps:[...steps,'Aucune solution réelle.'],verifications:[],exact:true,searchInterval:[xMin,xMax],quality:'verified'};
    const candidates=sol.roots.filter(x=>!ex.points.some(p=>Math.abs(p-x)<=1e-9*Math.max(1,Math.abs(x))));
    const verifications=verify(expr,k,candidates),solutions=candidates.filter((_,i)=>verifications[i].ok);
-   if(Math.abs(a)>1e-12)steps.push(`On résout ${fmt(a)}x²+${fmt(b)}x+${fmt(c)}=0 ; Δ=${fmt(sol.delta??0)}.`);else if(Math.abs(b)>1e-12)steps.push(`On résout ${fmt(b)}x+${fmt(c)}=0.`);
+   if(a!==0)steps.push(`On résout ${fmt(a)}x²+${fmt(b)}x+${fmt(c)}=0 ; Δ=${fmt(sol.delta??0)}.`);else if(b!==0)steps.push(`On résout ${fmt(b)}x+${fmt(c)}=0.`);
    steps.push(...verifications.map(v=>`Vérification : f(${fmt(v.x)})=${v.fx===null?'non défini':fmt(v.fx)}, résidu=${v.residual===null?'indéfini':fmt(v.residual)}.`));
    const ok=solutions.length===candidates.length&&sol.verification.every(v=>v.ok);
    return{solutions,method:'Résolution algébrique exacte',steps,verifications,exact:true,searchInterval:[xMin,xMax],quality:ok?'verified':'warning'};

@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import { annuityFutureValue, annuityPresentValue, commercialDiscount, compoundFutureValue, presentValue, simpleInterest, type FinanceResult } from '../lib/financialMathEngine';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { ResultBox, Section } from './ResultCard';
@@ -14,6 +14,7 @@ export const FinancialMathCalculator:React.FC<Props>=({onClose})=>{
  const [time,setTime]=useState('2');
  const [res,setRes]=useState<FinanceResult|null>(null);
  const [err,setErr]=useState('');
+ useEffect(()=>{setRes(null);setErr('');},[mode,capital,ratePct,time]);
 
  const calculate=()=>{
   setErr('');setRes(null);
@@ -33,7 +34,7 @@ export const FinancialMathCalculator:React.FC<Props>=({onClose})=>{
  const isIntegerPeriods=!['simple','discount'].includes(mode);
  const amountLabel=mode==='discount'?'Valeur nominale N':mode==='present'?'Valeur future VF':mode.startsWith('annuity')?'Annuité R':'Capital C';
  return <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto"><div className="max-w-lg mx-auto px-4 py-6 min-h-screen">
-  <div className="flex items-center justify-between mb-4"><div><p className="text-[10px] text-indigo-400 font-bold uppercase">Programme Terminale OSE</p><h2 className="text-xl font-extrabold text-white">Mathématiques financières</h2></div><button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400">×</button></div>
+  <div className="flex items-center justify-between mb-4"><div><p className="text-[0.625rem] text-indigo-400 font-bold uppercase">Programme Terminale OSE</p><h2 className="text-xl font-extrabold text-white">Mathématiques financières</h2></div><button onClick={onClose} aria-label="Fermer l’outil" className="w-8 h-8 rounded-full bg-slate-800 text-slate-400">×</button></div>
   <div className="notice notice-info mb-4"><strong>Lecture simple :</strong> saisis le taux en pourcentage. Pour l’intérêt simple et l’escompte, la durée doit être exprimée dans la même unité que le taux. Pour les intérêts composés et annuités, n est un nombre entier de périodes.</div>
   <div className="flex gap-1 overflow-x-auto mb-4">
    {([

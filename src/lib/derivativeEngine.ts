@@ -9,12 +9,15 @@
  * - explicit support for the function families used in the application.
  */
 
+import { realPower } from './realPower.js';
+export type FunctionName = 'sin'|'cos'|'tan'|'exp'|'log'|'log10'|'sqrt'|'abs'|'asin'|'acos'|'atan';
+
 export type DNode =
   | { kind: 'num'; value: number }
   | { kind: 'sym'; name: string }
   | { kind: 'neg'; value: DNode }
   | { kind: 'bin'; op: '+' | '-' | '*' | '/' | '^'; left: DNode; right: DNode }
-  | { kind: 'func'; name: 'sin' | 'cos' | 'tan' | 'exp' | 'log' | 'sqrt' | 'abs'; arg: DNode };
+  | { kind: 'func'; name: FunctionName; arg: DNode };
 
 export interface DerivativeLessonStep {
   rule: string;
@@ -60,15 +63,9 @@ function tokenize(input: string): Token[] {
   while (i < s.length) {
     const ch = s[i];
     if (/\d|\./.test(ch)) {
-      const start = i;
-      let dots = 0;
-      while (i < s.length && /[\d.]/.test(s[i])) {
-        if (s[i] === '.') dots++;
-        i++;
-      }
-      if (dots > 1) throw new Error('Nombre invalide');
-      const raw = s.slice(start, i);
-      if (!/^\d*\.?\d+$/.test(raw)) throw new Error('Nombre invalide');
+      const raw=s.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/)?.[0];
+      if(!raw||!Number.isFinite(Number(raw)))throw new Error('Nombre invalide');
+      i+=raw.length;
       out.push({ type: 'num', value: raw });
       continue;
     }
@@ -160,8 +157,8 @@ class Parser {
         const arg = this.parseAddSub();
         this.expect('rpar');
         const normalized = id === 'ln' ? 'log' : id;
-        if (!['sin','cos','tan','exp','log','sqrt','abs'].includes(normalized)) throw new Error(`Fonction non prise en charge: ${id}`);
-        return { kind: 'func', name: normalized as 'sin'|'cos'|'tan'|'exp'|'log'|'sqrt'|'abs', arg };
+        if (!['sin','cos','tan','exp','log','log10','sqrt','abs','asin','acos','atan'].includes(normalized)) throw new Error(`Fonction non prise en charge: ${id}`);
+        return { kind: 'func', name: normalized as FunctionName, arg };
       }
       return { kind: 'sym', name: id };
     }
@@ -178,12 +175,12 @@ export function parseDerivativeExpression(input: string): DNode {
   return new Parser(input).parse();
 }
 
-function num(value: number): DNode { return { kind: 'num', value: Math.abs(value) < EPS ? 0 : value }; }
+function num(value: number): DNode { return { kind: 'num', value }; }
 function neg(value: DNode): DNode { return simplifyNode({ kind: 'neg', value }); }
 function bin(op: '+'|'-'|'*'|'/'|'^', left: DNode, right: DNode): DNode { return simplifyNode({ kind: 'bin', op, left, right }); }
-function fn(name: 'sin'|'cos'|'tan'|'exp'|'log'|'sqrt'|'abs', arg: DNode): DNode { return { kind: 'func', name, arg: simplifyNode(arg) }; }
+function fn(name: FunctionName, arg: DNode): DNode { return { kind: 'func', name, arg: simplifyNode(arg) }; }
 
-function isNum(n: DNode, v?: number): boolean { return n.kind === 'num' && (v === undefined || Math.abs(n.value - v) < EPS); }
+function isNum(n: DNode, v?: number): boolean { return n.kind === 'num' && (v === undefined || n.value === v); }
 function sameNode(a: DNode, b: DNode): boolean { return serializeNode(a) === serializeNode(b); }
 
 function simplifyNode(node: DNode): DNode {
@@ -379,6 +376,10 @@ export function differentiateNode(node: DNode, warnings: string[] = []): DNode {
       case 'log':
         warnings.push('La formule (ln u)′ = u′/u s’applique sur les points où u > 0.');
         return bin('/',du,u);
+      case 'log10': return bin('/',du,bin('*',u,fn('log',num(10))));
+      case 'asin': return bin('/',du,fn('sqrt',bin('-',num(1),bin('^',u,num(2)))));
+      case 'acos': return neg(bin('/',du,fn('sqrt',bin('-',num(1),bin('^',u,num(2))))));
+      case 'atan': return bin('/',du,bin('+',num(1),bin('^',u,num(2))));
       case 'sqrt':
         warnings.push('Pour √u, la fonction peut être définie en u=0 mais la formule de dérivation u′/(2√u) s’utilise seulement lorsque u > 0 ; les points où u=0 doivent être étudiés séparément.');
         return bin('/',du,bin('*',num(2),fn('sqrt',u)));
@@ -396,6 +397,7 @@ function precedence(node: DNode): number {
   return 5;
 }
 function formatNum(v:number):string {
+  if (v !== 0 && Math.abs(v) < 1e-8) return String(v);
   if (Math.abs(v-Math.round(v))<1e-12) return String(Math.round(v));
   return String(Math.round(v*1e12)/1e12);
 }
@@ -420,7 +422,7 @@ export function serializeNode(node: DNode, parentPrec = 0, _rightSide = false): 
 // ---------- Rational-polynomial canonical form ----------
 type Poly = number[];
 type Rat = { num:Poly; den:Poly };
-function trim(a:Poly):Poly { const o=a.slice(); while(o.length>1&&Math.abs(o[o.length-1])<1e-10)o.pop(); return o.map(v=>Math.abs(v)<1e-11?0:v); }
+function trim(a:Poly):Poly { const o=a.slice(); while(o.length>1&&o[o.length-1]===0)o.pop(); return o; }
 function padd(a:Poly,b:Poly):Poly{const n=Math.max(a.length,b.length),o=Array(n).fill(0);for(let i=0;i<n;i++)o[i]=(a[i]||0)+(b[i]||0);return trim(o);}
 function psub(a:Poly,b:Poly):Poly{return padd(a,b.map(v=>-v));}
 function pmul(a:Poly,b:Poly):Poly{const o=Array(a.length+b.length-1).fill(0);for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++)o[i+j]+=a[i]*b[j];return trim(o);}
@@ -429,7 +431,7 @@ function ppow(a:Poly,n:number):Poly{let o:Poly=[1],b=a,e=n;while(e>0){if(e%2)o=p
 function pdivmod(a0:Poly,b0:Poly):{q:Poly;r:Poly}|null{let a=trim(a0),b=trim(b0);if(b.length===1&&Math.abs(b[0])<EPS)return null;if(a.length<b.length)return{q:[0],r:a};const q=Array(a.length-b.length+1).fill(0);let r=a.slice(),guard=0;while(r.length>=b.length&&!(r.length===1&&Math.abs(r[0])<1e-9)&&guard++<80){const k=r.length-b.length,c=r[r.length-1]/b[b.length-1];q[k]=c;const sub=Array(k).fill(0).concat(pscale(b,c));r=trim(psub(r,sub));}return{q:trim(q),r:trim(r)};}
 function pmonic(a:Poly):Poly{const p=trim(a),lead=p[p.length-1];return Math.abs(lead)<EPS?[0]:pscale(p,1/lead);}
 function pgcd(a0:Poly,b0:Poly):Poly{let a=trim(a0),b=trim(b0),g=0;while(!(b.length===1&&Math.abs(b[0])<1e-8)&&g++<50){const dm=pdivmod(a,b);if(!dm)break;a=b;b=dm.r.map(v=>Math.abs(v)<1e-7?0:v);}return pmonic(a);}
-function rreduce(r:Rat):Rat{let n=trim(r.num),d=trim(r.den);if(d.length===1&&Math.abs(d[0])<EPS)return r;const g=pgcd(n,d);if(!(g.length===1&&Math.abs(g[0]-1)<1e-7)){const a=pdivmod(n,g),b=pdivmod(d,g);if(a&&b&&a.r.every(v=>Math.abs(v)<1e-6)&&b.r.every(v=>Math.abs(v)<1e-6)){n=a.q;d=b.q;}}if(d[d.length-1]<0){n=pscale(n,-1);d=pscale(d,-1);}if(d.length===1&&Math.abs(d[0]-1)>1e-10&&Math.abs(d[0])>EPS){n=pscale(n,1/d[0]);d=[1];}const c=(p:Poly)=>p.map(v=>Math.abs(v-Math.round(v))<1e-9?Math.round(v):Math.round(v*1e10)/1e10);return{num:trim(c(n)),den:trim(c(d))};}
+function rreduce(r:Rat):Rat{if([...r.num,...r.den].some(v=>v!==0&&Math.abs(v)<1e-8))return r;let n=trim(r.num),d=trim(r.den);if(d.length===1&&Math.abs(d[0])<EPS)return r;const g=pgcd(n,d);if(!(g.length===1&&Math.abs(g[0]-1)<1e-7)){const a=pdivmod(n,g),b=pdivmod(d,g);if(a&&b&&a.r.every(v=>Math.abs(v)<1e-6)&&b.r.every(v=>Math.abs(v)<1e-6)){n=a.q;d=b.q;}}if(d[d.length-1]<0){n=pscale(n,-1);d=pscale(d,-1);}if(d.length===1&&Math.abs(d[0]-1)>1e-10&&Math.abs(d[0])>EPS){n=pscale(n,1/d[0]);d=[1];}const c=(p:Poly)=>p.map(v=>Math.abs(v-Math.round(v))<1e-9?Math.round(v):Math.round(v*1e10)/1e10);return{num:trim(c(n)),den:trim(c(d))};}
 function toRat(n:DNode):Rat|null{
   n=simplifyNode(n);
   if(n.kind==='num')return{num:[n.value],den:[1]};
@@ -497,7 +499,7 @@ function ratString(r0:Rat):string{
 export function canonicalDerivativeString(node: DNode): string {
   const simple=simplifyNode(node);
   const r=toRat(simple);
-  return r?ratString(r):serializeNode(simple);
+  return r && ![...r.num,...r.den].some(v=>v!==0&&Math.abs(v)<1e-8)?ratString(r):serializeNode(simple);
 }
 
 function derivativeString(n:DNode):string{return canonicalDerivativeString(differentiateNode(n,[]));}
@@ -621,7 +623,7 @@ export function evaluateDerivativeAst(node:DNode,x:number):number{
     case'num':return node.value;
     case'sym':if(node.name==='x')return x;if(node.name==='pi')return Math.PI;if(node.name==='e')return Math.E;throw new Error(`Constante ${node.name} sans valeur`);
     case'neg':return-evaluateDerivativeAst(node.value,x);
-    case'bin':{const a=evaluateDerivativeAst(node.left,x),b=evaluateDerivativeAst(node.right,x);if(node.op==='+')return a+b;if(node.op==='-')return a-b;if(node.op==='*')return a*b;if(node.op==='/')return a/b;return Math.pow(a,b);}
-    case'func':{const u=evaluateDerivativeAst(node.arg,x);if(node.name==='sin')return Math.sin(u);if(node.name==='cos')return Math.cos(u);if(node.name==='tan')return Math.tan(u);if(node.name==='exp')return Math.exp(u);if(node.name==='log')return Math.log(u);if(node.name==='sqrt')return Math.sqrt(u);return Math.abs(u);}
+    case'bin':{const a=evaluateDerivativeAst(node.left,x),b=evaluateDerivativeAst(node.right,x);if(node.op==='+')return a+b;if(node.op==='-')return a-b;if(node.op==='*')return a*b;if(node.op==='/')return a/b;return realPower(a,b);}
+    case'func':{const u=evaluateDerivativeAst(node.arg,x);if(node.name==='sin')return Math.sin(u);if(node.name==='cos')return Math.cos(u);if(node.name==='tan')return Math.tan(u);if(node.name==='exp')return Math.exp(u);if(node.name==='log')return Math.log(u);if(node.name==='log10')return Math.log10(u);if(node.name==='asin')return Math.asin(u);if(node.name==='acos')return Math.acos(u);if(node.name==='atan')return Math.atan(u);if(node.name==='sqrt')return Math.sqrt(u);return Math.abs(u);}
   }
 }

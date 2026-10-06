@@ -2,7 +2,7 @@
  * Probabilités & Statistiques avec résultats structurés
  * © 2025 RATOVOSON Navelanizara Romuel
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { factorialBigInt, combinationBigInt, arrangementsBigInt, binomialProbability, binomialCdf, binomialRangeProbability, normalCdf, normalRangeProbability, inverseNormalCdf, descriptiveStats, linearRegression, mayerRegression, uniformRangeProbability, uniformMeanVariance, exponentialRangeProbability, exponentialSurvival, exponentialMeanVariance } from '../lib/probabilityEngine';
@@ -13,6 +13,13 @@ type Mode = 'combi' | 'binomial' | 'stats' | 'normal' | 'regression' | 'continuo
 
 function f(n: number): string { const r = Math.round(n * 100000000) / 100000000; return Number.isInteger(r) ? String(r) : r.toFixed(8).replace(/0+$/, '').replace(/\.$/, ''); }
 function pct(n: number): string { return (n * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + '%'; }
+
+const In = ({ label, value, onChange, type = 'number' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) => (
+  <div><label className="block text-[0.625rem] text-indigo-400 font-bold mb-1">{label}</label>
+  {type === 'textarea' ? <textarea aria-label={label} value={value} onChange={e => onChange(e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none resize-none" />
+  : <input aria-label={label} type="number" value={value} onChange={e => onChange(e.target.value)} step="any" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-center focus:border-indigo-500 focus:outline-none" />}
+  </div>
+ );
 
 export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => {
  const primaryMode:Mode=series==='C'||series==='S'?'combi':'stats';
@@ -25,13 +32,9 @@ export const ProbabilityCalc: React.FC<Props> = ({ onClose, series = null }) => 
  const [continuousLaw,setContinuousLaw]=useState<'uniform'|'exponential'>('uniform');
  const [contA,setContA]=useState('0'); const [contB,setContB]=useState('1'); const [lambda,setLambda]=useState('0.5'); const [contX1,setContX1]=useState('0.2'); const [contX2,setContX2]=useState('0.8');
  const [res, setRes] = useState<React.ReactNode | null>(null);
+ useEffect(()=>{setRes(null);},[mode,n,k,k2,p,dataStr,mu,sigma,xVal,xVal2,qVal,regX,regY,continuousLaw,contA,contB,lambda,contX1,contX2]);
 
- const In = ({ label, value, onChange, type = 'number' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) => (
-  <div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label>
-  {type === 'textarea' ? <textarea aria-label={label} value={value} onChange={e => onChange(e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none resize-none" />
-  : <input aria-label={label} type="number" value={value} onChange={e => onChange(e.target.value)} step="any" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-center focus:border-indigo-500 focus:outline-none" />}
-  </div>
- );
+
 
  const doCombi = () => {
   const nv = Number(n), kv = Number(k);

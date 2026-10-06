@@ -1,3 +1,4 @@
+import { numericRoots } from './numericRoots.js';
 import { parse, derivative } from 'mathjs';
 import { deriveWithBacEngine, type DNode } from './derivativeEngine.js';
 import { parsePolynomial, polynomialDegree } from './polynomialEngine.js';
@@ -8,6 +9,8 @@ import { tryExactDefiniteIntegral, tryExactPrimitive } from './integralEngine.js
 import { parseExpressionCore, evaluateConstantNode, safeEvaluateExpression } from './expressionCore.js';
 import { solveEquationVerified, type EquationResult } from './equationEngine.js';
 import { exactLimitAtInfinity, exactElementaryBoundaryLimit } from './limitEngine.js';
+import { rationalExponent } from './realPower.js';
+import { serializeNode } from './derivativeEngine.js';
 import { certifyContinuousOnInterval } from './intervalDomainEngine.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -169,7 +172,7 @@ function safeEval(expr: string, x: number): number | null {
 }
 
 function formatNumber(n: number): string {
- if (Number.isInteger(n)) return String(n);
+ if (Number.isInteger(n) || (n !== 0 && Math.abs(n) < 0.0001)) return String(n);
  const rounded = Math.round(n * 10000) / 10000;
  if (Number.isInteger(rounded)) return String(rounded);
  return rounded.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
@@ -230,15 +233,15 @@ function collectRestrictions(expr: string): { type: string; expression: string; 
   root.traverse((node: any) => {
    if (node?.isOperatorNode && node.op === '/' && Array.isArray(node.args) && node.args[1]) {
     const denom = node.args[1].toString();
-    if (denom.includes('x')) add('division', denom, `${denom} ≠ 0`);
+    add('division', denom, `${denom} ≠ 0`);
    }
    if (node?.isOperatorNode && node.op === '^' && Array.isArray(node.args) && node.args.length === 2) {
     const base = node.args[0]?.toString?.() || '';
     const exponentText = node.args[1]?.toString?.() || '';
-    if (!base.includes('x')) return;
     const exponent = safeEvaluateExpression(exponentText, {});
     if (exponent === null) {
-     add('power-positive', base, `${base} > 0`);
+     const constantBase=safeEvaluateExpression(base,{});
+     if(constantBase===null||constantBase<=0)add('power-variable',base,`${base} > 0 (branche réelle continue ; autres points non déterminés)`);
      return;
     }
     if (Number.isInteger(exponent)) {
@@ -261,9 +264,10 @@ function collectRestrictions(expr: string): { type: string; expression: string; 
    if (node?.isFunctionNode) {
     const name = String(node.fn?.name || '').toLowerCase();
     const arg = node.args?.[0]?.toString?.();
-    if (!arg || !arg.includes('x')) return;
+    if (!arg) return;
     if (name === 'sqrt') add('sqrt', arg, `${arg} ≥ 0`);
-    if (name === 'log' || name === 'ln') add('log', arg, `${arg} > 0`);
+    if (name === 'log' || name === 'ln' || name === 'log10') add('log', arg, `${arg} > 0`);
+    if (name === 'asin' || name === 'acos') add('inverse-trig', `1-(${arg})^2`, `-1 ≤ ${arg} ≤ 1`);
     if (name === 'tan') add('tan', arg, `${arg} ≠ π/2 + kπ, k ∈ ℤ`);
    }
   });
@@ -307,42 +311,14 @@ function polynomialRootsUpToDegree2(expr: string): number[] | null {
  try {
   const p = parsePolynomial(expr, 'x', 2);
   if (!p || polynomialDegree(p) > 2) return null;
-  const a = p[2] || 0, b = p[1] || 0, c = p[0] || 0;
-  const scale = Math.max(1, Math.abs(a), Math.abs(b), Math.abs(c));
-  const eps = 1e-12 * scale;
-  if (Math.abs(a) <= eps) {
-   if (Math.abs(b) <= eps) return [];
-   return [-c / b];
-  }
-  const delta = b * b - 4 * a * c;
-  const deltaTol = 1e-12 * Math.max(1, Math.abs(b * b), Math.abs(4 * a * c));
-  if (delta < -deltaTol) return [];
-  if (Math.abs(delta) <= deltaTol) return [-b / (2 * a)];
-  const sqrtDelta = Math.sqrt(Math.max(0, delta));
-  return [(-b - sqrtDelta) / (2 * a), (-b + sqrtDelta) / (2 * a)].sort((x, y) => x - y);
+  return realPolynomialRoots(p);
  } catch {
   return null;
  }
 }
 
 function approximateRoots(expr: string, min = -100, max = 100): number[] {
- const roots: number[] = [];
- const step = 0.25;
- let prevX = min;
- let prev = safeEval(expr, prevX);
- for (let x = min + step; x <= max; x += step) {
-  const current = safeEval(expr, x);
-  if (current !== null && Math.abs(current) < 1e-5) {
-   const r = Math.round(x * 1e6) / 1e6;
-   if (!roots.some(v => Math.abs(v - r) < 1e-3)) roots.push(r);
-  } else if (prev !== null && current !== null && prev * current < 0) {
-   const refined = refineZero(expr, prevX, x);
-   if (refined !== null && !roots.some(v => Math.abs(v - refined) < 1e-3)) roots.push(refined);
-  }
-  prevX = x;
-  prev = current;
- }
- return roots.sort((a, b) => a - b);
+ return findZeros(expr,min,max).map(z=>z.x);
 }
 
 function restrictionRoots(restrictionExpr: string): number[] {
@@ -405,6 +381,13 @@ function finiteDomainIntervals(expr: string, restrictions: { type: string; expre
 }
 
 function computeDomain(expr: string, xMin: number, xMax: number): DomainInfo {
+ const restrictions = collectRestrictions(expr);
+ for (const r of restrictions) {
+  const value = evaluateConstantNode(parseExpressionCore(r.expression));
+  if (value === null) continue;
+  const invalid = r.type === 'division' ? value === 0 : ['log','power-positive'].includes(r.type) ? value <= 0 : ['sqrt','power-nonnegative','inverse-trig'].includes(r.type) ? value < 0 : false;
+  if (invalid) return {description:'∅ (aucun réel)',excludedPoints:[],boundaryPoints:[],intervals:[],type:'restricted',restrictions,proven:true};
+ }
  // Exact rational path first. This preserves holes created by a cancelled factor.
  const rational = parseRationalPolynomial(expr, 'x', 20);
  if (rational) {
@@ -423,7 +406,6 @@ function computeDomain(expr: string, xMin: number, xMax: number): DomainInfo {
   }
  }
 
- const restrictions = collectRestrictions(expr);
  const tanRestrictions = restrictions.filter(r => r.type === 'tan');
  if (tanRestrictions.length > 0) {
   const allAffine = tanRestrictions.every(r => tanPolesOnWindow(r.expression, xMin, xMax) !== null);
@@ -444,7 +426,7 @@ function computeDomain(expr: string, xMin: number, xMax: number): DomainInfo {
    proven: allAffine && onlyTan
   };
  }
- const restrictionsExact = restrictions.every(r => { const p=parsePolynomial(r.expression,'x',2); return !!p && polynomialDegree(p)<=2; });
+ const restrictionsExact = restrictions.every(r => { if(r.type==='power-variable')return false;const p=parsePolynomial(r.expression,'x',2); return !!p && polynomialDegree(p)<=2; });
  if (!restrictionsExact && restrictions.length>0) {
   const exactExcluded:number[]=[];
   for(const r of restrictions){if(r.type!=='division')continue;const p=parsePolynomial(r.expression,'x',2);if(!p||polynomialDegree(p)>2)continue;const sol=solveQuadraticReal(p[2]||0,p[1]||0,p[0]||0);for(const x of sol.roots)if(!exactExcluded.some(v=>Math.abs(v-x)<1e-9))exactExcluded.push(x);}
@@ -485,7 +467,7 @@ function findZeros(expr: string, xMin: number, xMax: number): ZeroInfo[] {
   if (roots !== null && ex.complete) {
    return roots
     .filter(x => x>=xMin-1e-10 && x<=xMax+1e-10 && !ex.points.some(p=>Math.abs(p-x)<1e-8))
-    .map(x => ({ x, multiplicity: Math.max(1, rootMultiplicity(rat.num, x)), method: 'Résolution algébrique exacte du numérateur' }));
+    .map(x => ({ x:x===0?0:x, multiplicity: Math.max(1, rootMultiplicity(rat.num, x)), method: 'Résolution algébrique exacte du numérateur' }));
   }
  }
  // Exact path for affine/quadratic polynomials: do not approximate roots by scanning.
@@ -493,61 +475,53 @@ function findZeros(expr: string, xMin: number, xMax: number): ZeroInfo[] {
  if(poly && polynomialDegree(poly)<=2){
   const solved=solveQuadraticReal(poly[2]||0,poly[1]||0,poly[0]||0);
   if(solved.kind==='all') return [];
-  return solved.roots.filter(x=>x>=xMin-1e-10&&x<=xMax+1e-10).map(x=>({x,multiplicity:solved.kind==='double'?2:1,method:'Résolution algébrique exacte'}));
+  return solved.roots.filter(x=>x>=xMin-1e-10&&x<=xMax+1e-10).map(x=>({x:x===0?0:x,multiplicity:solved.kind==='double'?2:1,method:'Résolution algébrique exacte'}));
  }
- const zeros: ZeroInfo[] = [];
- const step = Math.max(0.001, (xMax-xMin)/20000);
- let prevVal = safeEval(expr, xMin);
-
- for (let x = xMin + step; x <= xMax; x += step) {
-  const val = safeEval(expr, x);
-  if (val === null || prevVal === null) {
-   prevVal = val;
-   continue;
+ // Elementary identities locate roots without a "close to zero" threshold.
+ const ast = parseExpressionCore(expr);
+ const elementary = (node: DNode): ZeroInfo[] | null => {
+  if (node.kind === 'neg') return findZeros(serializeNode(node.value), xMin, xMax);
+  if (node.kind === 'bin' && node.op === '^') {
+   const exponent = evaluateConstantNode(node.right);
+   if (exponent !== null && exponent > 0) return findZeros(serializeNode(node.left), xMin, xMax).map(z=>({...z,multiplicity:Number.isInteger(exponent)?z.multiplicity*exponent:1}));
+   if (exponent !== null && exponent <= 0) return [];
+   const base = evaluateConstantNode(node.left);
+   if (base !== null && base > 0) return [];
   }
-
-  // Zero crossing
-  if (prevVal * val < 0) {
-   const zero = refineZero(expr, x - step, x);
-   if (zero !== null && !zeros.some(z => Math.abs(z.x - zero) < 0.01)) {
-    zeros.push({
-     x: Math.round(zero * 1000) / 1000,
-     multiplicity: 1,
-     method: 'Changement de signe'
-    });
-   }
+  if (node.kind !== 'func') return null;
+  if (node.name === 'exp') return [];
+  if (node.name === 'sqrt' || node.name === 'abs') return findZeros(serializeNode(node.arg),xMin,xMax).filter(z=>safeEval(expr,z.x)!==null);
+  if (node.name === 'log' || node.name === 'log10') return findZeros(`(${serializeNode(node.arg)})-1`,xMin,xMax);
+  if (['sin','cos','tan'].includes(node.name)) {
+   const p=parsePolynomial(serializeNode(node.arg),'x',1);
+   if (!p || !p[1]) return null;
+   const slope=p[1], intercept=p[0]||0, offset=node.name==='cos'?Math.PI/2:0;
+   const low=Math.min(slope*xMin+intercept,slope*xMax+intercept);
+   const high=Math.max(slope*xMin+intercept,slope*xMax+intercept);
+   const first=Math.ceil((low-offset)/Math.PI-1e-12),last=Math.floor((high-offset)/Math.PI+1e-12);
+   if (last-first>20000) return null;
+   return Array.from({length:Math.max(0,last-first+1)},(_,i)=>({x:(offset+(first+i)*Math.PI-intercept)/slope,multiplicity:1,method:'Zéros de la fonction trigonométrique affine'})).sort((a,b)=>a.x-b.x);
   }
-
-  // Touch zero
-  if (Math.abs(val) < 0.001) {
-   const rounded = Math.round(x * 100) / 100;
-   if (!zeros.some(z => Math.abs(z.x - rounded) < 0.01)) {
-    zeros.push({
-     x: rounded,
-     multiplicity: 1,
-     method: 'Valeur proche de 0'
-    });
-   }
-  }
-
-  prevVal = val;
- }
-
- return zeros.sort((a, b) => a.x - b.x);
+  return null;
+ };
+ const exact=elementary(ast);
+ if (exact!==null) return exact;
+ return numericRoots(expr,xMin,xMax).map(x=>({x,multiplicity:1,method:'Racine numérique avec résidu relatif contrôlé'}));
 }
 
 function refineZero(expr: string, a: number, b: number): number | null {
- let lo = a, hi = b;
- for (let i = 0; i < 50; i++) {
-  const mid = (lo + hi) / 2;
-  const fMid = safeEval(expr, mid);
-  const fLo = safeEval(expr, lo);
-  if (fMid === null || fLo === null) return mid;
-  if (Math.abs(fMid) < 1e-10) return mid;
-  if (fLo * fMid < 0) hi = mid;
-  else lo = mid;
+ let lo=a,hi=b,fl=safeEval(expr,a),fh=safeEval(expr,b);
+ if(fl===null||fh===null||Math.sign(fl)*Math.sign(fh)>=0)return null;
+ const scale=Math.max(Math.abs(fl),Math.abs(fh));
+ for(let i=0;i<80;i++){
+  const mid=lo+(hi-lo)/2,fm=safeEval(expr,mid);
+  if(fm===null)return null;
+  if(fm===0)return mid;
+  if(mid===lo||mid===hi)return Math.abs(fm)<=1e-8*scale?mid:null;
+  if(Math.sign(fl)*Math.sign(fm)<0){hi=mid;fh=fm;}else{lo=mid;fl=fm;}
  }
- return (lo + hi) / 2;
+ const x=lo+(hi-lo)/2,value=safeEval(expr,x);
+ return value!==null&&Math.abs(value)<=1e-8*scale?x:null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -574,7 +548,7 @@ function computeSignTable(expr: string, zeros: ZeroInfo[], domain: DomainInfo, x
   
   if (val === null) continue;
   
-  let sign: '+' | '-' | '0' = val > 0.001 ? '+' : val < -0.001 ? '-' : '0';
+  let sign: '+' | '-' | '0' = val > 0 ? '+' : val < 0 ? '-' : '0';
   
   intervals.push({
    from: formatNumber(from),
@@ -732,15 +706,17 @@ function parityOfNode(node: DNode): ExactParity {
    return a === b ? 'even' : 'odd';
   }
   if (node.op === '^') {
-   const n=evaluateConstantNode(node.right); if(n===null||!Number.isInteger(n))return 'unknown';
-   if(a==='even')return 'even'; if(a==='odd')return Math.abs(n)%2===0?'even':'odd'; return 'unknown';
+   const n=evaluateConstantNode(node.right); if(n===null)return 'unknown';
+   const fraction=rationalExponent(n);
+   if (!fraction || fraction.denominator % 2 === 0) return a==='even'?'even':'unknown';
+   if(a==='even')return 'even'; if(a==='odd')return Math.abs(fraction.numerator)%2===0?'even':'odd'; return 'unknown';
   }
  }
  if (node.kind === 'func') {
   const p=parityOfNode(node.arg);
   if (p === 'even') return 'even';
   if (p === 'odd') {
-   if (node.name === 'sin' || node.name === 'tan') return 'odd';
+   if (node.name === 'sin' || node.name === 'tan' || node.name === 'asin' || node.name === 'atan') return 'odd';
    if (node.name === 'cos' || node.name === 'abs') return 'even';
   }
  }
@@ -778,7 +754,7 @@ function computeConvexity(expr: string, secondDerivExpr: string, xMin: number, x
    const signs:{from:number;to:number;sign:number}[]=[];
    for(let i=0;i<cuts.length-1;i++){
     const from=cuts[i],to=cuts[i+1],mid=(from+to)/2,d2=safeEval(secondDerivExpr,mid),fx=safeEval(expr,mid);
-    if(d2===null||fx===null||Math.abs(d2)<1e-12)continue;
+    if(d2===null||fx===null||d2===0)continue;
     const sign=d2>0?1:-1; signs.push({from,to,sign}); intervals.push({from:formatNumber(from),to:formatNumber(to),type:sign>0?'convex':'concave',signSecondDeriv:sign>0?'+':'-'});
    }
    for(const z of zeroes){
@@ -795,7 +771,7 @@ function computeConvexity(expr: string, secondDerivExpr: string, xMin: number, x
  for(let x=xMin;x<=xMax+step/2;x+=step){
   const d2=safeEval(secondDerivExpr,x),fx=safeEval(expr,x);
   if(d2===null||fx===null){prevSign=null;prevX=null;intervalStart=x;continue;}
-  const sign=d2>1e-6?1:d2<-1e-6?-1:0;if(sign===0)continue;
+  const sign=d2>0?1:d2<0?-1:0;if(sign===0)continue;
   if(prevSign!==null&&prevX!==null&&sign!==prevSign){
    const z=refineZero(secondDerivExpr,prevX,x)??(prevX+x)/2;
    const y=safeEval(expr,z),dl=safeEval(secondDerivExpr,z-step),dr=safeEval(secondDerivExpr,z+step);
@@ -957,7 +933,7 @@ function classifyCriticalPoint(expr:string, derivExpr:string, x:number, leftGap:
  const dl=safeEval(derivExpr,x-leftGap), dr=safeEval(derivExpr,x+rightGap);
  let type='point stationnaire', signBefore='?', signAfter='?', conclusion="f'(x)=0 ; le changement de signe doit être étudié.";
  if(dl!==null&&dr!==null){
-  signBefore=dl>1e-9?'+':dl<-1e-9?'-':'0'; signAfter=dr>1e-9?'+':dr<-1e-9?'-':'0';
+  signBefore=dl>0?'+':dl<0?'-':'0'; signAfter=dr>0?'+':dr<0?'-':'0';
   if(dl>0&&dr<0){type='maximum local';conclusion="f' : + → −, donc maximum local.";}
   else if(dl<0&&dr>0){type='minimum local';conclusion="f' : − → +, donc minimum local.";}
   else conclusion="f' ne change pas de signe : point stationnaire, pas un extremum.";
@@ -988,21 +964,10 @@ function findCriticalPoints(expr: string, derivExpr: string, xMin: number, xMax:
  }
 
  // Conservative numerical fallback on the selected window only.
- const step=Math.max(0.002,(xMax-xMin)/10000); let prevDeriv:number|null=null,prevX=xMin;
- for(let x=xMin;x<=xMax+step/2;x+=step){
-  const d=safeEval(derivExpr,x);
-  if(d===null){prevDeriv=null;prevX=x;continue;}
-  let candidate:number|null=null;
-  if(Math.abs(d)<1e-5)candidate=x;
-  else if(prevDeriv!==null&&d*prevDeriv<0)candidate=refineZero(derivExpr,prevX,x);
-  if(candidate!==null&&!points.some(p=>Math.abs(p.x-candidate!)<1e-5)){
-   const residual=Math.abs(safeEval(derivExpr,candidate)??Infinity);
-   if(residual<=1e-5*Math.max(1,Math.abs(safeEval(expr,candidate)??0))){
-    const gap=Math.max(1e-5,Math.min(.05,step*5)); const c=classifyCriticalPoint(expr,derivExpr,candidate,gap,gap);
-    if(c){points.push(c.point);solutions.push(c.point.x);verification.push(c.verification);}
-   }
-  }
-  prevDeriv=d;prevX=x;
+ for(const root of findZeros(derivExpr,xMin,xMax)){
+  const x=root.x,gap=Math.max(1e-6,Math.min(.05,(xMax-xMin)/1000));
+  const c=classifyCriticalPoint(expr,derivExpr,x,gap,gap);
+  if(c){points.push(c.point);solutions.push(c.point.x);verification.push(c.verification);}
  }
  return {points:points.sort((a,b)=>a.x-b.x),steps:{equation:`f'(x)=0`,solving:solutions.length?`Solutions numériques contrôlées sur [${formatNumber(xMin)} ; ${formatNumber(xMax)}] : x ≈ ${solutions.map(formatNumber).join(', ')}`:`Aucun point critique détecté sur [${formatNumber(xMin)} ; ${formatNumber(xMax)}]`,solutions,verification}};
 }
@@ -1010,6 +975,28 @@ function findCriticalPoints(expr: string, derivExpr: string, xMin: number, xMax:
 function computeVariation(expr: string, derivExpr: string, domain: DomainInfo, xMin: number, xMax: number): { variation: VariationInfo; criticalSteps: CriticalPointStep } {
  const { points: criticalPoints, steps: criticalSteps } = findCriticalPoints(expr, derivExpr, xMin, xMax);
  const intervals: VariationInfo['intervals'] = [];
+ // Split at points where f is defined but its derivative formula is not.
+ const breaks:number[]=[];
+ const visit=(node:DNode):void=>{
+  if(node.kind==='func'){
+   if(node.name==='abs'||node.name==='sqrt')breaks.push(...findZeros(serializeNode(node.arg),xMin,xMax).map(z=>z.x));
+   visit(node.arg);
+  }else if(node.kind==='bin'){
+   if(node.op==='^'){const exponent=evaluateConstantNode(node.right);if(exponent!==null&&!Number.isInteger(exponent))breaks.push(...findZeros(serializeNode(node.left),xMin,xMax).map(z=>z.x));}
+   visit(node.left);visit(node.right);
+  }else if(node.kind==='neg')visit(node.value);
+ };
+ visit(parseExpressionCore(expr));
+ for(const x of [...new Set(breaks)]){
+  if(x<xMin||x>xMax||safeEval(expr,x)===null||safeEval(derivExpr,x)!==null||criticalPoints.some(p=>Math.abs(p.x-x)<1e-8))continue;
+  const c=classifyCriticalPoint(expr,derivExpr,x,Math.min(.05,(xMax-xMin)/1000),Math.min(.05,(xMax-xMin)/1000));
+  if(c){
+   if(!c.point.type.includes('extremum')&&!c.point.type.includes('minimum')&&!c.point.type.includes('maximum'))c.point.type='Formule de dérivée non définie';
+   c.verification.conclusion+=' La formule de dérivée n’est pas définie au point ; les signes latéraux sont étudiés séparément.';
+   criticalPoints.push(c.point);criticalSteps.verification.push(c.verification);
+  }
+ }
+ criticalPoints.sort((a,b)=>a.x-b.x);
 
  const boundaryPoints = [xMin, ...criticalPoints.map(p => p.x), ...domain.boundaryPoints.filter(p => p > xMin && p < xMax), xMax];
  const sortedPoints = [...new Set(boundaryPoints)].sort((a, b) => a - b);
@@ -1021,8 +1008,8 @@ function computeVariation(expr: string, derivExpr: string, domain: DomainInfo, x
   const derivAtMid = safeEval(derivExpr, mid);
   if (midVal === null || derivAtMid === null) continue;
 
-  const direction = derivAtMid > 0.001 ? 'increasing' : derivAtMid < -0.001 ? 'decreasing' : 'constant';
-  const signDerivative = derivAtMid > 0.001 ? '+' : derivAtMid < -0.001 ? '-' : '0';
+  const direction = derivAtMid > 0 ? 'increasing' : derivAtMid < 0 ? 'decreasing' : 'constant';
+  const signDerivative = derivAtMid > 0 ? '+' : derivAtMid < 0 ? '-' : '0';
   intervals.push({ from: formatNumber(from), to: formatNumber(to), direction, signDerivative });
  }
 
@@ -1062,8 +1049,12 @@ function buildDomainSteps(domain: DomainInfo): DomainStep[] {
    steps.push({ rule: 'Racine carrée ≥ 0', condition: 'Expression sous √ ≥ 0', equation: `${r.expression} ≥ 0`, solution: `Résoudre ${r.expression} ≥ 0`, result: domain.intervals });
   } else if (r.type === 'log') {
    steps.push({ rule: 'Logarithme > 0', condition: 'Argument de ln > 0', equation: `${r.expression} > 0`, solution: `Résoudre ${r.expression} > 0`, result: domain.intervals });
+  } else if (r.type === 'inverse-trig') {
+   steps.push({rule:'Domaine de la fonction trigonométrique réciproque',condition:r.condition,equation:`${r.expression} ≥ 0`,solution:'Résoudre la condition sur l’argument',result:domain.intervals});
   } else if (r.type === 'power-nonnegative') {
    steps.push({ rule: 'Puissance réelle fractionnaire', condition: 'Base ≥ 0', equation: `${r.expression} ≥ 0`, solution: `Résoudre ${r.expression} ≥ 0`, result: domain.intervals });
+  } else if (r.type === 'power-variable') {
+   steps.push({rule:'Puissance à exposant variable',condition:r.condition,equation:`${r.expression} > 0`,solution:'Condition suffisante pour la branche continue ; le domaine complet reste à déterminer',result:[]});
   } else if (r.type === 'power-positive') {
    steps.push({ rule: 'Puissance réelle fractionnaire négative ou générale', condition: 'Base > 0', equation: `${r.expression} > 0`, solution: `Résoudre ${r.expression} > 0`, result: domain.intervals });
   } else if (r.type === 'tan') {
@@ -1089,6 +1080,13 @@ export function analyzeFunction(expr: string, xMin: number = -10, xMax: number =
  }
  try {
   parse(expr);
+  const validate = (node: DNode): void => {
+   if (node.kind === 'sym' && !['x','pi','e'].includes(node.name)) throw new Error(`Variable non prise en charge : ${node.name}`);
+   if (node.kind === 'neg') validate(node.value);
+   if (node.kind === 'func') validate(node.arg);
+   if (node.kind === 'bin') { validate(node.left); validate(node.right); }
+  };
+  validate(parseExpressionCore(expr));
  } catch (e: any) {
   throw new Error(`Expression invalide: ${e.message}`);
  }
@@ -1098,6 +1096,7 @@ export function analyzeFunction(expr: string, xMin: number = -10, xMax: number =
   verification: derivativeVerification, secondVerification: secondDerivativeVerification
  } = computeDerivative(expr);
  const domain = computeDomain(expr, xMin, xMax);
+ if (domain.description.startsWith('∅')) throw new Error('Cette expression n’est définie pour aucun réel : vérifie ses divisions, racines et logarithmes.');
  const { limits, steps: limitSteps } = computeLimits(expr, domain);
  const { variation, criticalSteps } = computeVariation(expr, derivExpr, domain, xMin, xMax);
  const plotData = computePlotData(expr, xMin, xMax);
@@ -1120,10 +1119,10 @@ export function analyzeFunction(expr: string, xMin: number = -10, xMax: number =
  };
  const criticalCheck: ReliabilityCheck = {
   label: 'Points critiques',
-  ok: variation.criticalPoints.every(p => Math.abs(safeEval(derivExpr, p.x) ?? Number.POSITIVE_INFINITY) <= 5e-3),
+  ok: variation.criticalPoints.every(p => {const d=safeEval(derivExpr,p.x);return d===null?safeEval(expr,p.x)!==null:Math.abs(d)<=5e-3;}),
   detail: variation.criticalPoints.length === 0
    ? 'Aucun point critique détecté dans la fenêtre étudiée.'
-   : 'Chaque point critique affiché est recontrôlé dans la dérivée.'
+   : 'Les zéros de dérivée sont recontrôlés et les points où sa formule n’est pas définie sont étudiés séparément.'
  };
  const domainCheck: ReliabilityCheck = {
   label: 'Domaine de définition',

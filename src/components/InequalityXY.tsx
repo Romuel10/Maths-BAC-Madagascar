@@ -328,19 +328,19 @@ export const InequalityXY: React.FC<Props> = ({ onClose }) => {
        </div>
        <div className="grid grid-cols-4 gap-1.5">
         <div>
-         <label className="block text-[9px] text-slate-500 mb-0.5">a</label>
+         <label className="block text-[0.5625rem] text-slate-500 mb-0.5">a</label>
          <input aria-label={`Coefficient a, inéquation ${idx+1}`} type="number" value={iq.a} onChange={e => setField(idx, 'a', Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm font-mono text-center focus:border-indigo-500 focus:outline-none" />
         </div>
         <div>
-         <label className="block text-[9px] text-slate-500 mb-0.5">b</label>
+         <label className="block text-[0.5625rem] text-slate-500 mb-0.5">b</label>
          <input aria-label={`Coefficient b, inéquation ${idx+1}`} type="number" value={iq.b} onChange={e => setField(idx, 'b', Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm font-mono text-center focus:border-indigo-500 focus:outline-none" />
         </div>
         <div>
-         <label className="block text-[9px] text-slate-500 mb-0.5">c</label>
+         <label className="block text-[0.5625rem] text-slate-500 mb-0.5">c</label>
          <input aria-label={`Coefficient c, inéquation ${idx+1}`} type="number" value={iq.c} onChange={e => setField(idx, 'c', Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm font-mono text-center focus:border-indigo-500 focus:outline-none" />
         </div>
         <div>
-         <label className="block text-[9px] text-slate-500 mb-0.5">Signe</label>
+         <label className="block text-[0.5625rem] text-slate-500 mb-0.5">Signe</label>
          <select aria-label={`Signe, inéquation ${idx+1}`} value={iq.op} onChange={e => setField(idx, 'op', e.target.value as IneqOp)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-1 py-1.5 text-white text-sm text-center focus:border-indigo-500 focus:outline-none appearance-none">
           <option value=">=">≥ 0</option>
           <option value=">">&gt; 0</option>
@@ -368,7 +368,7 @@ export const InequalityXY: React.FC<Props> = ({ onClose }) => {
       { label: 'x≥0, y≥0, x+y≤4', data: [{ a: 1, b: 0, c: 0, op: '>=' as IneqOp }, { a: 0, b: 1, c: 0, op: '>=' as IneqOp }, { a: 1, b: 1, c: -4, op: '<=' as IneqOp }] },
       { label: '2x−y<3', data: [{ a: 2, b: -1, c: -3, op: '<' as IneqOp }] },
      ].map((ex, i) => (
-      <button key={i} onClick={() => { setInequalities(ex.data.map((d, j) => ({ ...d, label: '', color: COLORS[j] }))); setSolved(false); }} className="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[10px] text-slate-300 font-mono active:scale-95">{ex.label}</button>
+      <button key={i} onClick={() => { setInequalities(ex.data.map((d, j) => ({ ...d, label: '', color: COLORS[j] }))); setSolved(false); }} className="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[0.625rem] text-slate-300 font-mono active:scale-95">{ex.label}</button>
      ))}
     </div>
 
@@ -391,13 +391,13 @@ export const InequalityXY: React.FC<Props> = ({ onClose }) => {
        {intersections.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
          {intersections.map((pt, i) => (
-          <span key={i} className={`px-2 py-1 rounded-lg text-[10px] font-mono border ${pt.satisfiesAll ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
+          <span key={i} className={`px-2 py-1 rounded-lg text-[0.625rem] font-mono border ${pt.satisfiesAll ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
            ({fmt(pt.x)} ; {fmt(pt.y)}) {pt.satisfiesAll ? '' : ''}
           </span>
          ))}
         </div>
-       ) : <p className="text-[10px] text-slate-500">Aucune intersection finie visible.</p>}
-       {solutionVertices.length > 0 && <p className="text-[10px] text-emerald-400 mt-2">Les points marqués appartiennent à la zone solution.</p>}
+       ) : <p className="text-[0.625rem] text-slate-500">Aucune intersection finie visible.</p>}
+       {solutionVertices.length > 0 && <p className="text-[0.625rem] text-emerald-400 mt-2">Les points marqués appartiennent à la zone solution.</p>}
       </div>
 
       {/* Legend */}
@@ -445,12 +445,12 @@ export const InequalityXY: React.FC<Props> = ({ onClose }) => {
          const ok = satisfies(iq, tp.x, tp.y);
          return (
           <div key={i} className="bg-slate-800/40 rounded-lg p-2 border border-slate-700/20">
-           <p className="text-[11px] font-mono text-white">{iq.label}</p>
-           <p className="text-[10px] text-slate-400 mt-1">
+           <p className="text-[0.6875rem] font-mono text-white">{iq.label}</p>
+           <p className="text-[0.625rem] text-slate-400 mt-1">
             On teste le point <span className="text-cyan-300 font-mono">({tp.x} ; {tp.y})</span> : 
             <span className="font-mono text-slate-300"> {fmt(iq.a)}×{tp.x} {iq.b >= 0 ? '+' : '-'} {fmt(Math.abs(iq.b))}×{tp.y} {iq.c >= 0 ? '+' : '-'} {fmt(Math.abs(iq.c))} = {fmt(tp.value)}</span>
            </p>
-           <p className={`text-[10px] mt-1 ${ok ? 'text-emerald-400' : 'text-red-400'}`}>
+           <p className={`text-[0.625rem] mt-1 ${ok ? 'text-emerald-400' : 'text-red-400'}`}>
             {ok ? ' Ce point vérifie l’inéquation : le bon demi-plan est celui qui contient ce point.' : ' Ce point ne vérifie pas l’inéquation : ce demi-plan est hachuré.'}
            </p>
           </div>

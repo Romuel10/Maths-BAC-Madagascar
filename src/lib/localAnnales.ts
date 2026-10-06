@@ -1,5 +1,5 @@
-import type { BacSeries } from '../data/bacSubjects';
-import { storageGet, storageJsonSet } from './safeStorage';
+import { isBacSeries, type BacSeries } from '../data/bacSubjects.js';
+import { storageGet, storageJsonSet } from './safeStorage.js';
 
 const KEY = 'mathbac_mg_local_annales_v60';
 const LEGACY_KEY = 'mathbac_mg_local_annales_v37';
@@ -56,7 +56,7 @@ function normalizeAnnale(value:unknown,index:number):LocalAnnale|null {
  const item=record(value);if(!item)return null;
  const title=cleanText(item.title,200);
  const series=item.series;
- if(!title||(series!=='A'&&series!=='C'&&series!=='D')||!Array.isArray(item.questions))return null;
+ if(!title||!isBacSeries(series)||!Array.isArray(item.questions))return null;
  const questions=item.questions.slice(0,MAX_QUESTIONS).map(normalizeQuestion).filter((q):q is LocalAnnaleQuestion=>q!==null);
  if(!questions.length)return null;
  const suppliedYear=typeof item.year==='number'?item.year:Number(item.year);

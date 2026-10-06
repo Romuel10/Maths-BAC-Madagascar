@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { parseComplex, cAdd, cSub, cMul, cDiv, cPow, cSqrt, cRoots, cFromPolar, analyzeComplex, cToString, cMod, cArg, solveQuadraticComplex, type Complex } from '../lib/complex';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
@@ -6,6 +6,11 @@ import { ReliabilityPanel } from './ReliabilityPanel';
 interface Props { onClose: () => void }
 
 const fmt = (n: number) => { const r = Math.round(n * 10000) / 10000; return Number.isInteger(r) ? String(r) : r.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''); };
+
+const Input = ({ label, value, onChange, ph }: { label: string; value: string; onChange: (v: string) => void; ph?: string }) => (
+  <div><label className="block text-[0.625rem] text-indigo-400 font-bold mb-1">{label}</label>
+  <input aria-label={label} value={value} onChange={e => onChange(e.target.value)} placeholder={ph} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono focus:border-indigo-500 focus:outline-none" /></div>
+ );
 
 export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
  const [mode, setMode] = useState<'calc' | 'analyze' | 'equation' | 'polar'>('calc');
@@ -16,6 +21,7 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
  const [polarR,setPolarR]=useState('2'); const [polarTheta,setPolarTheta]=useState('60'); const [polarUnit,setPolarUnit]=useState<'deg'|'rad'>('deg');
  const [eqA, setEqA] = useState('1'); const [eqB, setEqB] = useState('2'); const [eqC, setEqC] = useState('5');
  const [res, setRes] = useState<React.ReactNode | null>(null);
+ useEffect(()=>{setRes(null);},[mode,z1s,z2s,op,pow,polarR,polarTheta,polarUnit,eqA,eqB,eqC]);
  const [err, setErr] = useState('');
 
  const doCalc = () => {
@@ -128,9 +134,9 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
     </div>
     <Section icon="" title="Les 3 formes" color="blue">
      <div className="space-y-2">
-      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[10px] text-blue-400">Algébrique</p><p className="font-mono text-white text-sm">{a.algebraicForm}</p></div>
-      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[10px] text-blue-400">Trigonométrique</p><p className="font-mono text-white text-sm">{a.trigForm}</p></div>
-      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[10px] text-blue-400">Exponentielle</p><p className="font-mono text-white text-sm">{a.exponentialForm}</p></div>
+      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[0.625rem] text-blue-400">Algébrique</p><p className="font-mono text-white text-sm">{a.algebraicForm}</p></div>
+      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[0.625rem] text-blue-400">Trigonométrique</p><p className="font-mono text-white text-sm">{a.trigForm}</p></div>
+      <div className="bg-slate-800/50 rounded-lg p-2"><p className="text-[0.625rem] text-blue-400">Exponentielle</p><p className="font-mono text-white text-sm">{a.exponentialForm}</p></div>
      </div>
     </Section>
     <Section icon="√" title="Racines carrées" color="emerald">
@@ -188,10 +194,7 @@ export const ComplexCalculator: React.FC<Props> = ({ onClose }) => {
    <Section icon="∴" title="Formes équivalentes" color="blue"><div className="space-y-1 text-xs text-slate-300 font-mono"><p>{analyzed.trigForm}</p><p>{analyzed.exponentialForm}</p></div></Section>
   </div>);
  };
- const Input = ({ label, value, onChange, ph }: { label: string; value: string; onChange: (v: string) => void; ph?: string }) => (
-  <div><label className="block text-[10px] text-indigo-400 font-bold mb-1">{label}</label>
-  <input aria-label={label} value={value} onChange={e => onChange(e.target.value)} placeholder={ph} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono focus:border-indigo-500 focus:outline-none" /></div>
- );
+
 
  return (
   <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto">

@@ -55,7 +55,7 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
     <div className="space-y-3.5 mt-4">
      {topics.map(t => (
       <div key={t.topic}>
-       <div className="flex justify-between gap-2 text-[10px]"><span className="font-semibold" style={{ color: 'var(--text-soft)' }}>{t.topic} · {t.percent>=80?'maîtrisé':t.percent>=50?'en progrès':'prioritaire'}</span><span className="font-extrabold text-brand">{t.done}/{t.total} · {t.percent}%</span></div>
+       <div className="flex justify-between gap-2 text-[0.625rem]"><span className="font-semibold" style={{ color: 'var(--text-soft)' }}>{t.topic} · {t.percent>=80?'maîtrisé':t.percent>=50?'en progrès':'prioritaire'}</span><span className="font-extrabold text-brand">{t.done}/{t.total} · {t.percent}%</span></div>
        <div className="progress-track mt-1.5"><div className="progress-fill" style={{ width: `${t.percent}%` }} /></div>
       </div>
      ))}
@@ -69,7 +69,7 @@ export function BacProgressDashboard({onOpenQuestion}:Props) {
      return (
       <div key={subject.id} className="surface p-3 flex items-center gap-3">
        <div className="w-9 h-9 rounded-xl grid place-items-center font-black text-brand" style={{ background: 'var(--brand-soft)' }}>{subject.series}</div>
-       <div className="min-w-0 flex-1"><p className="text-[11px] font-bold truncate" style={{ color: 'var(--text)' }}>{subject.title}</p><p className="section-copy mt-0.5">Série {subject.series}</p></div>
+       <div className="min-w-0 flex-1"><p className="text-[0.6875rem] font-bold truncate" style={{ color: 'var(--text)' }}>{subject.title}</p><p className="section-copy mt-0.5">Série {subject.series}</p></div>
        <p className="text-xs font-black text-brand">{p.percent}%</p>
       </div>
      );

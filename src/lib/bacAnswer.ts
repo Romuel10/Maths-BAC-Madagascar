@@ -1,4 +1,4 @@
-import { evaluate, simplify } from 'mathjs';
+import { evaluate, simplify, parse, FunctionNode, SymbolNode } from 'mathjs';
 import type { AnswerCheck } from '../data/bacSubjects.js';
 import { parseRationalPolynomial, rationalEquivalent, rationalExcludedPoints } from './rationalEngine.js';
 
@@ -18,10 +18,12 @@ function textContainsTerm(answer:string,term:string):boolean{
 }
 
 function toMathExpression(value: string): string {
- return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[−–—]/g, '-').replace(/,/g, '.')
+ const normalized=value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[−–—]/g, '-').replace(/,/g, '.')
   .replace(/√\s*\(([^)]+)\)/g, 'sqrt($1)').replace(/√\s*([0-9.]+)/g, 'sqrt($1)').replace(/ln\s*\(/g, 'log(')
-  .replace(/e\^\(([^)]+)\)/g, 'exp($1)').replace(/e\^([a-z0-9+\-*/.]+)/g, 'exp($1)').replace(/\)\s*\(/g, ')*(')
+  .replace(/\)\s*\(/g, ')*(')
   .replace(/²/g, '^2').replace(/³/g, '^3').replace(/×/g, '*').replace(/÷/g, '/').replace(/\s+/g, '');
+ // Transform a parsed power, preserving where its exponent actually ends.
+ try{return parse(normalized).transform((node:any)=>node.isOperatorNode&&node.op==='^'&&node.args[0]?.isSymbolNode&&node.args[0].name==='e'?new FunctionNode(new SymbolNode('exp'),[node.args[1]]):node).toString();}catch{return normalized;}
 }
 
 function numericValue(input: string): number | null {

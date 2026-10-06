@@ -1,4 +1,4 @@
-import type { SolverTopic } from './solverIntent';
+import type { SolverTopic } from './solverIntent.js';
 
 export type TutorExplanationLevel = 'simple' | 'detail' | 'bac';
 

@@ -1,3 +1,5 @@
+import { getTutorDraft } from '../lib/tutorDraft';
+import { storageSet } from '../lib/safeStorage';
 import { getBacProgress } from '../lib/bacProgress';
 import { getStudentProfile, weakTopics } from '../lib/studentProfile';
 
@@ -21,6 +23,11 @@ export function BacHome({ onBac, onTutor, onTools, onReview }: Props) {
  const profile=getStudentProfile();
  const priority=weakTopics(profile)[0];
 
+ const resumeTutor=()=>{
+  if(!getTutorDraft()&&profile.lastActivity?.payload){const isFunction=profile.lastActivity.workspace==='function'||profile.lastActivity.label==='Étude de fonction';storageSet(isFunction?'mathbac_function_prefill':'mathbac_tutor_prefill',profile.lastActivity.payload);}
+  onTutor();
+ };
+
  const open=(id:typeof ACTIONS[number]['id'])=>{
   if(id==='review')onReview();
   else if(id==='solve')onTutor();
@@ -40,7 +47,7 @@ export function BacHome({ onBac, onTutor, onTools, onReview }: Props) {
      <span className="chip chip-brand">{profile.series?'Série '+profile.series:'Choisir ma série'}</span>
      {priority&&<span className="chip chip-warning">À renforcer : {priority}</span>}
     </div>
-    {profile.lastActivity&&<button onClick={profile.lastActivity.kind==='solve'?onTutor:onReview} className="btn btn-secondary w-full mt-4">Continuer · {profile.lastActivity.label}</button>}
+    {profile.lastActivity&&<button onClick={profile.lastActivity.kind==='solve'?resumeTutor:profile.lastActivity.kind==='exam'?onBac:onReview} className="btn btn-secondary w-full mt-4">Continuer · {profile.lastActivity.label}</button>}
    </section>
 
    <section className="home-action-grid" aria-label="Actions principales">

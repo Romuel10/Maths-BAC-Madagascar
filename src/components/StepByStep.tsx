@@ -32,8 +32,8 @@ export const StepByStep: React.FC<StepByStepProps> = ({ result }) => {
   <div className="space-y-3">
    <ReliabilityPanel level={result.quality.level} title={result.quality.title} detail={result.quality.detail} checks={result.quality.checks} />
    <div className="rounded-xl border border-slate-700/30 bg-slate-900/50 p-3">
-    <p className="text-[10px] font-bold text-slate-300">Lecture conseillée</p>
-    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Lis les blocs dans l’ordre : domaine → dérivée → points critiques → limites. Les détails sont ouverts par défaut pour pouvoir comparer chaque ligne avec ton propre calcul.</p>
+    <p className="text-[0.625rem] font-bold text-slate-300">Lecture conseillée</p>
+    <p className="text-[0.625rem] text-slate-500 mt-1 leading-relaxed">Lis les blocs dans l’ordre : domaine → dérivée → points critiques → limites. Les détails sont ouverts par défaut pour pouvoir comparer chaque ligne avec ton propre calcul.</p>
    </div>
    {/* ═══════════════════════════════════════════════════════════════ */}
    {/* ÉTAPE 1 : ENSEMBLE DE DÉFINITION */}

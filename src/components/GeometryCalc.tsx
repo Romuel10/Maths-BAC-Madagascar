@@ -2,7 +2,7 @@
  * Géométrie analytique avec résultats visuels et étapes détaillées
  * © 2025 RATOVOSON Navelanizara Romuel
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ResultBox, Step, Section, StepsList, PropBadge } from './ResultCard';
 import { ReliabilityPanel } from './ReliabilityPanel';
 import { distance2D, midpoint2D, lineThrough, circleFromCenterPoint } from '../lib/geometryEngine';
@@ -13,11 +13,18 @@ type Mode = 'distance' | 'midpoint' | 'line' | 'circle';
 
 function fmt(n: number): string { const r = Math.round(n * 10000) / 10000; return Number.isInteger(r) ? String(r) : r.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''); }
 
+const InputField = ({ label, value, onChange, color = 'indigo' }: { label: string; value: string; onChange: (v: string) => void; color?: string }) => (
+  <div><label className={`block text-[0.625rem] text-${color}-400 font-bold mb-1`}>{label}</label>
+   <input aria-label={label} type="number" value={value} onChange={e => onChange(e.target.value)}
+    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:border-${color}-500 focus:outline-none`} /></div>
+ );
+
 export const GeometryCalc: React.FC<Props> = ({ onClose }) => {
  const [mode, setMode] = useState<Mode>('distance');
  const [x1, setX1] = useState('0'); const [y1, setY1] = useState('0');
  const [x2, setX2] = useState('3'); const [y2, setY2] = useState('4');
  const [res, setRes] = useState<React.ReactNode | null>(null);
+ useEffect(()=>{setRes(null);},[mode,x1,y1,x2,y2]);
 
  const modes: { id: Mode; icon: string; label: string }[] = [
   { id: 'distance', icon: 'd', label: 'Distance' },
@@ -153,11 +160,7 @@ export const GeometryCalc: React.FC<Props> = ({ onClose }) => {
   }
  };
 
- const InputField = ({ label, value, onChange, color = 'indigo' }: { label: string; value: string; onChange: (v: string) => void; color?: string }) => (
-  <div><label className={`block text-[10px] text-${color}-400 font-bold mb-1`}>{label}</label>
-   <input aria-label={label} type="number" value={value} onChange={e => onChange(e.target.value)}
-    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-mono text-sm focus:border-${color}-500 focus:outline-none`} /></div>
- );
+
 
  return (
   <div className="fixed inset-0 bg-slate-950/98 z-50 overflow-y-auto">

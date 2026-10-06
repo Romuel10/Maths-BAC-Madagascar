@@ -7,7 +7,7 @@
 - Nom : `Maths BAC Madagascar`.
 - Android minimum : API 24, soit Android 7.
 - Compilation et cible : API 36.
-- Version Android de publication : `versionCode 701`, `versionName 1.0.1`.
+- Version Android de publication : `versionCode 702`, `versionName 1.0.2`.
 - Module natif `@capacitor/app` : gestion par défaut du bouton Retour Android.
 - Ressources web embarquées dans l’application : aucun serveur n’est requis pour les cours et outils.
 - Icône adaptative, écran de démarrage sombre et trafic HTTP en clair désactivé.
@@ -59,7 +59,7 @@ Le workflow `.github/workflows/android-release.yml` valide d’abord le projet e
 - `MATHS_BAC_KEY_ALIAS` : par exemple `maths-bac` ;
 - `MATHS_BAC_KEY_PASSWORD`.
 
-Lancer ensuite **Actions → Validation et Android → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v1.0.1-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
+Lancer ensuite **Actions → Validation et Android → Run workflow**. Télécharger l’artefact `maths-bac-madagascar-v1.0.2-aab`, puis envoyer le fichier `.aab` sur une piste de test interne de Google Play Console.
 
 ## Construction locale avec un SDK Android configuré
 

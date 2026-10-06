@@ -14,6 +14,7 @@ export const SequenceAnalyzer: React.FC<Props> = ({ onClose }) => {
  const [count, setCount] = useState(20);
  const [result, setResult] = useState<SequenceResult | null>(null);
  const [error, setError] = useState<string | null>(null);
+ useEffect(()=>{setResult(null);setError(null);},[type,expr,u0,nStart,count]);
  const canvasRef = useRef<HTMLCanvasElement>(null);
  const containerRef = useRef<HTMLDivElement>(null);
 
@@ -225,18 +226,18 @@ export const SequenceAnalyzer: React.FC<Props> = ({ onClose }) => {
         <p className="text-sm font-bold text-indigo-300"> Suite arithmétique — Formules</p>
         <div className="space-y-2">
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-indigo-400 font-bold">Raison r</p>
+          <p className="text-[0.625rem] text-indigo-400 font-bold">Raison r</p>
           <div className="text-sm text-white"><MathExpression value={`r=u_(n+1)-u_n=${result.isArithmetic.reason}`} /></div>
          </div>
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-indigo-400 font-bold">Terme général</p>
+          <p className="text-[0.625rem] text-indigo-400 font-bold">Terme général</p>
           <p className="text-sm font-mono text-white">uₙ = u₀ + n × r = {result.terms[0].value} + n × {result.isArithmetic.reason}</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Vérif : u₅ = {result.terms[0].value} + 5 × {result.isArithmetic.reason} = {result.terms[0].value + 5 * (result.isArithmetic.reason || 0)}</p>
+          <p className="text-[0.625rem] text-slate-500 mt-0.5">Vérif : u₅ = {result.terms[0].value} + 5 × {result.isArithmetic.reason} = {result.terms[0].value + 5 * (result.isArithmetic.reason || 0)}</p>
          </div>
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-indigo-400 font-bold">Somme des n+1 premiers termes</p>
+          <p className="text-[0.625rem] text-indigo-400 font-bold">Somme des n+1 premiers termes</p>
           <p className="text-sm font-mono text-white">Sₙ = (n + 1) × (u₀ + uₙ) / 2</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">S₁₀ = 11 × ({result.terms[0].value} + {result.terms[Math.min(10, result.terms.length - 1)].value}) / 2 = {((11 * (result.terms[0].value + result.terms[Math.min(10, result.terms.length - 1)].value)) / 2).toFixed(2)}</p>
+          <p className="text-[0.625rem] text-slate-500 mt-0.5">S₁₀ = 11 × ({result.terms[0].value} + {result.terms[Math.min(10, result.terms.length - 1)].value}) / 2 = {((11 * (result.terms[0].value + result.terms[Math.min(10, result.terms.length - 1)].value)) / 2).toFixed(2)}</p>
          </div>
         </div>
        </div>
@@ -248,34 +249,34 @@ export const SequenceAnalyzer: React.FC<Props> = ({ onClose }) => {
         <p className="text-sm font-bold text-purple-300"> Suite géométrique — Formules</p>
         <div className="space-y-2">
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-purple-400 font-bold">Raison q</p>
+          <p className="text-[0.625rem] text-purple-400 font-bold">Raison q</p>
           <p className="text-sm font-mono text-white">q = uₙ₊₁ / uₙ = {result.isGeometric.ratio}</p>
          </div>
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-purple-400 font-bold">Terme général</p>
+          <p className="text-[0.625rem] text-purple-400 font-bold">Terme général</p>
           <p className="text-sm font-mono text-white">uₙ = u₀ × qⁿ = {result.terms[0].value} × {result.isGeometric.ratio}ⁿ</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Vérif : u₃ = {result.terms[0].value} × {result.isGeometric.ratio}³ = {(result.terms[0].value * Math.pow(result.isGeometric.ratio, 3)).toFixed(4)}</p>
+          <p className="text-[0.625rem] text-slate-500 mt-0.5">Vérif : u₃ = {result.terms[0].value} × {result.isGeometric.ratio}³ = {(result.terms[0].value * Math.pow(result.isGeometric.ratio, 3)).toFixed(4)}</p>
          </div>
          <div className="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/15">
-          <p className="text-[10px] text-purple-400 font-bold">Somme des n+1 premiers termes (q ≠ 1)</p>
+          <p className="text-[0.625rem] text-purple-400 font-bold">Somme des n+1 premiers termes (q ≠ 1)</p>
           <p className="text-sm font-mono text-white">Sₙ = u₀ × (1 − qⁿ⁺¹) / (1 − q)</p>
           {Math.abs(result.isGeometric.ratio) !== 1 && (
-           <p className="text-[10px] text-slate-500 mt-0.5">
+           <p className="text-[0.625rem] text-slate-500 mt-0.5">
             S₁₀ = {result.terms[0].value} × (1 − {result.isGeometric.ratio}¹¹) / (1 − {result.isGeometric.ratio}) = {(result.terms[0].value * (1 - Math.pow(result.isGeometric.ratio, 11)) / (1 - result.isGeometric.ratio)).toFixed(4)}
            </p>
           )}
          </div>
          {Math.abs(result.isGeometric.ratio) < 1 && (
           <div className="bg-emerald-500/10 rounded-lg p-2.5 border border-emerald-500/20">
-           <p className="text-[10px] text-emerald-400 font-bold">Somme à l'infini (|q| {'<'} 1)</p>
+           <p className="text-[0.625rem] text-emerald-400 font-bold">Somme à l'infini (|q| {'<'} 1)</p>
            <p className="text-sm font-mono text-white">S∞ = u₀ / (1 − q) = {result.terms[0].value} / (1 − {result.isGeometric.ratio}) = {(result.terms[0].value / (1 - result.isGeometric.ratio)).toFixed(4)}</p>
-           <p className="text-[10px] text-emerald-300 mt-0.5"> La suite converge car |q| = {Math.abs(result.isGeometric.ratio)} {'<'} 1</p>
+           <p className="text-[0.625rem] text-emerald-300 mt-0.5"> La suite converge car |q| = {Math.abs(result.isGeometric.ratio)} {'<'} 1</p>
           </div>
          )}
          {Math.abs(result.isGeometric.ratio) >= 1 && result.isGeometric.ratio !== 1 && (
           <div className="bg-amber-500/10 rounded-lg p-2.5 border border-amber-500/20">
-           <p className="text-[10px] text-amber-400 font-bold">Divergence</p>
-           <p className="text-[10px] text-amber-300">|q| = {Math.abs(result.isGeometric.ratio)} ≥ 1 → La suite diverge</p>
+           <p className="text-[0.625rem] text-amber-400 font-bold">Divergence</p>
+           <p className="text-[0.625rem] text-amber-300">|q| = {Math.abs(result.isGeometric.ratio)} ≥ 1 → La suite diverge</p>
           </div>
          )}
         </div>

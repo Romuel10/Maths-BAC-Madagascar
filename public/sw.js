@@ -1,62 +1,58 @@
-const CACHE_NAME = 'maths-bac-madagascar-v1-0-1';
+const CACHE_NAME = 'maths-bac-madagascar-v1-0-2';
 const CORE_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './asset-manifest.json'];
 
 function scoped(path = '') {
   return new URL(path, self.registration.scope).toString();
 }
 
-async function precacheApplication() {
-  const cache = await caches.open(CACHE_NAME);
-  const indexResponse = await fetch(scoped('./index.html'), { cache: 'reload' });
-  if (!indexResponse.ok) throw new Error('Index indisponible pendant l’installation hors ligne.');
-  await Promise.all([
-    cache.put(scoped('./index.html'), indexResponse.clone()),
-    cache.put(scoped('./'), indexResponse.clone())
-  ]);
-
-  const urls = new Set(CORE_FILES.map(scoped));
-  let entryAsset = '';
-  try {
-    const manifestResponse = await fetch(scoped('./asset-manifest.json'), { cache: 'reload' });
-    if (manifestResponse.ok) {
-      await cache.put(scoped('./asset-manifest.json'), manifestResponse.clone());
-      const buildManifest = await manifestResponse.json();
-      const visitedEntries = new Set();
-      const addManifestEntry = key => {
-        if (!key || visitedEntries.has(key)) return;
-        const entry = buildManifest[key];
-        if (!entry || typeof entry !== 'object') return;
-        visitedEntries.add(key);
-        if (typeof entry.file === 'string') urls.add(scoped(entry.file));
-        if (Array.isArray(entry.css)) entry.css.forEach(file => urls.add(scoped(file)));
-        // KaTeX publie les mêmes polices dans trois formats : WOFF2 suffit aux
-        // navigateurs modernes et évite de télécharger aussi WOFF et TTF.
-        if (Array.isArray(entry.assets)) entry.assets.filter(file => file.endsWith('.woff2')).forEach(file => urls.add(scoped(file)));
-        if (Array.isArray(entry.imports)) entry.imports.forEach(addManifestEntry);
-      };
-      const entryKey = Object.keys(buildManifest).find(key => buildManifest[key]?.isEntry);
-      // Précharger toutes les entrées Vite garantit que les outils chargés avec
-      // React.lazy restent disponibles même si l'appareil passe hors connexion
-      // avant leur première ouverture.
-      Object.keys(buildManifest).forEach(addManifestEntry);
-      entryAsset = entryKey && typeof buildManifest[entryKey]?.file === 'string' ? buildManifest[entryKey].file : '';
-      if (entryAsset) {
-        const entryResponse = await fetch(scoped(entryAsset), { cache: 'reload' });
-        if (entryResponse.ok) {
-          const entryCode = await entryResponse.text();
-          for (const workerFile of entryCode.match(/analysis\.worker-[A-Za-z0-9_-]+\.js/g) || []) {
-            urls.add(scoped(`./assets/${workerFile}`));
-          }
-        }
-      }
+async function fetchRequired(url) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(url, { cache: 'reload' });
+      if (!response.ok) throw new Error(`Ressource hors ligne indisponible (${response.status}) : ${url}`);
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
     }
-  } catch {
-    // L’index reste disponible même si l’hébergeur ne publie pas le manifeste Vite.
   }
+  throw lastError;
+}
 
-  urls.delete(scoped('./'));
-  urls.delete(scoped('./index.html'));
-  await Promise.allSettled([...urls].map(url => cache.add(url)));
+async function precacheApplication() {
+  const stagingName = `${CACHE_NAME}-install`;
+  await caches.delete(stagingName);
+  const cache = await caches.open(stagingName);
+  try {
+    const indexResponse = await fetchRequired(scoped('./index.html'));
+    const manifestResponse = await fetchRequired(scoped('./asset-manifest.json'));
+    const buildManifest = await manifestResponse.clone().json();
+    const urls = new Set(CORE_FILES.map(scoped));
+    const entryKey = Object.keys(buildManifest).find(key => buildManifest[key]?.isEntry);
+    if (!entryKey) throw new Error('Manifeste incomplet : entrée de l’application absente.');
+    for (const entry of Object.values(buildManifest)) {
+      if (!entry || typeof entry !== 'object') continue;
+      if (typeof entry.file === 'string') urls.add(scoped(entry.file));
+      if (Array.isArray(entry.css)) entry.css.forEach(file => urls.add(scoped(file)));
+      if (Array.isArray(entry.assets)) entry.assets.filter(file => file.endsWith('.woff2')).forEach(file => urls.add(scoped(file)));
+    }
+    const entryResponse = await fetchRequired(scoped(buildManifest[entryKey].file));
+    const entryCode = await entryResponse.clone().text();
+    for (const workerFile of entryCode.match(/analysis\.worker-[A-Za-z0-9_-]+\.js/g) || []) urls.add(scoped(`./assets/${workerFile}`));
+    await cache.put(scoped(buildManifest[entryKey].file), entryResponse);
+    await cache.put(scoped('./asset-manifest.json'), manifestResponse);
+    urls.delete(scoped('./')); urls.delete(scoped('./index.html')); urls.delete(scoped('./asset-manifest.json'));
+    // A failed module rejects installation. The previous complete version remains active.
+    await Promise.all([...urls].map(async url => cache.put(url, await fetchRequired(url))));
+    await cache.put(scoped('./index.html'), indexResponse.clone());
+    await cache.put(scoped('./'), indexResponse);
+    const complete = await caches.open(CACHE_NAME);
+    const requests = await cache.keys();
+    await Promise.all(requests.map(async request => complete.put(request, await cache.match(request))));
+  } finally {
+    await caches.delete(stagingName);
+  }
 }
 
 self.addEventListener('install', event => {
@@ -80,7 +76,9 @@ async function networkFirst(request, navigation = false) {
   try {
     const response = await fetch(request);
     if (response.ok) await cache.put(request, response.clone());
-    return response;
+    if (response.ok) return response;
+    const cached = await cache.match(request);
+    return cached || response;
   } catch {
     const cached = await cache.match(request);
     if (cached) return cached;
