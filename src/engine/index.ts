@@ -2,8 +2,13 @@ import {expression,cas,tex,exact,asReal,onlyVariables,domainTex,fmt,numeric,cons
 import {equation,inequality} from './algebra';
 import {calculus} from './calculus';
 import {advanced} from './tools';
+import {guidedForms} from '../data/guided';
 import type {Request,Result} from './types';
 export function solve(req:Request):Result {
+ if(req.params.entry==='guided'){
+  for(const field of guidedForms[req.operation]?.fields??[]){const raw=req.params['data_'+field.key]??field.initial;try{const value=expression(raw);onlyVariables(value,[]);if(!Number.isFinite(asReal(value)))throw new Error();}catch{throw new Error('Renseigne un nombre réel valide pour « '+field.label+' ».');}}
+ }
+
  if(req.operation==='equation')return equation(req.expression);
  if(req.operation==='inequality')return inequality(req.expression);
  if(['function','derivative','integral','limit'].includes(req.operation))return calculus(req);

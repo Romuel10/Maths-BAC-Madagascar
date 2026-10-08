@@ -1,4 +1,4 @@
-# Confidentialité — Maths BAC Madagascar 2.0.0
+# Confidentialité — Maths BAC Madagascar 2.0.1
 
 L’application ne demande pas de compte et ne transmet pas les expressions, notes, réponses ou résultats à un serveur de calcul. Elle ne contient ni publicité ni outil de suivi publicitaire.
 

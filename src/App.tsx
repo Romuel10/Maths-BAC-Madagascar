@@ -11,7 +11,7 @@ import {Notebook} from './pages/Notebook';
 import {Settings} from './pages/Settings';
 import type {Series} from './engine/types';
 const nav=[['accueil','Accueil','home'],['resoudre','Résoudre','solve'],['cours','Cours','book'],['bac','Entraînement','practice'],['carnet','Carnet','note']];
-const readRoute=()=>location.hash.slice(1)||'accueil';
+const readRoute=()=>location.hash.slice(1)||'resoudre';
 export default function App(){
  const state=useStore(),[route,setRoute]=useState(readRoute),[offline,setOffline]=useState(!navigator.onLine),[cache,setCache]=useState('Préparation hors connexion…');
  const [page,id]=route.split('/');

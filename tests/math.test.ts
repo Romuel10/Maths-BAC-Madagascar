@@ -4,6 +4,7 @@ import katex from 'katex';
 import {solve,compareAnswer} from '../src/engine/index';
 import {asReal,numeric,expression,parse,checkDomain} from '../src/engine/expression';
 import {lessons} from '../src/data/lessons';
+import {guidedRequest} from '../src/data/guided';
 import {tools} from '../src/data/tools';
 import type {Operation,Result} from '../src/engine/types';
 const run=(operation:Operation,expression:string,params:Record<string,string>={})=>solve({operation,expression,params});
@@ -140,4 +141,14 @@ test('limites : ne jamais moyenner les deux côtés',()=>{
 test('une correction ne doit pas accepter une restriction ajoutée',()=>{
  assert.equal(compareAnswer('x/x','1'),false);
  assert.equal(compareAnswer('2/(2*x+2)','1/(x+1)'),true);
+});
+
+test('données personnelles : valeurs, fractions, premier degré et systèmes',()=>{
+ const input=(operation:Operation,params:Record<string,string>)=>solve(guidedRequest({operation,expression:'',params:{...params,entry:'guided'}}));
+ assert.deepEqual(values(input('equation',{data_a:'1',data_b:'-7',data_c:'12'})),[3,4]);
+ assert.deepEqual(values(input('equation',{data_a:'0',data_b:'2/3',data_c:'-4'})),[6]);
+ assert.equal(input('system',{data_a1:'1',data_b1:'1',data_c1:'7',data_a2:'1',data_b2:'-1',data_c2:'1'}).exact,'4;3');
+ assert.throws(()=>input('equation',{data_a:'x'}),/Coefficient a/);
+ assert.throws(()=>input('equation',{data_b:''}),/Coefficient b/);
+ assert.throws(()=>input('complex',{data_a:'1/0'}),/Partie réelle/);
 });

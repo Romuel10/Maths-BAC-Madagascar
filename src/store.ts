@@ -1,13 +1,14 @@
 import {useSyncExternalStore} from 'react';
 import type {Series,Request} from './engine/types';
 import {tools} from './data/tools';
+import {guidedRequest} from './data/guided';
 import {exercises} from './data/exercises';
 export interface Saved {id:string;date:string;request:Request;favorite:boolean;}
 export interface Attempt {id:string;correct:boolean;date:string;assisted:boolean;}
 export interface Exam {ids:string[];answers:Record<string,string>;started:number;duration:number;finished:boolean;score?:number;}
 export interface State {version:2;series:Series;theme:'light'|'dark'|'system';size:number;motion:boolean;draft:Request;history:Saved[];read:string[];attempts:Attempt[];statement:string;exam:Exam|null;}
 const key='maths-bac-v2';
-export function defaultRequest(id='equation'):Request{const t=tools.find(v=>v.id===id)??tools[0];return {operation:t.id,expression:t.expression,params:Object.fromEntries(t.fields.map(f=>[f.key,f.initial]))};}
+export function defaultRequest(id='equation',entry='guided'):Request{const t=tools.find(v=>v.id===id)??tools[0];const request:Request={operation:t.id,expression:t.expression,params:{...Object.fromEntries(t.fields.map(f=>[f.key,f.initial])),entry}};return entry==='guided'?guidedRequest(request):request;}
 const initial:State={version:2,series:'D',theme:'light',size:100,motion:true,draft:defaultRequest(),history:[],read:[],attempts:[],statement:'',exam:null};
 const series=['A','C','D','L','OSE','S'];
 function requestValid(v:any):v is Request{return !!v&&tools.some(t=>t.id===v.operation)&&typeof v.expression==='string'&&v.expression.length<=600&&v.params&&typeof v.params==='object'&&!Array.isArray(v.params)&&Object.values(v.params).every(x=>typeof x==='string'&&x.length<=600);}

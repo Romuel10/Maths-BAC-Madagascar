@@ -42,7 +42,7 @@ function Statement({go}:{go:(page:string)=>void}){
  function open(operation:Operation){const el=ref.current;let text=el&&el.selectionEnd>el.selectionStart?statement.slice(el.selectionStart,el.selectionEnd):statement;
   text=text.trim().replace(/^(résoudre|calculer|étudier|dériver)\s*:?\s*/i,'').replace(/^f\s*\(x\)\s*=\s*/,'');
   if(!text||text.length>600||text.includes('\n')){setError('Sélectionne uniquement la formule ou l’équation de la question à traiter.');return;}
-  update({draft:{...defaultRequest(operation),expression:text}});go('resoudre');
+  update({draft:{...defaultRequest(operation,'formula'),expression:text}});go('resoudre');
  }
  return <section className="statement-panel"><h2>Un sujet, question par question.</h2><p>Colle ton énoncé ou tes notes. Sélectionne ensuite une formule dans le texte et choisis l’outil adapté. Le cahier conserve l’énoncé complet.</p><label>Énoncé et notes<textarea ref={ref} rows={12} maxLength={20000} value={statement} onChange={e=>update({statement:e.target.value})} placeholder="Exemple : Soit f(x) = x^3 − 3x + 1. Étudier ses variations…"/></label><div className="action-row">{[['equation','Résoudre une équation'],['function','Étudier une fonction'],['derivative','Dériver']].map(([v,label])=><button key={v} className="button secondary" onClick={()=>open(v as Operation)}>{label}<Icon name="arrow"/></button>)}</div>{error&&<p className="error" role="alert">{error}</p>}</section>;
 }
