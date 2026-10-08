@@ -1,31 +1,14 @@
 apply plugin: 'com.android.application'
 
-def releaseKeystorePath = System.getenv('MATHS_BAC_KEYSTORE_PATH')
-def releaseKeystorePassword = System.getenv('MATHS_BAC_KEYSTORE_PASSWORD')
-def releaseKeyAlias = System.getenv('MATHS_BAC_KEY_ALIAS')
-def releaseKeyPassword = System.getenv('MATHS_BAC_KEY_PASSWORD')
-def hasReleaseSigning = [releaseKeystorePath, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword]
-        .every { value -> value != null && !value.trim().isEmpty() }
-
 android {
     namespace = "mg.mathsbac.madagascar"
     compileSdk = rootProject.ext.compileSdkVersion
-    signingConfigs {
-        if (hasReleaseSigning) {
-            release {
-                storeFile file(releaseKeystorePath)
-                storePassword releaseKeystorePassword
-                keyAlias releaseKeyAlias
-                keyPassword releaseKeyPassword
-            }
-        }
-    }
     defaultConfig {
         applicationId "mg.mathsbac.madagascar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 702
-        versionName "1.0.2"
+        versionCode 20000
+        versionName "2.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -35,13 +18,7 @@ android {
     }
     buildTypes {
         release {
-            if (hasReleaseSigning) {
-                signingConfig signingConfigs.release
-            }
-            // R8 reste désactivé jusqu’à validation sur appareils réels avec Capacitor 8.x.
-            // La priorité de cette version est la stabilité de la WebView embarquée.
             minifyEnabled false
-            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

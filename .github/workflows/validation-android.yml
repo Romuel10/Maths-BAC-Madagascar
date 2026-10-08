@@ -1,0 +1,61 @@
+name: Validation et APK v2
+on:
+  push:
+    branches: [main, rebuild/v2]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: maths-v2-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=low
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:full
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: verification-interface-v2
+          path: test-results/
+  android:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: npm ci
+      - run: npm run cap:sync
+      - working-directory: android
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+      - run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/Maths-BAC-Madagascar-v2.0.0.apk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Maths-BAC-Madagascar-v2.0.0-apk
+          path: artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 30

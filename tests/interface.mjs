@@ -1,0 +1,63 @@
+import {chromium} from 'playwright';
+import {createServer} from 'node:http';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {resolve,extname,join} from 'node:path';
+import assert from 'node:assert/strict';
+const root=resolve('dist'),output=process.env.UI_OUTPUT??'test-results';
+await mkdir(output,{recursive:true});
+const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf'};
+let failInstall=false;
+const server=createServer(async(req,res)=>{
+ try{
+  const name=decodeURIComponent(new URL(req.url,'http://local').pathname),path=resolve(root,'.'+(name==='/'?'/index.html':name));
+  if(!path.startsWith(root+'/')){res.writeHead(403);res.end();return;}
+  if(failInstall&&path.includes('/worker-')&&req.headers['service-worker']===undefined){res.writeHead(503);res.end('Interrupted');return;}
+  res.writeHead(200,{'Content-Type':mime[extname(path)]??'application/octet-stream','Cache-Control':'no-store'});res.end(await readFile(path));
+ }catch{res.writeHead(404);res.end();}
+});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const base='http://127.0.0.1:'+server.address().port;
+const args=process.env.AUDIT_BROWSER_ARGS?JSON.parse(process.env.AUDIT_BROWSER_ARGS):['--no-sandbox'];
+const browser=await chromium.launch({headless:true,args,...(process.env.AUDIT_CHROMIUM_PATH?{executablePath:process.env.AUDIT_CHROMIUM_PATH}:{})});
+const results=[],errors=[];
+function ok(name){results.push(name);console.log('OK '+name);}
+function monitor(page){page.on('pageerror',e=>errors.push(e.message));}
+async function noOverflow(page,name){const excess=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert.ok(excess<=2,name+': débordement '+excess);assert.equal(await page.locator('.katex-error').count(),0,name+': KaTeX');ok(name);}
+try{
+ for(const [width,theme,size] of [[1366,'light',100],[1366,'dark',100],[390,'light',100],[390,'dark',100],[320,'light',135]]){
+  const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'}),page=await context.newPage();monitor(page);await page.goto(base);await page.locator('h1').waitFor();
+  await page.evaluate(({theme,size})=>{const data=JSON.parse(localStorage.getItem('maths-bac-v2')??'null');if(data){data.theme=theme;data.size=size;localStorage.setItem('maths-bac-v2',JSON.stringify(data));}else{document.documentElement.dataset.theme=theme;document.documentElement.style.fontSize=size+'%';}}, {theme,size});
+  // Persist a preference through the actual UI before changing viewport settings.
+  await page.goto(base+'/#reglages');await page.getByLabel('Apparence',{exact:true}).selectOption(theme);await page.getByLabel('Taille du texte',{exact:true}).fill(String(size));
+  for(const route of ['accueil','resoudre','cours','bac','carnet','reglages']){
+   await page.goto(base+'/#'+route);await page.locator('main h1').waitFor();await noOverflow(page,width+' '+theme+' '+size+'% '+route);
+   if(route==='accueil'&&size===100)await page.screenshot({path:join(output,'home-'+width+'-'+theme+'.png'),fullPage:true,animations:'disabled'});
+  }
+  for(const chapter of ['equations','signs','functions','derivatives','limits','integrals','sequences','probability','statistics','complex','matrices','arithmetic','geometry','finance','ode']){
+   await page.goto(base+'/#cours/'+chapter);await page.locator('.lesson').waitFor();await noOverflow(page,width+' cours '+chapter);
+  }
+  await context.close();
+ }
+ const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();monitor(page);
+ await page.goto(base+'/#resoudre');await page.locator('#expression').waitFor();
+ await page.locator('#expression').fill('');await page.locator('#expression').pressSequentially('x^2-5*x+6=0',{delay:15});assert.equal(await page.locator('#expression').inputValue(),'x^2-5*x+6=0');assert.equal(await page.locator('#expression').evaluate(el=>document.activeElement===el),true);ok('saisie continue et focus stable');
+ await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor({timeout:20000});assert.match(await page.locator('.result-header').innerText(),/Solutions réelles/);ok('équation calculée dans le worker');
+ await page.locator('#expression').fill('x+1=0');assert.equal(await page.locator('.result-header').count(),0);ok('résultat invalidé après modification');
+ await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor();
+ await page.goto(base+'/#carnet');await page.getByRole('button',{name:'Ajouter aux favoris'}).first().click();await page.reload();assert.ok(await page.getByRole('button',{name:'Retirer des favoris'}).count());await page.getByRole('button',{name:'Rouvrir',exact:true}).first().click();assert.equal(await page.locator('#expression').inputValue(),'x+1=0');ok('historique, favoris et reprise après rechargement');
+ const toolIds=['calculate','inequality','system','function','derivative','integral','limit','sequence','probability','statistics','complex','matrix','geometry','arithmetic','ode','finance'];
+ for(const id of toolIds){await page.locator('.mobile-tool select').selectOption(id);await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor({timeout:20000});assert.equal(await page.locator('.error').count(),0,id);await noOverflow(page,'outil '+id);if(id==='function')await page.screenshot({path:join(output,'function-mobile.png'),fullPage:true,animations:'disabled'});}
+ await page.goto(base+'/#cours/equations');await page.getByRole('button',{name:'Marquer comme lu',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Chapitre marqué comme lu',exact:true}).waitFor();ok('chapitre lu conservé');
+ await page.goto(base+'/#bac');await page.locator('.exercise-card').first().click();await page.getByLabel('Ta réponse',{exact:true}).fill('9');await page.getByRole('button',{name:'Vérifier ma réponse'}).click();await page.locator('.feedback.incorrect').waitFor();await page.getByLabel('Ta réponse',{exact:true}).fill('2');await page.getByRole('button',{name:'Vérifier ma réponse'}).click();await page.locator('.feedback.correct').waitFor();ok('correction : mauvaise réponse refusée et bonne réponse acceptée');
+ await page.getByRole('button',{name:'Tous les exercices',exact:true}).click();await page.getByRole('tab',{name:'Mon sujet',exact:true}).click();const subject='Énoncé complet de mathématiques. '.repeat(50);await page.getByLabel('Énoncé et notes').fill(subject);await page.goto(base+'/#accueil');await page.goto(base+'/#bac');await page.getByRole('tab',{name:'Mon sujet',exact:true}).click();assert.equal(await page.getByLabel('Énoncé et notes').inputValue(),subject);ok('sujet complet conservé');
+ for(const series of ['A','C','D','L','OSE','S']){await page.getByLabel('Ma série',{exact:true}).selectOption(series);await page.reload();assert.equal(await page.getByLabel('Ma série',{exact:true}).inputValue(),series);}ok('six séries persistantes');
+ await page.getByLabel('Ma série',{exact:true}).selectOption('D');await page.goto(base+'/#bac');await page.getByRole('button',{name:'Commencer une session'}).click();await page.getByLabel('Réponse 1',{exact:true}).fill('2');await page.goto(base+'/#accueil');await page.goto(base+'/#bac');assert.equal(await page.getByLabel('Réponse 1',{exact:true}).inputValue(),'2');await page.reload();assert.equal(await page.getByLabel('Réponse 1',{exact:true}).inputValue(),'2');ok('session sauvegardée immédiatement et reprise');
+ await page.getByRole('button',{name:'Terminer et corriger'}).click();await page.locator('.exam-banner').waitFor({timeout:30000});assert.match(await page.locator('.notice').innerText(),/1\/8/);ok('session terminée, score calculé');
+ await page.goto(base+'/#reglages');const download=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter mes données'}).click();const backup=await download;const backupPath=await backup.path();const saved=JSON.parse(await readFile(backupPath,'utf8'));assert.equal(saved.version,2);assert.equal(saved.statement,subject);ok('export de sauvegarde complet');
+ page.on('dialog',dialog=>dialog.accept());await page.locator('input[type=file]').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...saved,series:'OSE'}))});await page.getByRole('status').filter({hasText:'Sauvegarde restaurée'}).waitFor();assert.equal(await page.getByLabel('Ma série',{exact:true}).inputValue(),'OSE');ok('restauration valide');
+ await page.locator('input[type=file]').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{"version":2}')});await page.getByRole('alert').waitFor();assert.equal(await page.getByLabel('Ma série',{exact:true}).inputValue(),'OSE');ok('restauration invalide sans perte de données');
+ await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:20000});await context.setOffline(true);await page.reload();await page.locator('main h1').waitFor();await page.goto(base+'/#resoudre');await page.locator('.mobile-tool select').selectOption('equation');await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor();ok('rechargement et calcul entièrement hors connexion');await context.setOffline(false);await context.close();
+ const failedContext=await browser.newContext(),failedPage=await failedContext.newPage();monitor(failedPage);failInstall=true;await failedPage.goto(base);await failedPage.waitForTimeout(2600);assert.equal(await failedPage.evaluate(()=>!!navigator.serviceWorker.controller),false);ok('téléchargement interrompu : aucun cache incomplet activé');failInstall=false;await failedPage.reload();await failedPage.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:20000});await failedContext.setOffline(true);await failedPage.reload();await failedPage.locator('h1').waitFor();ok('réessai hors connexion après interruption');await failedContext.close();
+ assert.deepEqual(errors,[]);ok('aucune erreur JavaScript non interceptée');
+ await writeFile(join(output,'results.json'),JSON.stringify({results,errors},null,2));console.log('Interface : '+results.length+' contrôles réussis.');
+}finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

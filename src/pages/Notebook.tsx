@@ -1,0 +1,13 @@
+import {useState} from 'react';
+import {useStore,update} from '../store';
+import {tools} from '../data/tools';
+import {Icon} from '../components/Icon';
+export function Notebook({go}:{go:(page:string)=>void}){
+ const state=useStore(),[onlyFavorites,setOnlyFavorites]=useState(false);
+ const items=state.history.filter(h=>!onlyFavorites||h.favorite);
+ return <div className="animate-in"><header className="page-heading"><div><p className="eyebrow">TON ESPACE PERSONNEL</p><h1>Garder le fil<br/>de tes <em>progrès.</em></h1></div><p>Retrouve tes calculs et conserve les méthodes qui t’ont aidé. Les données restent sur ton appareil.</p></header>
+ <div className="tabs"><button className={!onlyFavorites?'active':''} onClick={()=>setOnlyFavorites(false)}>Tous les calculs <span>{state.history.length}</span></button><button className={onlyFavorites?'active':''} onClick={()=>setOnlyFavorites(true)}>Favoris <span>{state.history.filter(h=>h.favorite).length}</span></button></div>
+ {items.length?<div className="notebook-list">{items.map(h=><article className="history-row" key={h.id}><div><p className="eyebrow">{tools.find(t=>t.id===h.request.operation)?.name} · {new Date(h.date).toLocaleDateString('fr-FR').replace(/\//g,'-')}</p><pre>{h.request.expression}</pre></div><div className="history-actions"><button className="button secondary" onClick={()=>{update({draft:h.request});go('resoudre');}}>Rouvrir<Icon name="arrow" size={16}/></button><button className={'icon-button '+(h.favorite?'saved':'')} aria-label={h.favorite?'Retirer des favoris':'Ajouter aux favoris'} aria-pressed={h.favorite} onClick={()=>update(s=>({history:s.history.map(v=>v.id===h.id?{...v,favorite:!v.favorite}:v)}))}><Icon name="bookmark"/></button><button className="icon-button" aria-label="Supprimer ce calcul" onClick={()=>update(s=>({history:s.history.filter(v=>v.id!==h.id)}))}><Icon name="trash"/></button></div></article>)}</div>:<div className="empty-state"><Icon name="note" size={42}/><h2>{onlyFavorites?'Tes favoris t’attendent ici.':'Chaque résolution laisse une trace.'}</h2><p>{onlyFavorites?'Utilise le marque-page d’un calcul pour le retrouver rapidement.':'Lance un premier calcul : son énoncé sera automatiquement conservé dans ce carnet.'}</p><button className="button primary" onClick={()=>go('resoudre')}>Ouvrir l’atelier<Icon name="arrow"/></button></div>}
+ <section className="notebook-summary"><h2>Entraînement</h2><p>{state.attempts.length} réponses vérifiées · {state.attempts.filter(a=>a.correct&&!a.assisted).length} réponses correctes sans indice ni correction.</p><button className="text-button" onClick={()=>go('bac')}>Poursuivre la révision<Icon name="arrow"/></button></section>
+ </div>;
+}
