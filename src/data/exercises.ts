@@ -1,0 +1,42 @@
+import type {Series} from '../engine/types';
+export interface Exercise {id:string;chapter:string;question:string;formula:string;answer:string;answerTex:string;hint:string;explanation:string;minutes:number;}
+const items:[string,string,string,string,string,string][]=[
+ ['equations','Donne la plus petite solution réelle.','x^2-5x+6=0','2','Calcule le discriminant ou cherche deux nombres de somme 5 et de produit 6.','Δ = 1. Les solutions sont 2 et 3 ; la plus petite est 2.'],
+ ['equations','Donne la solution de cette équation.','3x-7=2','3','Ajoute 7 aux deux membres.','3x = 9, donc x = 3.'],
+ ['equations','Combien cette équation a-t-elle de solutions réelles distinctes ?','x^2+4=0','0','Un carré réel peut-il être négatif ?','x² est positif ou nul, donc x² + 4 est strictement positif.'],
+ ['signs','Quelle valeur est interdite dans cette expression ?','\\frac{x+1}{x-3}','3','Le dénominateur ne doit pas s’annuler.','x − 3 = 0 donne x = 3. Cette valeur est exclue même après une simplification.'],
+ ['signs','Donne la borne inférieure de l’ensemble solution.','2x-4\\ge0','2','Isole x en divisant par 2, qui est positif.','x ≥ 2. La borne 2 est incluse.'],
+ ['functions','Calcule la valeur de f en 2.','f(x)=x^3-3x+1','3','Remplace chaque x par 2.','f(2) = 8 − 6 + 1 = 3.'],
+ ['functions','Donne la pente de la tangente en x = 1.','f(x)=x^2+3x','5','La pente est f′(1).','f′(x) = 2x + 3. Ainsi f′(1) = 5.'],
+ ['derivatives','Écris la dérivée sous forme d’une expression en x.','f(x)=x^3-2x','3*x^2-2','Utilise (xⁿ)′ = nxⁿ⁻¹.','La dérivée de x³ vaut 3x² et celle de −2x vaut −2.'],
+ ['derivatives','Calcule f′(0).','f(x)=(x^2+1)e^x','1','Utilise la dérivée d’un produit.','f′(x) = (x² + 2x + 1)eˣ. En 0, on trouve 1.'],
+ ['derivatives','Écris la dérivée pour x > −1/2.','f(x)=\\ln(2x+1)','2/(2*x+1)','La dérivée de ln(u) vaut u′/u.','u = 2x + 1 et u′ = 2, donc f′ = 2/(2x + 1).'],
+ ['limits','Calcule la limite.','\\lim_{x\\to1}\\frac{x^2-1}{x-1}','2','Factorise x² − 1.','Pour x ≠ 1, l’expression vaut x + 1. Sa limite est 2.'],
+ ['limits','Calcule la limite en radians.','\\lim_{x\\to0}\\frac{\\sin x}{x}','1','C’est une limite usuelle.','Le quotient sin(x)/x tend vers 1 au voisinage de 0.'],
+ ['limits','Calcule la limite.','\\lim_{x\\to+\\infty}\\frac{3x^2+1}{2x^2-5}','3/2','Divise numérateur et dénominateur par x².','Les termes en 1/x² tendent vers 0, il reste 3/2.'],
+ ['integrals','Calcule l’intégrale.','\\int_0^1x^2\\,dx','1/3','Une primitive de x² est x³/3.','F(1) − F(0) = 1/3.'],
+ ['integrals','Calcule l’intégrale.','\\int_0^2(2x+1)\\,dx','6','Une primitive est x² + x.','F(2) = 6 et F(0) = 0.'],
+ ['sequences','Calcule u₅.','u_0=3,\\quad u_{n+1}=u_n+2','13','C’est une suite arithmétique de raison 2.','u₅ = 3 + 5 × 2 = 13.'],
+ ['sequences','Calcule u₃.','u_0=2,\\quad u_{n+1}=3u_n','54','C’est une suite géométrique.','u₃ = 2 × 3³ = 54.'],
+ ['sequences','Donne la limite.','u_0=5,\\quad u_{n+1}=0.8u_n+3','15','Cherche le point fixe ℓ = 0,8ℓ + 3.','ℓ = 15. La raison 0,8 est de valeur absolue inférieure à 1.'],
+ ['probability','Calcule P(X = 2).','X\\sim\\mathcal B(3;1/2)','3/8','Utilise le coefficient binomial 3 parmi 2.','Il y a 3 placements possibles : 3 × (1/2)³ = 3/8.'],
+ ['probability','Calcule P(X ≥ 1).','X\\sim\\mathcal B(3;1/2)','7/8','Passe par l’événement contraire X = 0.','1 − (1/2)³ = 7/8.'],
+ ['probability','Calcule P(B sachant A).','P(A)=0.4,\\quad P(A\\cap B)=0.1','1/4','Divise P(A ∩ B) par P(A).','0,1 / 0,4 = 1/4.'],
+ ['statistics','Donne la pente de la droite d’ajustement.','(1;2),\\ (2;4),\\ (3;6)','2','Observe la relation entre x et y.','Tous les points vérifient y = 2x : la pente vaut 2.'],
+ ['statistics','Calcule la moyenne des abscisses.','x_1=2,\\ x_2=4,\\ x_3=9','5','Additionne les valeurs et divise par leur nombre.','(2 + 4 + 9)/3 = 5.'],
+ ['complex','Calcule le module de z.','z=3+4i','5','Utilise √(a² + b²).','|z| = √(9 + 16) = 5.'],
+ ['complex','Donne la partie réelle de z.','z=(1+i)^2','0','Développe le carré et utilise i² = −1.','(1 + i)² = 1 + 2i − 1 = 2i. Sa partie réelle est 0.'],
+ ['complex','Donne un argument en radians de z.','z=1+i','pi/4','Le point se trouve sur la bissectrice du premier quadrant.','Un argument de 1 + i est π/4.'],
+ ['matrices','Calcule x dans ce système.','\\begin{cases}2x+y=5\\\\x-y=1\\end{cases}','2','Additionne les deux équations.','3x = 6, donc x = 2.'],
+ ['matrices','Calcule le déterminant.','A=\\begin{pmatrix}2&1\\\\1&3\\end{pmatrix}','5','Pour une matrice 2 × 2, det A = ad − bc.','2 × 3 − 1 × 1 = 5.'],
+ ['arithmetic','Calcule le PGCD.','\\operatorname{PGCD}(252;198)','18','Utilise les restes successifs 54, 36 et 18.','Le dernier reste non nul de l’algorithme d’Euclide est 18.'],
+ ['arithmetic','Donne le reste dans la division par 7.','100=7q+r','2','Cherche le plus grand multiple de 7 inférieur à 100.','100 = 7 × 14 + 2.'],
+ ['geometry','Calcule le produit scalaire.','u=(1;2;0),\\quad v=(2;-1;0)','0','Multiplie puis additionne les coordonnées correspondantes.','1 × 2 + 2 × (−1) + 0 = 0.'],
+ ['geometry','Calcule la norme.','u=(2;-3;6)','7','Prends la racine de la somme des carrés.','‖u‖ = √(4 + 9 + 36) = 7.'],
+ ['finance','Calcule le capital après deux ans à intérêts composés.','C_0=100000,\\quad t=5\\%','110250','Multiplie le capital par 1,05².','100 000 × 1,05² = 110 250 Ar.'],
+ ['finance','Donne le coefficient multiplicateur d’une hausse de 8 %.','t=8\\%','1.08','Ajoute 1 au taux écrit sous forme décimale.','1 + 8/100 = 1,08.'],
+ ['ode','Calcule y(0) pour cette solution.','y(x)=3/2-(1/2)e^{-2x}','1','Utilise e⁰ = 1.','y(0) = 3/2 − 1/2 = 1.'],
+ ['ode','Trouve C avec la condition y(0) = 4.','y(x)=Ce^{2x}','4','Remplace x par 0.','e⁰ = 1, donc C = 4.']
+];
+const answerTeX:Record<string,string>={'3*x^2-2':'3x^2-2','2/(2*x+1)':'\\frac{2}{2x+1}','3/2':'\\frac32','1/3':'\\frac13','3/8':'\\frac38','7/8':'\\frac78','1/4':'\\frac14','pi/4':'\\frac{\\pi}{4}'};
+export const exercises:Exercise[]=items.map(([chapter,question,formula,answer,hint,explanation],i)=>({id:'ex-'+(i+1),chapter,question,formula,answer,answerTex:answerTeX[answer]??answer,hint,explanation,minutes:3}));

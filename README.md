@@ -1,82 +1,47 @@
-# Maths BAC Madagascar — v1.0.2
+# Maths BAC Madagascar — 2.0.0
 
-Application web/PWA et Android de révision et de résolution des mathématiques du Baccalauréat à Madagascar.
+Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
-## Objectif
+## Utilisation
 
-L’application aide un élève de Terminale à faire quatre choses simplement :
+Choisir sa série (A, C, D, L, OSE ou S), ouvrir **Résoudre**, sélectionner un outil et saisir la formule. Les 17 outils couvrent le calcul exact, les équations, inéquations, systèmes, fonctions, dérivées, intégrales, limites, suites, probabilités, statistiques, complexes, matrices, géométrie, arithmétique, équations différentielles linéaires et intérêts composés.
 
-1. **Réviser** — cours détaillés, méthodes, exemples corrigés, diagnostic et suivi.
-2. **Résoudre** — tuteur pas à pas pour comprendre et traiter un exercice.
-3. **BAC** — annales référencées, entraînements guidés et simulations.
-4. **Outils** — calculateurs spécialisés pour vérifier un raisonnement ou un résultat.
+**Cours** contient 15 chapitres avec règles, exemples travaillés et erreurs à éviter. **Entraînement** contient 36 questions originales, des sessions chronométrées et un espace pour conserver son sujet. Une formule sélectionnée dans le sujet peut être envoyée à l’atelier. Les liens externes donnent accès aux annales et aux programmes ; ils nécessitent Internet.
 
-Les séries prises en charge sont **A, C, D, L, OSE et S**, selon le périmètre pédagogique documenté dans le projet.
+Les données sont locales : exporter une sauvegarde depuis les réglages avant de changer d’appareil. Le format v2 est indépendant des sauvegardes v1 ; celles-ci ne sont pas supprimées automatiquement, mais ne sont pas importées par v2.
 
-## Contenus pédagogiques
+## Périmètre du moteur
 
-Le coach couvre 9 grands thèmes : Analyse, Algèbre, Complexes, Probabilités, Suites, Géométrie, Arithmétique, Statistiques et Mathématiques financières. Les cours détaillés comportent méthode, exemples résolus, conseils de rédaction et exercices de vérification.
-
-Le tuteur sait calculer complètement les familles qu’il peut vérifier de façon déterministe et affiche alors une **résolution complète vérifiée**. Pour une formulation non couverte ou ambiguë, il reste en **méthode guidée** plutôt que d’inventer une correction.
-
-## Navigation v1.0.2
-
-La barre principale est volontairement limitée à cinq entrées :
-
-- **Accueil**
-- **Réviser**
-- **Résoudre**
-- **BAC**
-- **Outils**
-
-Les outils avancés sont regroupés derrière une section secondaire pour éviter de surcharger l’écran.
-
-## Qualité des réponses
-
-Les formules sont rendues avec KaTeX : fractions, puissances, racines, ensembles, combinaisons et systèmes sont présentés dans une écriture scolaire. Les corrections sont découpées verticalement en étapes, avec une justification séparée et une réponse finale visible.
+- Calcul symbolique avec Nerdamer 2 et analyse des expressions avec math.js ; calculs exécutés dans un Web Worker avec annulation et délai maximal.
+- Conservation des restrictions initiales lors des simplifications et vérification des candidats d’équations.
+- Les recherches incomplètes sont indiquées. Les tableaux globaux ne sont proposés que lorsque les zéros et restrictions nécessaires sont déterminés.
+- Les graphes et statistiques sont numériques. Le tracé ne constitue pas une preuve.
+- Certaines expressions dépassent les méthodes implémentées. L’application ne résout pas automatiquement tout un énoncé rédigé et ne reconnaît pas les photos.
+- Les exercices intégrés sont originaux ; ils ne sont pas présentés comme des sujets officiels. La sélection par série est une aide de révision, pas une certification de couverture intégrale du programme.
 
 ## Développement
 
-Prérequis : Node.js 22.12 ou ultérieur.
+Node.js >= 22.12, npm. Pour Android : Java 21 et SDK Android API 36.
 
-```bash
+```sh
 npm ci
-npm run test:full
+npm run dev
+npm test
 npm run build
-```
-
-Pour tester la version de production localement :
-
-```bash
-npm run termux
-```
-
-Pour Android :
-
-```bash
+npx playwright install --with-deps chromium
+npm run test:ui
 npm run cap:sync
 npm run android:debug
 ```
 
-Le bundle signé de publication utilise les variables de signature documentées dans [CAPACITOR_ANDROID.md](CAPACITOR_ANDROID.md).
+Les tests mathématiques comprennent des oracles indépendants pour 121 couples de racines et 81 valeurs de dérivées, les restrictions, petites valeurs, limites latérales et sauvegardes. Les parcours Chromium vérifient tailles d’écran, thèmes, saisie, worker, reprise, correction, sauvegarde et cache interrompu.
 
-## Version Android
+## Android et diffusion
 
-- `versionName` : **1.0.2**
-- `versionCode` : **702**
+Identifiant : `mg.mathsbac.madagascar`, version `2.0.0`, code `20000`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
 
-Le `versionCode` reste supérieur à l’ancien code 700 afin de conserver la possibilité de mettre à jour une installation Android antérieure.
+Le répertoire `dist` peut être hébergé statiquement. Le service worker précharge toutes les ressources et n’active le cache qu’après un téléchargement complet. L’APK embarque directement les ressources, sans téléchargement initial.
 
-## Confidentialité
+## Confidentialité et licences
 
-Aucun compte, publicité ou analytique n’est requis. Les données d’apprentissage sont conservées localement sur l’appareil. Une photo sélectionnée dans le tuteur est préparée localement et n’est pas envoyée à un serveur par l’application.
-
-Voir [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
-
-## Références pédagogiques
-
-Voir [SOURCES_PEDAGOGIQUES.md](SOURCES_PEDAGOGIQUES.md).
-
-## Licence
-
-Le projet est distribué sous la licence décrite dans [LICENSE](LICENSE). Les dépendances tierces conservent leurs propres licences.
+Pas de compte, pas de publicité, pas de télémétrie. Les calculs et sauvegardes restent sur l’appareil. Les exports Android utilisent le partage natif. Voir [PRIVACY_POLICY.md](PRIVACY_POLICY.md), [LICENSE](LICENSE) et [docs/SOURCES.md](docs/SOURCES.md).
