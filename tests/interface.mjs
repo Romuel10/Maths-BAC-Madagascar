@@ -39,7 +39,12 @@ try{
   await context.close();
  }
  const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();monitor(page);
- await page.goto(base+'/#resoudre');await page.locator('#expression').waitFor();
+ await page.goto(base);await page.getByLabel('Coefficient a',{exact:true}).waitFor();
+ await page.getByLabel('Coefficient b',{exact:true}).fill('-7');await page.getByLabel('Coefficient c',{exact:true}).fill('12');
+ await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor();assert.match(await page.locator('.result-header annotation').textContent(),/3.*4/);ok('saisie des coefficients : solutions 3 et 4');
+ await page.goto(base+'/#accueil');await page.goto(base+'/#resoudre');assert.equal(await page.getByLabel('Coefficient b',{exact:true}).inputValue(),'-7');await page.reload();assert.equal(await page.getByLabel('Coefficient c',{exact:true}).inputValue(),'12');ok('données saisies conservées en quittant et en rechargeant');
+ await page.getByLabel('Coefficient a',{exact:true}).fill('x');await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.getByRole('alert').waitFor();ok('donnée invalide signalée sans résultat faux');
+ await page.getByRole('button',{name:'Saisir une formule',exact:true}).click();await page.locator('#expression').waitFor();
  await page.locator('#expression').fill('');await page.locator('#expression').pressSequentially('x^2-5*x+6=0',{delay:15});assert.equal(await page.locator('#expression').inputValue(),'x^2-5*x+6=0');assert.equal(await page.locator('#expression').evaluate(el=>document.activeElement===el),true);ok('saisie continue et focus stable');
  await page.locator('main').getByRole('button',{name:'Résoudre',exact:true}).click();await page.locator('.result-header').waitFor({timeout:20000});assert.match(await page.locator('.result-header').innerText(),/Solutions réelles/);ok('équation calculée dans le worker');
  await page.locator('#expression').fill('x+1=0');assert.equal(await page.locator('.result-header').count(),0);ok('résultat invalidé après modification');

@@ -1,10 +1,10 @@
-# Maths BAC Madagascar — 2.0.0
+# Maths BAC Madagascar — 2.0.1
 
 Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
 ## Utilisation
 
-Choisir sa série (A, C, D, L, OSE ou S), ouvrir **Résoudre**, sélectionner un outil et saisir la formule. Les 17 outils couvrent le calcul exact, les équations, inéquations, systèmes, fonctions, dérivées, intégrales, limites, suites, probabilités, statistiques, complexes, matrices, géométrie, arithmétique, équations différentielles linéaires et intérêts composés.
+L’application s’ouvre directement sur **Résoudre**. Choisir sa série (A, C, D, L, OSE ou S), le type de question, puis saisir ses données. Les équations, systèmes à deux inconnues, complexes, vecteurs et PGCD/PPCM proposent des champs séparés ; la saisie libre d’une formule reste disponible. Les 17 outils couvrent le calcul exact, les équations, inéquations, systèmes, fonctions, dérivées, intégrales, limites, suites, probabilités, statistiques, complexes, matrices, géométrie, arithmétique, équations différentielles linéaires et intérêts composés.
 
 **Cours** contient 15 chapitres avec règles, exemples travaillés et erreurs à éviter. **Entraînement** contient 36 questions originales, des sessions chronométrées et un espace pour conserver son sujet. Une formule sélectionnée dans le sujet peut être envoyée à l’atelier. Les liens externes donnent accès aux annales et aux programmes ; ils nécessitent Internet.
 
@@ -38,7 +38,7 @@ Les tests mathématiques comprennent des oracles indépendants pour 121 couples 
 
 ## Android et diffusion
 
-Identifiant : `mg.mathsbac.madagascar`, version `2.0.0`, code `20000`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+Identifiant : `mg.mathsbac.madagascar`, version `2.0.1`, code `20001`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
 
 Le répertoire `dist` peut être hébergé statiquement. Le service worker précharge toutes les ressources et n’active le cache qu’après un téléchargement complet. L’APK embarque directement les ressources, sans téléchargement initial.
 
