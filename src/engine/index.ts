@@ -1,24 +1,39 @@
-import {expression,cas,tex,exact,asReal,onlyVariables,domainTex,fmt,numeric,constraints,simplified} from './expression';
+import {expression,cas,tex,asReal,onlyVariables,domainTex,fmt,constraints,simplified,param,checkDomain,inputTex,structuralKey,substitute,integerValue,decimalApprox} from './expression';
+import {withoutFunctionLabel} from './notation';
 import {equation,inequality} from './algebra';
 import {calculus} from './calculus';
 import {advanced} from './tools';
-import {guidedForms} from '../data/guided';
+import {guideFor,guidedRequest,hasGuidedData} from '../data/guided';
 import type {Request,Result} from './types';
 export function solve(req:Request):Result {
- if(req.params.entry==='guided'){
-  for(const field of guidedForms[req.operation]?.fields??[]){const raw=req.params['data_'+field.key]??field.initial;try{const value=expression(raw);onlyVariables(value,[]);if(!Number.isFinite(asReal(value)))throw new Error();}catch{throw new Error('Renseigne un nombre réel valide pour « '+field.label+' ».');}}
+ if(hasGuidedData(req)){
+  req=guidedRequest(req);
+  for(const field of guideFor(req)?.fields??[]){const raw=req.params['data_'+field.key]??field.initial;try{const value=expression(raw);onlyVariables(value,[]);if(!Number.isFinite(asReal(value)))throw new Error();}catch{throw new Error('Renseigne un nombre réel valide pour « '+field.label+' ».');}}
  }
 
- if(req.operation==='equation')return equation(req.expression);
+ if(['calculate','function','derivative','integral','limit'].includes(req.operation))req={...req,expression:withoutFunctionLabel(req.expression)};
+ if(req.operation==='equation')return equation(req.expression,req.params);
  if(req.operation==='inequality')return inequality(req.expression);
  if(['function','derivative','integral','limit'].includes(req.operation))return calculus(req);
  if(req.operation!=='calculate')return advanced(req);
- const s=expression(req.expression);onlyVariables(s,['x']);
+ if(/<=|>=|[<>≤≥]/.test(req.expression))return inequality(req.expression);
+ if(req.expression.includes('='))return equation(req.expression,req.params);
+ const s=expression(req.expression,req.params.angle??'rad');onlyVariables(s,['x']);
  const mode=req.params.form??'simplify';
- const output=mode==='factor'?cas.factor(s).toString():mode==='expand'?cas.expand(s).toString():cas.simplify(s).toString();
- const numericResult=asReal(output);
- if(!s.includes('x')&&!Number.isFinite(numericResult))throw new Error('Ce calcul ne donne pas un nombre réel fini. Pour un nombre complexe, choisis l’outil « Complexes ».');
- return {title:mode==='factor'?'Forme factorisée':mode==='expand'?'Forme développée':'Résultat du calcul',latex:tex(output),exact:output,approximate:Number.isFinite(numericResult)?fmt(numericResult):undefined,steps:[{title:'Lire l’expression',text:'Les parenthèses et les exposants fixent l’ordre des opérations.',latex:tex(s)},{title:'Conserver les conditions',text:'Les conditions initiales restent valables après simplification.',latex:domainTex(s)},{title:'Calculer',text:mode==='factor'?'Regrouper les facteurs communs.':mode==='expand'?'Appliquer la distributivité puis regrouper les termes semblables.':'Effectuer le calcul symbolique et conserver les fractions exactes.',latex:tex(output)}],notes:[]};
+ if(!['simplify','expand','factor','evaluate'].includes(mode))throw new Error('Choisis le calcul souhaité.');
+ if(mode==='evaluate'){
+  const x=param(req.params,'xvalue','0');if(!checkDomain(s,x))throw new Error('Cette valeur de x est interdite dans l’expression initiale. Choisis une valeur de son domaine.');
+  const substituted=substitute(s,'x',req.params.xvalue??'0'),output=integerValue(substituted)??cas(substituted).toString(),approximate=decimalApprox(output);
+  if(approximate===undefined&&!/^[-]?\d+(?:\/\d+)?$/.test(output))throw new Error('Cette expression ne donne pas une valeur réelle représentable pour ce x.');
+  return {title:'Valeur pour x = '+fmt(x),method:'exact',latex:tex(output),exact:output,approximate,steps:[{title:'Lire la formule',text:'Partir de l’expression saisie.',latex:inputTex(req.expression)},{title:'Remplacer x',text:'Substituer la valeur choisie après avoir vérifié le domaine.',latex:'x='+tex(expression(req.params.xvalue??'0'))},{title:'Effectuer le calcul',text:'Conserver la valeur exacte et afficher son approximation décimale.',latex:tex(output)}],notes:[]};
+ }
+ const variable=/\bx\b/.test(s);
+ const integer=variable?null:integerValue(s);
+ const output=integer??(mode==='factor'?cas.factor(s).toString():mode==='expand'?cas.expand(s).toString():cas.simplify(s).toString());
+ const approximate=variable?undefined:decimalApprox(output);
+ const unchanged=variable&&structuralKey(s)===structuralKey(output);
+ if(!variable&&approximate===undefined&&!/^[-]?\d+(?:\/\d+)?$/.test(output))throw new Error('Ce calcul sort du domaine réel ou dépasse la plage numérique. Pour un nombre complexe, choisis l’outil « Complexes ».');
+ return {title:unchanged?(mode==='factor'?'Aucune autre factorisation obtenue':mode==='expand'?'Forme déjà développée':'Forme déjà simplifiée'):mode==='factor'?'Forme factorisée':mode==='expand'?'Forme développée':'Résultat du calcul',method:unchanged?'unchanged':'exact',latex:tex(output),exact:output,approximate,steps:[{title:'Lire l’expression',text:'Les parenthèses et les exposants fixent l’ordre des opérations.',latex:inputTex(req.expression)},{title:'Conserver les conditions',text:'Les conditions initiales restent valables après simplification.',latex:domainTex(s)},{title:unchanged?'Préciser le résultat':'Calculer',text:unchanged?'Le moteur n’a pas obtenu de transformation supplémentaire. La présence de x ne permet pas de donner un nombre sans choisir sa valeur.':mode==='factor'?'Regrouper les facteurs communs.':mode==='expand'?'Appliquer la distributivité puis regrouper les termes semblables.':'Effectuer le calcul symbolique et conserver les fractions exactes.',latex:tex(output)}],notes:unchanged?['Pour obtenir un nombre, choisis « Calculer pour x = … ». Pour résoudre une équation, écris les deux membres avec =.']:[]};
 }
 export function compareAnswer(answer:string,expected:string):boolean {
  try{const a=expression(answer),b=expression(expected);onlyVariables(a,['x']);onlyVariables(b,['x']);

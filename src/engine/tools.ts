@@ -18,7 +18,7 @@ export function gaussian(input:string[][],columns:number):{rows:string[][];pivot
 }
 export function matrixTex(rows:string[][]):string{return '\\begin{pmatrix}'+rows.map(r=>r.map(tex).join('&')).join('\\\\')+'\\end{pmatrix}';}
 function readRows(raw:string):string[][] {
- return raw.trim().split(/\n+/).map(row=>row.trim().split(/[;\s]+/).filter(Boolean).map(value));
+ return raw.trim().split(/\n+/).map(row=>(row.includes(';')?row.split(';'):row.trim().split(/\s+/)).map(v=>value(v.trim())));
 }
 function comb(n:number,k:number):string{let v=1n;for(let i=1;i<=Math.min(k,n-k);i++)v=v*BigInt(n-i+1)/BigInt(i);return String(v);}
 export function advanced(req:Request):Result{
