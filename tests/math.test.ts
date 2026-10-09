@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import katex from 'katex';
 import {solve,compareAnswer} from '../src/engine/index';
-import {asReal,numeric,expression,parse,checkDomain} from '../src/engine/expression';
+import {asReal,numeric,expression,parse,checkDomain,cas,inputTex} from '../src/engine/expression';
+import {numericalRoots,certifiedDomain} from '../src/engine/numerical';
 import {lessons} from '../src/data/lessons';
 import {guidedRequest} from '../src/data/guided';
 import {tools} from '../src/data/tools';
 import type {Operation,Result} from '../src/engine/types';
 const run=(operation:Operation,expression:string,params:Record<string,string>={})=>solve({operation,expression,params});
 const close=(a:number,b:number,tol=1e-9)=>assert.ok(Number.isFinite(a)&&Math.abs(a-b)<=tol*Math.max(1,Math.abs(b)),a+' != '+b);
-function values(r:Result){return (r.exact??'').split(';').filter(Boolean).map(asReal).sort((a,b)=>a-b);}
+function values(r:Result){return r.numericValues??(r.exact??'').split(';').filter(Boolean).map(asReal).sort((a,b)=>a-b);}
 test('les 17 outils produisent des résultats et des formules valides',()=>{
  for(const t of tools){const r=solve({operation:t.id,expression:t.expression,params:Object.fromEntries(t.fields.map(f=>[f.key,f.initial]))});assert.ok(r.steps.length>=2,t.id);katex.renderToString(r.latex,{throwOnError:true});for(const s of r.steps)if(s.latex)katex.renderToString(s.latex,{throwOnError:true});}
 });
@@ -151,4 +152,94 @@ test('données personnelles : valeurs, fractions, premier degré et systèmes',(
  assert.throws(()=>input('equation',{data_a:'x'}),/Coefficient a/);
  assert.throws(()=>input('equation',{data_b:''}),/Coefficient b/);
  assert.throws(()=>input('complex',{data_a:'1/0'}),/Partie réelle/);
+});
+
+test('notations du cahier : racines, multiplication, puissances, virgules et fonctions',()=>{
+ assert.equal(run('calculate','√9 + 2²').exact,'7');
+ assert.equal(run('calculate','2√9 + ∛27').exact,'9');
+ assert.equal(run('calculate','0,1 + 0,2').exact,'3/10');
+ assert.equal(run('calculate','2x + 3x').exact,'5*x');
+ assert.equal(run('calculate','ln e').exact,'1');
+ assert.equal(run('calculate','|−3|').exact,'3');
+ const d=run('derivative','f(x) = (x²+1)eˣ');
+ for(const x of [-2,-1,0,1,2])close(numeric(d.exact!,x),(x*x+2*x+1)*Math.exp(x));
+ assert.equal(run('calculate','sin 30',{angle:'deg'}).exact,'1/2');
+ close(asReal(run('calculate','sin 30',{angle:'rad'}).exact!),Math.sin(30));
+ assert.equal(run('calculate','arcsin(1/2)',{angle:'deg'}).exact,'30');
+ for(const raw of ['√(x²+1)','ln x','3x²−2x+1'])katex.renderToString(inputTex(raw),{throwOnError:true});
+ for(const raw of ['x¹⁰⁰⁰¹','x^(10001)','x^(-10001)','sin','sqrt'])assert.throws(()=>parse(raw),raw);
+});
+test('grands entiers : 500! conserve tous ses chiffres',()=>{
+ let expected=1n;for(let n=1n;n<=500n;n++)expected*=n;
+ assert.equal(run('calculate','500!').exact,String(expected));
+ assert.equal(run('calculate','2^1024').exact,String(1n<<1024n));
+ assert.match(run('calculate','exp(-1000)').approximate!,/10\^-435/);
+ assert.match(run('calculate','1/10^400').approximate!,/10\^-400/);
+ assert.throws(()=>run('calculate','(2^10000)^10000'),/chiffres/);
+});
+test('une forme inchangée est annoncée et peut être évaluée pour x',()=>{
+ const unchanged=run('calculate','x²+1');assert.equal(unchanged.method,'unchanged');assert.match(unchanged.title,/déjà/);
+ assert.equal(run('calculate','x²+1',{form:'evaluate',xvalue:'3'}).exact,'10');
+ assert.equal(run('calculate','x²+1',{form:'evaluate',xvalue:'2/3'}).exact,'13/9');
+ assert.equal(run('calculate','∛x',{form:'evaluate',xvalue:'−8'}).exact,'-2');
+ assert.equal(run('calculate','x²',{form:'evaluate',xvalue:'1e200'}).exact,'1'+'0'.repeat(400));
+ assert.throws(()=>run('calculate','(x²-1)/(x-1)',{form:'evaluate',xvalue:'1'}),/interdite/);
+ assert.deepEqual(values(run('calculate','x²−5x+6=0')),[2,3]);
+ assert.equal(run('calculate','x²<0').latex,'S=\\varnothing');
+});
+test('équations numériques : racines transcendantes, bornes et vérification indépendante',()=>{
+ for(const [formula,expected,f] of [
+  ['ln x+x=0',.5671432904097839,(x:number)=>Math.log(x)+x],
+  ['cos(x)=x',.7390851332151607,(x:number)=>Math.cos(x)-x],
+  ['x⁵−x−1=0',1.1673039782614187,(x:number)=>x**5-x-1]
+ ] as const){const r=run('equation',formula);assert.equal(r.method,'numeric');assert.equal(r.exact,undefined);assert.equal(r.numericValues?.length,1);close(r.numericValues![0],expected,1e-10);close(f(r.numericValues![0]),0,1e-10);katex.renderToString(r.latex,{throwOnError:true});}
+ const outside=run('equation','cos(x)=x',{rootMin:'2',rootMax:'3'});assert.deepEqual(outside.numericValues,[]);assert.match(outside.title,/repérée/);assert.ok(!outside.latex.includes('varnothing'));
+ assert.throws(()=>run('equation','cos(x)=x',{rootMin:'3',rootMax:'2'}),/bornes/);
+ const shifted=run('equation','cos(x-20)=x-20',{rootMin:'20',rootMax:'21'});close(values(shifted)[0],20.73908513321516,1e-10);
+});
+test('la recherche numérique rejette les pôles et les faux zéros par sous-dépassement',()=>{
+ assert.deepEqual(numericalRoots(expression('1/(x-0.12345)'),expression('0'),-1,1),[]);
+ assert.deepEqual(numericalRoots(expression('exp(x)'),expression('0'),-1000,0),[]);
+ assert.deepEqual(numericalRoots(expression('x^1000'),expression('0'),-1,1),[0]);
+ assert.deepEqual(numericalRoots(expression('1e-20*(x²+1)'),expression('0'),-3,3),[]);
+ const tangent=numericalRoots(expression('(cos(x)-x)²'),expression('0'),0,1);assert.equal(tangent.length,1);close(tangent[0],.7390851332151607,1e-8);
+});
+test('trigonométrie : toutes les branches périodiques, radians et degrés',()=>{
+ for(const [formula,target,fn] of [['sin(2x+1)=1/2',.5,Math.sin],['cos(2x+1)=1/2',.5,Math.cos],['tan(2x+1)=1',1,Math.tan]] as const){
+  const r=run('equation',formula);assert.equal(r.method,'exact');assert.equal(r.families?.length,formula.startsWith('tan')?1:2);
+  for(const family of r.families!)for(const n of [-5,-1,0,1,5]){const x=asReal(cas(family,{n:String(n)}).toString());close(fn(2*x+1),target);}
+  katex.renderToString(r.latex,{throwOnError:true});
+ }
+ const degrees=run('calculate','sin(x)=1/2',{angle:'deg'});for(const family of degrees.families!)close(Math.sin(asReal(cas(family,{n:'0'}).toString())*Math.PI/180),.5);
+ assert.equal(run('equation','sin(x)=2').latex,'S=\\varnothing');
+ assert.equal(run('equation','exp(x)=-1').latex,'S=\\varnothing');
+ close(values(run('equation','ln(x)=0'))[0],1);
+ close(values(run('equation','exp(x)=2'))[0],Math.log(2));
+});
+test('intégrales numériques : oracles indépendants et oscillations',()=>{
+ // References obtained from 85-digit sums of the integrated power series.
+ for(const [formula,upper,expected] of [['e^(−x²)','1',.7468241328124270254],['cos(x²)','1',.9045242379002720815],['sin(x²)','4',.7471338446481146562],['sin(256πx)²','1',.5]] as const){
+  const r=run('integral',formula,{kind:'definite',method:'numeric',lower:'0',upper});assert.equal(r.method,'numeric');assert.equal(r.exact,undefined);close(r.numericValues![0],expected,1e-9);katex.renderToString(r.latex,{throwOnError:true});
+ }
+ const automatic=run('integral','exp(−x²)',{kind:'definite',lower:'0',upper:'1'});assert.equal(automatic.method,'numeric');close(automatic.numericValues![0],.7468241328124270254);
+ close(run('integral','exp(−x²)',{kind:'definite',lower:'1',upper:'0'}).numericValues![0],-.7468241328124270254);
+ close(asReal(run('integral','sin(x)',{kind:'definite',lower:'0',upper:'π'}).exact!),2);
+ assert.throws(()=>run('integral','exp(−x²)'),/deux bornes/);
+});
+test('intégrales : certifier les domaines sans rater une singularité entre deux échantillons',()=>{
+ assert.equal(certifiedDomain(expression('1/(1+exp(x))'),-10,10),true);
+ assert.equal(certifiedDomain(expression('ln(sin(x))'),Math.PI/4,3*Math.PI/4),true);
+ assert.equal(certifiedDomain(expression('tan(x)'),0,Math.PI),false);
+ assert.equal(certifiedDomain(expression('tan(x)'),0,Math.PI/2),false);
+ assert.throws(()=>run('integral','1/(x-0.12345)²',{kind:'definite',lower:'0',upper:'1',method:'numeric'}),/impropre/);
+ assert.throws(()=>run('integral','ln(x)',{kind:'definite',lower:'-1',upper:'1',method:'numeric'}));
+ const r=run('integral','1/(1+exp(x))',{kind:'definite',lower:'0',upper:'1',method:'numeric'});close(r.numericValues![0],1-Math.log1p(Math.E)+Math.log(2));
+});
+test('formulaires : modèles d’analyse, suites et grilles sans séparateurs à saisir',()=>{
+ const input=(operation:Operation,params:Record<string,string>)=>solve(guidedRequest({operation,expression:'',params}));
+ const derivative=input('derivative',{data_model:'logarithm',data_a:'3',data_b:'2'});for(const x of [0,1,2])close(numeric(derivative.exact!,x),3/(3*x+2));
+ const geometric=input('sequence',{data_model:'geometric',data_q:'2/3',initial:'9',count:'3'});assert.equal(geometric.exact,'4');
+ const arithmetic=input('sequence',{data_model:'arithmetic',data_r:'−2',initial:'10',count:'4'});assert.equal(arithmetic.exact,'4');
+ const matrix=input('matrix',{data_size:'3'});assert.equal(matrix.exact,'[["1","0","0"],["0","1","0"],["0","0","1"]]');
+ const statistics=input('statistics',{data_rows:'2',data_x0:'2 / 3',data_y0:'4 / 3',data_x1:'2',data_y1:'4'});assert.match(statistics.approximate!,/a = 2 ; b = 0/);
 });

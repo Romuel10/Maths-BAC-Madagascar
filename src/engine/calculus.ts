@@ -1,5 +1,6 @@
-import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param} from './expression';
+import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex} from './expression';
 import {polynomialCuts} from './algebra';
+import {certifiedDomain,quadrature} from './numerical';
 import type {Request,Result,Step} from './types';
 function derivativeSteps(raw:string,d:string):Step[]{
  const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
@@ -10,7 +11,7 @@ function derivativeSteps(raw:string,d:string):Step[]{
 }
 export function calculus(req:Request):Result {
  const raw=expression(req.expression);onlyVariables(raw,['x']);
- if(/\b(floor|ceil|factorial)\(/.test(raw))throw new Error('Cette fonction discontinue ou discrète nécessite une étude séparée.');
+ if(/\b(floor|ceil|factorial|sign)\(/.test(raw))throw new Error('Cette fonction discontinue ou discrète nécessite une étude séparée.');
  if(req.operation==='derivative'){
   const order=param(req.params,'order','1');if(![1,2,3].includes(order))throw new Error('Choisis un ordre de dérivation de 1 à 3.');
   let d=raw;for(let i=0;i<order;i++)d=cas.diff(d,'x').toString();
@@ -18,22 +19,30 @@ export function calculus(req:Request):Result {
   return {title:order===1?'La dérivée':'Dérivée d’ordre '+order,latex:'f^{('+order+')}(x)='+tex(d),exact:d,steps:derivativeSteps(raw,d),notes:raw.includes('abs')?['Pour une valeur absolue, examiner les points où son argument s’annule : la formule avec sign ne prouve pas la dérivabilité en ces points.']:[]};
  }
  if(req.operation==='integral'){
-  let primitive=cas.integrate(raw,'x').toString();
-  if(primitive.includes('integrate('))throw new Error('Aucune primitive usuelle n’a été déterminée. Cette intégrale peut nécessiter un changement de variable ou une méthode numérique.');
+  let primitive='';try{primitive=cas.integrate(raw,'x').toString();}catch{}
+  if(/integrate\(|undefined|NaN/.test(primitive))primitive='';
   // A real primitive of 1/x is ln|x| on each connected interval of R*.
   if(simplified('('+raw+')-1/x')==='0')primitive='log(abs(x))';
-  const steps:Step[]=[{title:'Vérifier l’intégrande',text:'Une intégrale définie usuelle suppose une fonction continue sur l’intervalle. Une valeur interdite demande une étude d’intégrale impropre.',latex:domainTex(raw)},{title:'Chercher une primitive',text:'Une primitive F satisfait F′ = f sur chaque intervalle de définition.',latex:'F(x)='+tex(primitive)}];
-  if(req.params.kind!=='definite')return {title:'Une primitive',latex:'F(x)='+tex(primitive)+'+C',exact:primitive,steps,notes:['C est une constante réelle. La formule est valable sur chaque intervalle où elle est définie.']};
+  const steps:Step[]=[{title:'Vérifier l’intégrande',text:'Une intégrale définie usuelle suppose une fonction continue sur l’intervalle. Une valeur interdite demande une étude d’intégrale impropre.',latex:domainTex(raw)}];
+  if(primitive)steps.push({title:'Chercher une primitive',text:'Une primitive F satisfait F′ = f sur chaque intervalle de définition.',latex:'F(x)='+tex(primitive)});
+  if(req.params.kind!=='definite'){
+   if(!primitive)throw new Error('Aucune primitive explicite n’a été obtenue. Choisis « Intégrale entre deux bornes » pour calculer une valeur numérique.');
+   return {title:'Une primitive',method:'exact',latex:'F(x)='+tex(primitive)+'+C',exact:primitive,steps,notes:['C est une constante réelle. La formule est valable sur chaque intervalle où elle est définie.']};
+  }
   const a=param(req.params,'lower','0'),b=param(req.params,'upper','1'),lo=Math.min(a,b),hi=Math.max(a,b);
-  for(const c of constraints(raw)){const cuts=polynomialCuts('('+c.expr+')-('+c.value+')');if(cuts===null)throw new Error('La continuité de cette expression n’est pas établie automatiquement. Étudie d’abord ses points singuliers.');if(cuts.some(x=>x>=lo&&x<=hi&&(c.op==='!='||c.op==='>')))throw new Error('Une valeur interdite se trouve dans l’intervalle : cette intégrale est impropre.');}
+  for(const c of constraints(raw)){const cuts=polynomialCuts('('+c.expr+')-('+c.value+')');if(cuts?.some(x=>x>=lo&&x<=hi&&(c.op==='!='||c.op==='>')))throw new Error('Une valeur interdite se trouve dans l’intervalle : cette intégrale est impropre.');}
+  if(!certifiedDomain(raw,a,b))throw new Error('Le domaine sur cet intervalle n’est pas établi : une intégrale impropre ou une étude des singularités peut être nécessaire. Change les bornes.');
   for(let i=0;i<=40;i++)if(!checkDomain(raw,lo+(hi-lo)*i/40)||!Number.isFinite(numeric(raw,lo+(hi-lo)*i/40)))throw new Error('La fonction n’est pas définie sur tout l’intervalle choisi.');
-  const result=exact('('+cas(primitive,{x:String(b)}).toString()+')-('+cas(primitive,{x:String(a)}).toString()+')');
-  if(!Number.isFinite(asReal(result)))throw new Error('L’évaluation aux bornes ne donne pas une valeur réelle finie.');
-  steps.push({title:'Évaluer aux bornes',text:'Appliquer le théorème fondamental : F(b) − F(a).',latex:tex(result)});
-  return {title:'Valeur de l’intégrale',latex:'\\int_{'+tex(String(a))+'}^{'+tex(String(b))+'}'+tex(raw)+'\\,dx='+tex(result),exact:result,approximate:fmt(asReal(result)),steps,notes:[]};
+  let result='';if(primitive&&req.params.method!=='numeric')try{result=exact('('+cas(primitive,{x:expression(req.params.upper??'1')}).toString()+')-('+cas(primitive,{x:expression(req.params.lower??'0')}).toString()+')');if(!Number.isFinite(asReal(result)))result='';}catch{}
+  const integral='\\int_{'+tex(expression(req.params.lower??'0'))+'}^{'+tex(expression(req.params.upper??'1'))+'}'+tex(raw)+'\\,dx';
+  if(result){steps.push({title:'Évaluer aux bornes',text:'Appliquer le théorème fondamental : F(b) − F(a).',latex:tex(result)});return {title:'Valeur de l’intégrale',method:'exact',latex:integral+'='+tex(result),exact:result,approximate:fmt(asReal(result)),steps,notes:[]};}
+  const estimate=quadrature(raw,a,b);
+  steps.push({title:'Calculer numériquement',text:'La quadrature de Gauss–Kronrod subdivise l’intervalle et compare deux estimations sur chaque portion.',latex:integral+'\\approx '+numericTex(estimate.value)});
+  steps.push({title:'Contrôler la convergence',text:estimate.evaluations+' évaluations de la fonction. Écart estimé : '+fmt(estimate.error)+'. Cet écart est un indicateur numérique.'});
+  return {title:'Intégrale approchée',method:'numeric',latex:integral+'\\approx '+numericTex(estimate.value),approximate:fmt(estimate.value),numericValues:[estimate.value],steps,notes:['La valeur est une approximation numérique. Aucune primitive explicite n’est nécessaire pour ce calcul.']};
  }
  if(req.operation==='limit'){
-  const value=req.params.point??'0',point=/^[+]?inf(inity)?$|^∞$/i.test(value)?'Infinity':/^-inf(inity)?$|^-∞$/i.test(value)?'-Infinity':expression(value);
+  const value=(req.params.point??'0').trim().replace(/−|–/g,'-'),point=/^[+]?inf(inity)?$|^\+?∞$/i.test(value)?'Infinity':/^-inf(inity)?$|^-∞$/i.test(value)?'-Infinity':expression(value);
   if(!point.includes('Infinity'))onlyVariables(point,[]);
   const direction=req.params.side??'both';
   if(!['left','right','both'].includes(direction))throw new Error('Sens de limite invalide.');
@@ -64,5 +73,5 @@ export function calculus(req:Request):Result {
   for(let i=0;i<boundaries.length-1;i++){const a=boundaries[i],b=boundaries[i+1],x=!Number.isFinite(a)&&!Number.isFinite(b)?0:!Number.isFinite(a)?b-Math.max(1,Math.abs(b)+1):!Number.isFinite(b)?a+Math.max(1,Math.abs(a)+1):(a+b)/2;const v=numeric(d,x);rows.push([']'+fmt(a)+' ; '+fmt(b)+'[',!checkDomain(raw,x)?'hors domaine':v>0?'croissante':v<0?'décroissante':v===0?'constante':'à étudier']);}
   steps.push({title:'Lire les variations',text:'Le signe de la dérivée détermine le sens de variation sur les intervalles où la fonction est définie.'});
  }else{notes.push('Le signe global de cette dérivée n’est pas établi. Le tableau ci-dessous donne uniquement des valeurs numériques.');for(let i=0;i<=8;i++){const x=xmin+(xmax-xmin)*i/8;rows.push([fmt(x),fmt(evaluateNode(node,{x}))]);}}
- return {title:'Étude de la fonction',latex:'f(x)='+tex(raw),exact:raw,steps,notes,plot:{points,xmin,xmax},table:{headers:cuts===null?['x','f(x)']:['Intervalle','Variation'],rows}};
+ return {title:'Dérivée et étude de la fonction',method:'analysis',latex:"f'(x)="+tex(d),exact:d,steps,notes,plot:{points,xmin,xmax},table:{headers:cuts===null?['x','f(x)']:['Intervalle','Variation'],rows}};
 }
