@@ -1,4 +1,4 @@
-# Maths BAC Madagascar — 2.2.1
+# Maths BAC Madagascar — 2.2.2
 
 Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
@@ -12,6 +12,8 @@ Les données sont locales : exporter une sauvegarde depuis les réglages avant d
 
 La saisie libre accepte notamment `3x`, `x²`, `√9`, `ln x`, `eˣ`, les virgules décimales et `f(x) = …`. L’aperçu montre la formule comprise ; les arguments composés doivent être parenthésés, par exemple `ln(2x+1)`. L’éditeur MathLive local affiche et édite les fractions, racines, ln et eˣ. Les flèches parcourent numérateur, dénominateur et exposants ; le clavier tactile propose chiffres, fonctions, inégalités et symboles. Les brouillons visuels et historiques v2 sont conservés. Les calculs trigonométriques du calculateur peuvent utiliser les degrés ou les radians. Les outils d’analyse utilisent les radians.
 
+Pour **Limite**, saisis la fonction puis touche **Un nombre**, **+∞** ou **−∞**. Un nombre peut être une fraction ou un décimal. L’approche **Automatique** vérifie les côtés autorisés par le domaine ; les limites à gauche et à droite sont comparées quand les deux approches sont possibles. Ouvre **Approche** si ton énoncé impose un côté. L’aperçu montre la limite saisie et **Essayer un exemple** remplit tous les champs. Des résultats latéraux différents donnent une conclusion expliquée, avec chaque limite, plutôt qu’une erreur de saisie.
+
 Une forme inchangée est signalée et un bouton permet de remplacer x par une valeur. Une équation tapée dans le calculateur est reconnue automatiquement.
 
 ## Périmètre du moteur
@@ -21,6 +23,7 @@ Une forme inchangée est signalée et un bouton permet de remplacer x par une va
 - Domaines en intervalles avec crochets français, unions et bornes incluses ou exclues. Les valeurs interdites initiales restent exclues après simplification ; le domaine de validité de la formule dérivée est affiché séparément. Les contraintes non résolues restent explicites.
 - Conservation des restrictions initiales lors des simplifications et vérification des candidats d’équations.
 - Recherche numérique de racines par balayage, dichotomie et Newton dans un intervalle choisi, avec contrôle dans les deux membres initiaux. Les résultats numériques portent le signe ≈ ; l’absence de racine repérée ne prouve pas l’absence de solution. Les familles trigonométriques à argument affine incluent toutes les branches.
+- Limites : approche choisie à partir des intervalles du domaine ou du signe local établi symboliquement ; aucune sélection à partir d’un seul point échantillonné. Logarithmes en zéro, branches réelles des racines, puissances et limites à l’infini sont contrôlés. Les cas non établis restent explicites.
 - Intégrales entre bornes finies : méthode exacte si possible, puis quadrature adaptative de Gauss–Kronrod 7/15 avec contrôle de domaine par intervalles. Les singularités sont refusées ; les intégrales impropres ne sont pas traitées automatiquement. L’écart de quadrature est une estimation.
 - Les recherches incomplètes sont indiquées. Les tableaux globaux ne sont proposés que lorsque les zéros et restrictions nécessaires sont déterminés.
 - Étude de fonction : domaine, dérivées première et seconde, zéros, extrema, inflexions, variations, convexité, limites et asymptotes établies symboliquement. Les facteurs exponentiels et certaines équations de logarithmes sont traités par transformations inversibles ; les recherches restantes sont limitées à la fenêtre initiale et signalées comme numériques.
@@ -43,11 +46,11 @@ npm run cap:sync
 npm run android:debug
 ```
 
-Les tests mathématiques comprennent des oracles indépendants pour 121 couples de racines et 386 valeurs de dérivées, dont 305 pour les fonctions composées et les ordres 1 à 3, des références d’intégrales obtenues par séries intégrées à 85 chiffres, des équations transcendantes, les branches trigonométriques, les pôles, le sous-dépassement numérique, les grands entiers, les restrictions, limites latérales et sauvegardes. Les parcours Chromium vérifient tailles d’écran, thèmes, saisie, worker, reprise, correction, sauvegarde et cache interrompu, ainsi que l’édition tactile et physique de fractions, ln, exponentielles, le zoom et la tangente. Les polices et modules de l’éditeur sont embarqués et mis en cache ; aucun service externe de calcul n’est utilisé.
+Les tests mathématiques comprennent des oracles indépendants pour 121 couples de racines et 386 valeurs de dérivées, dont 305 pour les fonctions composées et les ordres 1 à 3, des références d’intégrales obtenues par séries intégrées à 85 chiffres, des équations transcendantes, les branches trigonométriques, les pôles, le sous-dépassement numérique, les grands entiers, les restrictions, limites latérales et sauvegardes. Les limites sont aussi vérifiées contre des références connues pour les deux infinis, les logarithmes, racines réelles, points fractionnaires, intervalles courts et formes indéterminées. Les parcours Chromium vérifient tailles d’écran, thèmes, saisie, worker, reprise, correction, sauvegarde et cache interrompu, ainsi que l’édition tactile et physique de fractions, ln, exponentielles, le zoom et la tangente, et le parcours de limites avec infinis par boutons, sélection du sens, reprise, messages de saisie et calcul hors connexion. Les polices et modules de l’éditeur sont embarqués et mis en cache ; aucun service externe de calcul n’est utilisé.
 
 ## Android et diffusion
 
-Identifiant : `mg.mathsbac.madagascar`, version `2.2.1`, code `20201`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+Identifiant : `mg.mathsbac.madagascar`, version `2.2.2`, code `20202`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
 
 Le répertoire `dist` peut être hébergé statiquement. Le service worker précharge toutes les ressources et n’active le cache qu’après un téléchargement complet. L’APK embarque directement les ressources, sans téléchargement initial.
 

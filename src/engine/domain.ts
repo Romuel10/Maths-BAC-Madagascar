@@ -21,12 +21,15 @@ function periodicDomain(checks:Constraint[]):string|null {
  return 'D=\\bigcup_{n\\in\\mathbb Z}'+(c.op==='>='?'[':']')+bounds[0]+';'+bounds[1]+(c.op==='>='?']':'[');
 }
 
-export function domainTex(raw:string|string[]):string {
+export interface DomainInterval {a:string;b:string;leftClosed:boolean;rightClosed:boolean;}
+// null means that the interval decomposition is not established. Consumers
+// must keep the original constraints rather than infer a domain from samples.
+export function domainIntervals(raw:string|string[]):DomainInterval[]|null {
  const checks=(Array.isArray(raw)?raw:[raw]).flatMap(constraints),cuts:{value:string;x:number}[]=[];
  const conditions:{check:Constraint;zeros:number[];identity:boolean}[]=[];
  let complete=true;
  for(const c of checks){
-  try{onlyVariables(c.expr,[]);if(!exactAccepts(c))return 'D=\\varnothing';continue;}catch{}
+  try{onlyVariables(c.expr,[]);if(!exactAccepts(c))return [];continue;}catch{}
   let set=null;try{set=finiteZeros('('+c.expr+')-('+c.value+')');}catch{}
   if(!set){complete=false;continue;}
   const zeros=set.values.map(asReal);
@@ -34,10 +37,9 @@ export function domainTex(raw:string|string[]):string {
   conditions.push({check:c,zeros,identity:set.identity});
   cuts.push(...set.values.map((value,i)=>({value,x:zeros[i]})));
  }
- if(!complete)return periodicDomain(checks)??'D=\\left\\{x\\in]-\\infty;+\\infty[\\;\\middle|\\;'+checks.map(c=>tex(c.expr)+(c.op==='!='?'\\ne':c.op==='>='?'\\ge':'>')+tex(c.value)).join(',\\;')+'\\right\\}';
+ if(!complete)return null;
  const unique=cuts.filter((v,i,a)=>a.findIndex(u=>u.x===v.x)===i).sort((a,b)=>a.x-b.x);
- const endpointTex=(v:string)=>/^-\d+\/\d+$/.test(v)?'-'+tex(v.slice(1)):tex(v);
- const xs=[-Infinity,...unique.map(v=>v.x),Infinity],tokens=['-\\infty',...unique.map(v=>endpointTex(v.value)),'+\\infty'];
+ const xs=[-Infinity,...unique.map(v=>v.x),Infinity],tokens=['-Infinity',...unique.map(v=>v.value),'Infinity'];
  const permitted=(x:number,endpoint=false)=>conditions.every(({check:c,zeros,identity})=>{
   // Do not use a rounded sqrt(2) to decide whether a zero is strictly positive.
   if(identity||endpoint&&zeros.includes(x))return c.op==='>=';
@@ -55,5 +57,15 @@ export function domainTex(raw:string|string[]):string {
  }
  for(let i=1;i<xs.length-1;i++)if(closed[i]&&!covered.has(i))pieces.push({a:i,b:i,lc:true,rc:true});
  pieces.sort((a,b)=>a.a-b.a);
- return 'D='+(pieces.length?pieces.map(p=>(p.lc?'[':']')+tokens[p.a]+';'+tokens[p.b]+(p.rc?']':'[')).join('\\;\\cup\\;'):'\\varnothing');
+ return pieces.map(p=>({a:tokens[p.a],b:tokens[p.b],leftClosed:p.lc,rightClosed:p.rc}));
+}
+
+export function domainTex(raw:string|string[]):string {
+ const pieces=domainIntervals(raw);
+ if(pieces===null){
+  const checks=(Array.isArray(raw)?raw:[raw]).flatMap(constraints);
+  return periodicDomain(checks)??'D=\\left\\{x\\in]-\\infty;+\\infty[\\;\\middle|\\;'+checks.map(c=>tex(c.expr)+(c.op==='!='?'\\ne':c.op==='>='?'\\ge':'>')+tex(c.value)).join(',\\;')+'\\right\\}';
+ }
+ const endpoint=(v:string)=>v==='-Infinity'?'-\\infty':v==='Infinity'?'+\\infty':/^-\d+\/\d+$/.test(v)?'-'+tex(v.slice(1)):tex(v);
+ return 'D='+(pieces.length?pieces.map(p=>(p.leftClosed?'[':']')+endpoint(p.a)+';'+endpoint(p.b)+(p.rightClosed?']':'[')).join('\\;\\cup\\;'):'\\varnothing');
 }

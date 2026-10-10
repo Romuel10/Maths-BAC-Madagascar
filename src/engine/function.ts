@@ -1,6 +1,7 @@
 import {cas,parse,source,exact,simplified,asReal,tex,numericTex,constraints,checkDomain,domainTex,onlyVariables,substitute,fmt} from './expression';
 import {numericalRoots,realEvaluator,domainCertifier} from './numerical';
 import {samplePlot} from './plot';
+import {symbolicLimit as safeLimit} from './symbolic-limit';
 import type {Result,Step,RemarkablePoint,Asymptote,FunctionAnalysis} from './types';
 
 import {finiteZeros,type ZeroSet} from './zero-set';
@@ -24,29 +25,6 @@ function boundaries(raws:string[],xmin:number,xmax:number,regularity=true){
  return {cuts:cuts.filter((c,i,a)=>Number.isFinite(c.x)&&a.findIndex(v=>v.x===c.x)===i).sort((a,b)=>a.x-b.x),approximate,complete};
 }
 function sampleBetween(a:number,b:number):number{return !Number.isFinite(a)&&!Number.isFinite(b)?0:!Number.isFinite(a)?b-Math.max(1,Math.abs(b)+1):!Number.isFinite(b)?a+Math.max(1,Math.abs(a)+1):a+(b-a)/2;}
-function safeLimit(raw:string,at:string,side='both',depth=0):string|null {
- if(depth>10)return null;
- try{
-  const output=cas.limit(simplified(raw),'x',at,side).toString();
-  if(/^[-]?(?:Inf|Infinity)$/.test(output))return output;
-  onlyVariables(output,[]);return Number.isFinite(asReal(output))?output:null;
- }catch{}
- // Nerdamer currently throws on ln(0+) instead of returning -Inf. Resolve
- // elementary compositions and determinate products from their proven limits.
- try{
-  const n=unwrap(parse(raw)),child=(v:any)=>safeLimit(source(v),at,side,depth+1);
-  if(n.isFunctionNode&&n.fn.name==='log'){
-   const a=child(n.args[0]);if(a==='0')return '-Inf';if(a==='Inf'||a==='Infinity')return 'Inf';
-  }
-  if(n.isOperatorNode&&n.args.length===2){
-   const [a,b]=n.args,l=child(a),r=n.op==='/'?safeLimit('1/('+source(b)+')',at,side,depth+1):child(b);
-   if(l!==null&&r!==null&&(n.op==='*'||n.op==='/')){
-    const x=asReal(l),y=asReal(r);if((!Number.isFinite(x)||!Number.isFinite(y))&&x!==0&&y!==0&&!Number.isNaN(x)&&!Number.isNaN(y))return Math.sign(x)*Math.sign(y)>0?'Inf':'-Inf';
-   }
-  }
- }catch{}
- return null;
-}
 function valueTex(value:string):string {return value==='Inf'||value==='Infinity'?'+\\infty':value==='-Inf'||value==='-Infinity'?'-\\infty':tex(value);}
 
 export function analyzeFunction(raw:string,d0:string,xmin:number,xmax:number,steps:Step[]):Result {

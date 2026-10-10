@@ -3,6 +3,7 @@ import {polynomialCuts} from './algebra';
 import {certifiedDomain,quadrature} from './numerical';
 import {analyzeFunction} from './function';
 import {differentiate,derivativeTex} from './differentiation';
+import {computeLimit} from './limits';
 import type {Request,Result,Step} from './types';
 function derivativeSteps(raw:string,d:string,order=1,formulas=[d]):Step[]{
  const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
@@ -42,22 +43,7 @@ export function calculus(req:Request):Result {
   steps.push({title:'Contrôler la convergence',text:estimate.evaluations+' évaluations de la fonction. Écart estimé : '+fmt(estimate.error)+'. Cet écart est un indicateur numérique.'});
   return {title:'Intégrale approchée',method:'numeric',latex:integral+'\\approx '+numericTex(estimate.value),approximate:fmt(estimate.value),numericValues:[estimate.value],steps,notes:['La valeur est une approximation numérique. Aucune primitive explicite n’est nécessaire pour ce calcul.']};
  }
- if(req.operation==='limit'){
-  const value=(req.params.point??'0').trim().replace(/−|–/g,'-'),point=/^[+]?inf(inity)?$|^\+?∞$/i.test(value)?'Infinity':/^-inf(inity)?$|^-∞$/i.test(value)?'-Infinity':expression(value);
-  if(!point.includes('Infinity'))onlyVariables(point,[]);
-  const direction=req.params.side??'both';
-  if(!['left','right','both'].includes(direction))throw new Error('Sens de limite invalide.');
-  if(/\b(floor|ceil|factorial)\(/.test(raw))throw new Error('Cette fonction discontinue nécessite une étude de limite séparée.');
-  let output=cas.limit(raw,'x',point,direction).toString();
-  if(direction==='both'&&!point.includes('Infinity')){
-   const left=cas.limit(raw,'x',point,'left').toString(),right=cas.limit(raw,'x',point,'right').toString();
-   if(left!==right&&simplified('('+left+')-('+right+')')!=='0')throw new Error('Les limites à gauche et à droite sont différentes ou non déterminées. Étudie chaque côté séparément.');
-   output=right;
-  }
-  if(/limit\(|undefined|NaN/.test(output))throw new Error(direction==='both'?'La limite bilatérale n’est pas déterminée. Calcule séparément les limites à gauche et à droite.':'Cette limite n’est pas déterminée symboliquement.');
-  const p=asReal(point);if(Number.isFinite(p)){const sides=direction==='both'?[-1,1]:[direction==='left'?-1:1];if(sides.some(sign=>!checkDomain(raw,p+sign*Math.max(1,Math.abs(p))*1e-5)))throw new Error('La fonction n’est pas définie de ce côté du point.');}
-  return {title:'Limite',latex:'\\lim_{x\\to '+(point.includes('Infinity')?point.replace('Infinity','\\infty'):tex(point))+(direction==='left'?'^-':direction==='right'?'^+':'')+'}'+tex(raw)+'='+tex(output),exact:output,steps:[{title:'Identifier l’approche',text:direction==='both'?'Les deux côtés doivent conduire à la même limite.':direction==='left'?'x s’approche par valeurs inférieures.':'x s’approche par valeurs supérieures.'},{title:'Transformer l’expression',text:'Le calcul symbolique utilise les identités algébriques et les limites usuelles. Une petite valeur obtenue au voisinage n’est pas une preuve de limite.',latex:tex(raw)},{title:'Conclure',text:'Le résultat porte sur la limite, et ne donne pas nécessairement la valeur de la fonction au point.',latex:tex(output)}],notes:[]};
- }
+ if(req.operation==='limit')return computeLimit(raw,req);
  const xmin=param(req.params,'xmin','-5'),xmax=param(req.params,'xmax','5');if(xmin>=xmax||xmax-xmin>1e6)throw new Error('Choisis deux bornes croissantes, avec une largeur au plus égale à 1 000 000.');
  const d=differentiate(raw);
  return analyzeFunction(raw,d,xmin,xmax,derivativeSteps(raw,d));
