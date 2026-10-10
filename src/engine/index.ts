@@ -1,4 +1,4 @@
-import {expression,cas,tex,asReal,onlyVariables,domainTex,fmt,constraints,simplified,param,checkDomain,inputTex,structuralKey,substitute,integerValue,decimalApprox} from './expression';
+import {expression,cas,tex,asReal,onlyVariables,domainTex,fmt,constraints,simplified,param,checkDomain,checkConstantDomain,inputTex,structuralKey,substitute,integerValue,decimalApprox} from './expression';
 import {withoutFunctionLabel} from './notation';
 import {equation,inequality} from './algebra';
 import {calculus} from './calculus';
@@ -23,13 +23,14 @@ export function solve(req:Request):Result {
  if(!['simplify','expand','factor','evaluate'].includes(mode))throw new Error('Choisis le calcul souhaité.');
  if(mode==='evaluate'){
   const x=param(req.params,'xvalue','0');if(!checkDomain(s,x))throw new Error('Cette valeur de x est interdite dans l’expression initiale. Choisis une valeur de son domaine.');
-  const substituted=substitute(s,'x',req.params.xvalue??'0'),output=integerValue(substituted)??cas(substituted).toString(),approximate=decimalApprox(output);
+  const substituted=substitute(s,'x',req.params.xvalue??'0'),output=integerValue(substituted)??simplified(substituted),approximate=decimalApprox(output);
   if(approximate===undefined&&!/^[-]?\d+(?:\/\d+)?$/.test(output))throw new Error('Cette expression ne donne pas une valeur réelle représentable pour ce x.');
   return {title:'Valeur pour x = '+fmt(x),method:'exact',latex:tex(output),exact:output,approximate,steps:[{title:'Lire la formule',text:'Partir de l’expression saisie.',latex:inputTex(req.expression)},{title:'Remplacer x',text:'Substituer la valeur choisie après avoir vérifié le domaine.',latex:'x='+tex(expression(req.params.xvalue??'0'))},{title:'Effectuer le calcul',text:'Conserver la valeur exacte et afficher son approximation décimale.',latex:tex(output)}],notes:[]};
  }
  const variable=/\bx\b/.test(s);
+ if(!variable&&!checkConstantDomain(s))throw new Error('Cette expression n’est pas définie dans les nombres réels. Vérifie les dénominateurs, logarithmes et racines.');
  const integer=variable?null:integerValue(s);
- const output=integer??(mode==='factor'?cas.factor(s).toString():mode==='expand'?cas.expand(s).toString():cas.simplify(s).toString());
+ const output=integer??(!variable?simplified(s):mode==='factor'?cas.factor(s).toString():mode==='expand'?cas.expand(s).toString():simplified(s));
  const approximate=variable?undefined:decimalApprox(output);
  const unchanged=variable&&structuralKey(s)===structuralKey(output);
  if(!variable&&approximate===undefined&&!/^[-]?\d+(?:\/\d+)?$/.test(output))throw new Error('Ce calcul sort du domaine réel ou dépasse la plage numérique. Pour un nombre complexe, choisis l’outil « Complexes ».');

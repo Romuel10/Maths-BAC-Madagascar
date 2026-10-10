@@ -1,6 +1,7 @@
 import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex} from './expression';
 import {polynomialCuts} from './algebra';
 import {certifiedDomain,quadrature} from './numerical';
+import {analyzeFunction} from './function';
 import type {Request,Result,Step} from './types';
 function derivativeSteps(raw:string,d:string):Step[]{
  const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
@@ -58,20 +59,6 @@ export function calculus(req:Request):Result {
   return {title:'Limite',latex:'\\lim_{x\\to '+(point.includes('Infinity')?point.replace('Infinity','\\infty'):tex(point))+(direction==='left'?'^-':direction==='right'?'^+':'')+'}'+tex(raw)+'='+tex(output),exact:output,steps:[{title:'Identifier l’approche',text:direction==='both'?'Les deux côtés doivent conduire à la même limite.':direction==='left'?'x s’approche par valeurs inférieures.':'x s’approche par valeurs supérieures.'},{title:'Transformer l’expression',text:'Le calcul symbolique utilise les identités algébriques et les limites usuelles. Une petite valeur obtenue au voisinage n’est pas une preuve de limite.',latex:tex(raw)},{title:'Conclure',text:'Le résultat porte sur la limite, et ne donne pas nécessairement la valeur de la fonction au point.',latex:tex(output)}],notes:[]};
  }
  const xmin=param(req.params,'xmin','-5'),xmax=param(req.params,'xmax','5');if(xmin>=xmax||xmax-xmin>1e6)throw new Error('Choisis deux bornes croissantes, avec une largeur au plus égale à 1 000 000.');
- const node=parse(raw),points:(number[]|null)[]=[];for(let i=0;i<=360;i++){const x=xmin+(xmax-xmin)*i/360,y=evaluateNode(node,{x});points.push(Number.isFinite(y)&&Math.abs(y)<1e9?[x,y]:null);}
- if(!points.some(Boolean))throw new Error('Aucun point réel n’est défini dans cette fenêtre. Vérifie le domaine ou change les bornes.');
- const d=cas.diff(raw,'x').toString();let cuts=polynomialCuts(d);
- const boundarySets=[...constraints(raw),...constraints(d)].map(c=>polynomialCuts('('+c.expr+')-('+c.value+')'));
- // An unresolved boundary must never be silently discarded from a global sign table.
- if(boundarySets.some(set=>set===null))cuts=null;
- const poles=boundarySets.flatMap(set=>set??[]);
- const steps=derivativeSteps(raw,d);
- const rows:string[][]=[];
- const notes=['Le graphe est un échantillonnage numérique. Il ne remplace pas l’étude du domaine ni une preuve.'];
- if(cuts!==null){
-  const boundaries=[-Infinity,...[...new Set([...cuts,...poles])].sort((a,b)=>a-b),Infinity];
-  for(let i=0;i<boundaries.length-1;i++){const a=boundaries[i],b=boundaries[i+1],x=!Number.isFinite(a)&&!Number.isFinite(b)?0:!Number.isFinite(a)?b-Math.max(1,Math.abs(b)+1):!Number.isFinite(b)?a+Math.max(1,Math.abs(a)+1):(a+b)/2;const v=numeric(d,x);rows.push([']'+fmt(a)+' ; '+fmt(b)+'[',!checkDomain(raw,x)?'hors domaine':v>0?'croissante':v<0?'décroissante':v===0?'constante':'à étudier']);}
-  steps.push({title:'Lire les variations',text:'Le signe de la dérivée détermine le sens de variation sur les intervalles où la fonction est définie.'});
- }else{notes.push('Le signe global de cette dérivée n’est pas établi. Le tableau ci-dessous donne uniquement des valeurs numériques.');for(let i=0;i<=8;i++){const x=xmin+(xmax-xmin)*i/8;rows.push([fmt(x),fmt(evaluateNode(node,{x}))]);}}
- return {title:'Dérivée et étude de la fonction',method:'analysis',latex:"f'(x)="+tex(d),exact:d,steps,notes,plot:{points,xmin,xmax},table:{headers:cuts===null?['x','f(x)']:['Intervalle','Variation'],rows}};
+ const d=cas.diff(raw,'x').toString();if(/diff\(|undefined|NaN/.test(d))throw new Error('La dérivée de cette fonction n’a pas été obtenue.');
+ return analyzeFunction(raw,d,xmin,xmax,derivativeSteps(raw,d));
 }

@@ -45,7 +45,7 @@ export function realEvaluator(raw:string):(x:number)=>number {
   return underflow?NaN:evaluateNode(node,{x});
  };
 }
-export function certifiedDomain(raw:string,a:number,b:number):boolean {
+export function domainCertifier(raw:string):(a:number,b:number,depth?:number)=>boolean {
  const checks=constraints(raw).map(c=>({...c,node:parse(c.expr)}));
  const prove=(lo:number,hi:number,depth:number):boolean=>{
   let uncertain=false;
@@ -56,11 +56,13 @@ export function certifiedDomain(raw:string,a:number,b:number):boolean {
   }
   if(!uncertain)return true;if(depth===0)return false;const mid=(lo+hi)/2;return prove(lo,mid,depth-1)&&prove(mid,hi,depth-1);
  };
- return prove(Math.min(a,b),Math.max(a,b),12);
+ return (a,b,depth=12)=>prove(Math.min(a,b),Math.max(a,b),depth);
 }
+export function certifiedDomain(raw:string,a:number,b:number):boolean {return domainCertifier(raw)(a,b);}
 function magnitude(n:any,x:number):number {
  if(n.isParenthesisNode)return magnitude(n.content,x);
- if(n.isFunctionNode&&['sin','cos','tan','log','log10'].includes(n.fn.name))return Math.max(Math.abs(evaluateNode(n,{x})),Math.abs(evaluateNode(n.args[0],{x})));
+ if(n.isOperatorNode&&n.args.length===1)return magnitude(n.args[0],x);
+ if(n.isFunctionNode&&['sin','cos','tan','sec','csc','cot','log','log10'].includes(n.fn.name))return Math.max(Math.abs(evaluateNode(n,{x})),Math.abs(evaluateNode(n.args[0],{x})));
  if(!n.isOperatorNode||n.args.length!==2)return Math.abs(evaluateNode(n,{x}));
  const a=magnitude(n.args[0],x),b=magnitude(n.args[1],x);
  if(n.op==='+'||n.op==='-')return a+b;if(n.op==='*')return a*b;
