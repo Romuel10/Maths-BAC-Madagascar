@@ -27,7 +27,7 @@ export function parse(input:string):MathNode {
 export function source(node:any,angle='rad'):string {
  const child=(n:any)=>source(n,angle);
  if(node.isParenthesisNode)return '('+child(node.content)+')';
- if(node.isConstantNode){const s=typeof node.value?.toFixed==='function'?node.value.toFixed():String(node.value);if(s.includes('.')){const [whole,fraction]=s.split('.');return '('+BigInt(whole+fraction).toString()+'/'+('1'+'0'.repeat(fraction.length))+')';}return s;}
+ if(node.isConstantNode){if(math.isFraction(node.value)){const v=node.value,num=String(BigInt(v.s)*BigInt(v.n)),den=String(v.d);return den==='1'?num:'('+num+'/'+den+')';}const s=typeof node.value?.toFixed==='function'?node.value.toFixed():String(node.value);if(s.includes('.')){const [whole,fraction]=s.split('.');return '('+BigInt(whole+fraction).toString()+'/'+('1'+'0'.repeat(fraction.length))+')';}return s;}
  if(node.isSymbolNode)return node.name;
  if(node.isFunctionNode){const a=child(node.args[0]),name=node.fn.name;if(name==='cbrt')return evaluateNode(node.args[0])<0?'(-abs('+a+')^(1/3))':'(('+a+')^(1/3))';if(angle==='deg'&&['sin','cos','tan','sec','csc','cot'].includes(name))return name+'(('+a+')*pi/180)';if(angle==='deg'&&['asin','acos','atan'].includes(name))return '('+name+'('+a+')*180/pi)';return name==='log10'?'(log('+a+')/log(10))':name+'('+a+')';}
  if(node.args.length===1)return node.op==='!'?'factorial('+child(node.args[0])+')':'('+node.op+child(node.args[0])+')';
@@ -132,10 +132,7 @@ export function constraints(raw:string):Constraint[]{
  });
  return out.filter((v,i,a)=>a.findIndex(x=>x.expr===v.expr&&x.op===v.op&&x.value===v.value)===i);
 }
-export function domainTex(raw:string):string {
- const c=constraints(raw).filter(v=>{try{onlyVariables(v.expr,[]);const a=asReal(v.expr),b=Number(v.value);return !(Number.isFinite(a)&&(v.op==='!='?a!==b:v.op==='>'?a>b:a>=b));}catch{return true;}});
- return c.length?'D=\\left\\{x\\in\\mathbb R\\;\\middle|\\;'+c.map(v=>tex(v.expr)+(v.op==='!='?'\\ne':v.op==='>='?'\\ge':'>')+v.value).join(',\\;')+'\\right\\}':'D=\\mathbb R';
-}
+export {domainTex} from './domain';
 export function checkConstantDomain(raw:string):boolean {
  return constraints(raw).every(c=>{try{const value=math.bignumber(cas(c.expr).numeric(80).toString()),bound=math.bignumber(c.value);return value.isFinite()&&(c.op==='!='?!value.eq(bound):c.op==='>'?value.gt(bound):value.gte(bound));}catch{return false;}});
 }

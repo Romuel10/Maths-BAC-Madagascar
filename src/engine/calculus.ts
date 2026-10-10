@@ -2,22 +2,22 @@ import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,co
 import {polynomialCuts} from './algebra';
 import {certifiedDomain,quadrature} from './numerical';
 import {analyzeFunction} from './function';
+import {differentiate,derivativeTex} from './differentiation';
 import type {Request,Result,Step} from './types';
-function derivativeSteps(raw:string,d:string):Step[]{
+function derivativeSteps(raw:string,d:string,order=1,formulas=[d]):Step[]{
  const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
  if(s.isOperatorNode&&s.op==='*')rule='Pour un produit, appliquer (uv)′ = u′v + uv′.';
  if(s.isOperatorNode&&s.op==='/')rule='Pour un quotient, appliquer (u/v)′ = (u′v − uv′)/v², lorsque v ≠ 0.';
  if(s.isFunctionNode)rule='Appliquer la dérivation d’une composée : (g ∘ u)′ = u′ × g′(u).';
- return [{title:'Préciser le domaine',text:'Les conditions sont celles de la fonction initiale. Les points où elle n’est pas dérivable sont à examiner séparément.',latex:domainTex(raw)},{title:'Choisir la règle',text:rule},{title:'Obtenir la dérivée',text:'Cette formule s’applique aux points où la fonction est dérivable.',latex:"f'(x)="+tex(d)}];
+ return [{title:'Lire la fonction',text:'Dériver cette expression en conservant ses parenthèses.',latex:'f(x)='+derivativeTex(raw)},{title:'Préciser le domaine',text:'[a ; b] inclut les deux bornes ; ]a ; b[ les exclut. L’infini est toujours exclu.',latex:domainTex(raw)},{title:'Choisir la règle',text:rule},{title:'Obtenir la dérivée',text:'Cette formule s’applique sur les intervalles où les règles de dérivation sont valables.',latex:(order===1?"f'(x)=":'f^{('+order+')}(x)=')+derivativeTex(d)},{title:'Vérifier le domaine de la formule dérivée',text:'Conserver le domaine initial et les restrictions des dérivées successives. Une borne exclue de cette formule demande un calcul de limite pour vérifier si la dérivée y existe.',latex:domainTex([raw,...formulas]).replace(/^D=/,'D_{\\text{formule}}=')}];
 }
 export function calculus(req:Request):Result {
  const raw=expression(req.expression);onlyVariables(raw,['x']);
  if(/\b(floor|ceil|factorial|sign)\(/.test(raw))throw new Error('Cette fonction discontinue ou discrète nécessite une étude séparée.');
  if(req.operation==='derivative'){
   const order=param(req.params,'order','1');if(![1,2,3].includes(order))throw new Error('Choisis un ordre de dérivation de 1 à 3.');
-  let d=raw;for(let i=0;i<order;i++)d=cas.diff(d,'x').toString();
-  if(d.includes('diff('))throw new Error('Cette dérivée nécessite un traitement séparé.');
-  return {title:order===1?'La dérivée':'Dérivée d’ordre '+order,latex:'f^{('+order+')}(x)='+tex(d),exact:d,steps:derivativeSteps(raw,d),notes:raw.includes('abs')?['Pour une valeur absolue, examiner les points où son argument s’annule : la formule avec sign ne prouve pas la dérivabilité en ces points.']:[]};
+  let d=raw;const formulas:string[]=[];for(let i=0;i<order;i++){d=differentiate(d);formulas.push(d);}
+  return {title:order===1?'La dérivée':'Dérivée d’ordre '+order,latex:(order===1?"f'(x)=":'f^{('+order+')}(x)=')+derivativeTex(d),exact:d,steps:derivativeSteps(raw,d,order,formulas),notes:raw.includes('abs')?['Aux points où une valeur absolue s’annule, vérifier la dérivabilité avec les limites à gauche et à droite.']:[]};
  }
  if(req.operation==='integral'){
   let primitive='';try{primitive=cas.integrate(raw,'x').toString();}catch{}
@@ -59,6 +59,6 @@ export function calculus(req:Request):Result {
   return {title:'Limite',latex:'\\lim_{x\\to '+(point.includes('Infinity')?point.replace('Infinity','\\infty'):tex(point))+(direction==='left'?'^-':direction==='right'?'^+':'')+'}'+tex(raw)+'='+tex(output),exact:output,steps:[{title:'Identifier l’approche',text:direction==='both'?'Les deux côtés doivent conduire à la même limite.':direction==='left'?'x s’approche par valeurs inférieures.':'x s’approche par valeurs supérieures.'},{title:'Transformer l’expression',text:'Le calcul symbolique utilise les identités algébriques et les limites usuelles. Une petite valeur obtenue au voisinage n’est pas une preuve de limite.',latex:tex(raw)},{title:'Conclure',text:'Le résultat porte sur la limite, et ne donne pas nécessairement la valeur de la fonction au point.',latex:tex(output)}],notes:[]};
  }
  const xmin=param(req.params,'xmin','-5'),xmax=param(req.params,'xmax','5');if(xmin>=xmax||xmax-xmin>1e6)throw new Error('Choisis deux bornes croissantes, avec une largeur au plus égale à 1 000 000.');
- const d=cas.diff(raw,'x').toString();if(/diff\(|undefined|NaN/.test(d))throw new Error('La dérivée de cette fonction n’a pas été obtenue.');
+ const d=differentiate(raw);
  return analyzeFunction(raw,d,xmin,xmax,derivativeSteps(raw,d));
 }

@@ -1,60 +1,11 @@
 import {cas,parse,source,exact,simplified,asReal,tex,numericTex,constraints,checkDomain,domainTex,onlyVariables,substitute,fmt} from './expression';
-import {coefficients,roots} from './algebra';
 import {numericalRoots,realEvaluator,domainCertifier} from './numerical';
 import {samplePlot} from './plot';
 import type {Result,Step,RemarkablePoint,Asymptote,FunctionAnalysis} from './types';
 
-interface ZeroSet {values:string[];identity:boolean;}
+import {finiteZeros,type ZeroSet} from './zero-set';
+import {differentiate,derivativeTex,factorDerivative} from './differentiation';
 function unwrap(n:any):any{return n.isParenthesisNode?unwrap(n.content):n;}
-function constant(n:any):boolean {let variable=false;n.traverse((v:any)=>{if(v.isSymbolNode&&v.name==='x')variable=true;});return !variable;}
-// Exhaustive finite zeros, obtained by polynomial solving or invertible steps.
-// Unresolved sums and periodic functions deliberately return null.
-function finiteZeros(raw:string,target='0',depth=0):ZeroSet|null {
- if(depth>14)return null;
- const residual=target==='0'?raw:'('+raw+')-('+target+')';
- if(simplified(residual)==='0')return {values:[],identity:true};
- const co=coefficients(residual);
- if(co&&co.length<=3){const r=roots(residual);if(r.values.some(v=>Math.abs(asReal(v))===Infinity))return null;if(r.complete&&!r.numeric&&!r.family)return {values:r.values.filter(v=>Number.isFinite(asReal(v))),identity:false};}
- else if(co){
-  // Higher-degree CAS solving can spend seconds producing numerical roots
-  // that still require our bounded search. Resolve exact factors first.
-  try{const factored=cas.factor(residual).toString(),n=unwrap(parse(factored));if(factored!==residual&&n.isOperatorNode&&['*','^'].includes(n.op))return finiteZeros(factored,'0',depth+1);}catch{}
- }
- const n=unwrap(parse(raw));
- if(constant(n))return {values:[],identity:false};
- const descend=(node:any,value:string)=>finiteZeros(source(node),value,depth+1);
- if(n.isFunctionNode){
-  if(['sec','csc'].includes(n.fn.name)&&target==='0')return {values:[],identity:false};
-  if(n.fn.name==='log')return descend(n.args[0],exact('exp('+target+')'));
-  if(n.fn.name==='exp'){const value=asReal(target);if((value===0&&exact(target)!=='0')||!Number.isFinite(value))return null;if(value<=0)return {values:[],identity:false};return descend(n.args[0],exact('log('+target+')'));}
-  if(['sqrt','cbrt','abs','sign'].includes(n.fn.name)&&target==='0')return descend(n.args[0],'0');
- }
- if(n.isOperatorNode){
-  const [a,b]=n.args;
-  if(n.args.length===1)return descend(a,n.op==='-'?exact('-('+target+')'):target);
-  if(n.op==='^'){
-   if(constant(a)&&asReal(source(a))>0&&asReal(source(a))!==1){const value=asReal(target);if((value===0&&exact(target)!=='0')||!Number.isFinite(value))return null;if(value<=0)return {values:[],identity:false};return descend(b,exact('log('+target+')/log('+source(a)+')'));}
-   if(constant(b)&&target==='0'){const p=asReal(source(b));if(p<0)return {values:[],identity:false};if(p>0)return descend(a,'0');}
-  }
-  if(target==='0'&&(n.op==='*'||n.op==='/')){
-   const left=descend(a,'0');if(n.op==='/')return left;
-   const right=descend(b,'0');if(!left||!right)return null;
-   return {values:[...new Set([...left.values,...right.values])],identity:left.identity||right.identity};
-  }
-  const ca=constant(a),cb=constant(b);
-  if(ca!==cb){
-   const c=source(ca?a:b),variable=ca?b:a;let value:string|undefined;
-   if(n.op==='+')value='('+target+')-('+c+')';
-   if(n.op==='-')value=ca?'('+c+')-('+target+')':'('+target+')+('+c+')';
-   if(n.op==='*'&&asReal(c)!==0)value='('+target+')/('+c+')';
-   if(n.op==='/'&&!ca)value='('+target+')*('+c+')';
-   if(n.op==='/'&&ca&&asReal(target)!==0)value='('+c+')/('+target+')';
-   if(value!==undefined)return descend(variable,exact(value));
-  }
- }
- if(depth===0){try{const factored=cas.factor(raw).toString();if(factored!==raw)return finiteZeros(factored,target,depth+1);}catch{}}
- return null;
-}
 function setZeros(raw:string,xmin:number,xmax:number):{values:{value:string;x:number;exact:boolean}[];complete:boolean;identity:boolean}{
  let set:ZeroSet|null=null;try{set=finiteZeros(raw);}catch{}
  if(set)return {values:set.values.map(value=>({value,x:asReal(value),exact:true})).sort((a,b)=>a.x-b.x),complete:true,identity:set.identity};
@@ -99,8 +50,8 @@ function safeLimit(raw:string,at:string,side='both',depth=0):string|null {
 function valueTex(value:string):string {return value==='Inf'||value==='Infinity'?'+\\infty':value==='-Inf'||value==='-Infinity'?'-\\infty':tex(value);}
 
 export function analyzeFunction(raw:string,d0:string,xmin:number,xmax:number,steps:Step[]):Result {
- let d=d0;try{d=cas.factor(d0).toString();}catch{}
- let dd:string|undefined;try{const v=cas.factor(cas.diff(d0,'x').toString()).toString();if(!/diff\(|undefined|NaN/.test(v))dd=v;}catch{}
+ const d=factorDerivative(d0);
+ let dd:string|undefined;try{const v=factorDerivative(differentiate(d0));if(!/diff\(|undefined|NaN/.test(v))dd=v;}catch{}
  const f=realEvaluator(raw),df=realEvaluator(d0),certify=domainCertifier(raw);
  const zeros=setZeros(raw,xmin,xmax),stationary=setZeros(d,xmin,xmax),edge=boundaries([raw,d0],xmin,xmax);
  const point=(root:{value:string;x:number;exact:boolean},kind:RemarkablePoint['kind']):RemarkablePoint|null=>{
@@ -114,7 +65,7 @@ export function analyzeFunction(raw:string,d0:string,xmin:number,xmax:number,ste
  const global=stationary.complete&&edge.complete;
  const critical:RemarkablePoint[]=[];
  for(const root of stationary.values){
-  if(!checkDomain(raw,root.x))continue;
+  if(!checkDomain(raw,root.x)||!Number.isFinite(df(root.x)))continue;
   const index=division.indexOf(root.x),left=division[index-1]??-Infinity,right=division[index+1]??Infinity;
   const h=Math.min(Math.max(1,Math.abs(root.x))*1e-4,(root.x-left)/4,(right-root.x)/4);
   const l=global?sampleBetween(left,root.x):root.x-h,r=global?sampleBetween(root.x,right):root.x+h;
@@ -122,6 +73,18 @@ export function analyzeFunction(raw:string,d0:string,xmin:number,xmax:number,ste
   const dl=df(l),dr=df(r),kind=dl<0&&dr>0?'minimum':dl>0&&dr<0?'maximum':'stationary';
   const p=point(root,kind);if(p)critical.push(p);
  }
+ // An extremum can occur at a corner even when f′ does not exist there.
+ // The original function must be continuous on a neighbourhood of the cut.
+ for(const root of edge.cuts){
+  if(Number.isFinite(df(root.x))||!checkDomain(raw,root.x)||critical.some(p=>p.x===root.x))continue;
+  const index=division.indexOf(root.x),left=division[index-1]??-Infinity,right=division[index+1]??Infinity;
+  const h=Math.min(Math.max(1,Math.abs(root.x))*1e-4,(root.x-left)/4,(right-root.x)/4);
+  if(!certify(root.x-h,root.x+h))continue;
+  const dl=df(global?sampleBetween(left,root.x):root.x-h),dr=df(global?sampleBetween(root.x,right):root.x+h);
+  const kind=dl<0&&dr>0?'minimum':dl>0&&dr<0?'maximum':null;
+  if(kind){const p=point({...root,exact:true},kind);if(p)critical.push(p);}
+ }
+ critical.sort((a,b)=>a.x-b.x);
  const rows:string[][]=[],variationBounds=global?[-Infinity,...division,Infinity]:[xmin,...division.filter(x=>x>xmin&&x<xmax),...edge.approximate.filter(x=>x>xmin&&x<xmax),xmax].sort((a,b)=>a-b);
  for(let i=0;i<variationBounds.length-1;i++){
   const a=variationBounds[i],b=variationBounds[i+1];if(a===b)continue;const x=sampleBetween(a,b),v=df(x),defined=checkDomain(raw,x);
@@ -167,13 +130,13 @@ export function analyzeFunction(raw:string,d0:string,xmin:number,xmax:number,ste
  }
  const forbidden=constraints(raw).filter(c=>c.op!=='>=').flatMap(c=>{try{return finiteZeros('('+c.expr+')-('+c.value+')')?.values.map(asReal)??numericalRoots(c.expr,c.value,xmin,xmax);}catch{return [];}});
  const plot=samplePlot(raw,d0,xmin,xmax,forbidden);
- const analysis:FunctionAnalysis={domain:domainTex(raw),derivative:"f'(x)="+tex(d),secondDerivative:dd?"f''(x)="+tex(dd):undefined,zeros:zeroPoints,zeroIdentity:zeros.identity,zerosComplete:zeros.complete,stationaryIdentity:stationary.identity,critical,inflections,asymptotes:merged,limits,variation:global?'global':'window',curvature};
+ const analysis:FunctionAnalysis={domain:domainTex(raw),derivativeDomain:domainTex([raw,d0]).replace(/^D=/,"D_{\\text{formule }f'}="),derivative:"f'(x)="+derivativeTex(d),secondDerivative:dd?"f''(x)="+derivativeTex(dd):undefined,zeros:zeroPoints,zeroIdentity:zeros.identity,zerosComplete:zeros.complete,stationaryIdentity:stationary.identity,critical,inflections,asymptotes:merged,limits,variation:global?'global':'window',curvature};
  const notes=['La courbe et la lecture des points sont numériques. Un tracé ne remplace pas une démonstration.'];
  if(!global)notes.push('Les variations sont repérées numériquement dans la fenêtre initiale ['+fmt(xmin)+' ; '+fmt(xmax)+']. La recherche peut manquer des points critiques : ces intervalles ne constituent pas un tableau global démontré.');
  if(!zeros.complete)notes.push('La recherche de zéros porte sur la fenêtre initiale ['+fmt(xmin)+' ; '+fmt(xmax)+'] et peut être incomplète. Modifier le zoom ne relance pas cette recherche.');
  if(raw.includes('abs'))notes.push('Les points où une valeur absolue s’annule demandent une vérification séparée de la dérivabilité.');
  steps.push({title:'Étudier le signe de la dérivée',text:global?'Les zéros de f′ et les frontières du domaine découpent les intervalles de variation.':'Repérer les changements dans la fenêtre. Les recherches numériques sont indiquées comme telles.'});
- if(dd)steps.push({title:'Examiner la convexité',text:'Le signe de f″ indique les intervalles convexes et concaves. Un changement de signe, avec une tangente existante, repère un point d’inflexion.',latex:"f''(x)="+tex(dd)});
+ if(dd)steps.push({title:'Examiner la convexité',text:'Le signe de f″ indique les intervalles convexes et concaves. Un changement de signe, avec une tangente existante, repère un point d’inflexion.',latex:"f''(x)="+derivativeTex(dd)});
  if(merged.length)steps.push({title:'Rechercher les asymptotes',text:'Les limites infinies en une borne donnent les asymptotes verticales. À l’infini, vérifier f(x) − (ax + b) → 0 pour une droite oblique.'});
  return {title:'Étude de la fonction',method:'analysis',latex:analysis.derivative,exact:d,steps,notes,analysis,table:{headers:['Intervalle','Variation','Signe de f′'],rows},plot:{...plot,markers:[...zeroPoints,...critical,...inflections],asymptotes:merged}};
 }
