@@ -1,6 +1,7 @@
-import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {previewInput} from '../client';
 import {MathView} from './Math';
+const VisualEditor=lazy(()=>import('./VisualEditor').then(module=>({default:module.VisualEditor})));
 import {guideFor,guideModels,guidedRequest} from '../data/guided';
 import type {Request,Tool} from '../engine/types';
 export function ExpressionPreview({expression,busy=false}:{expression:string;busy?:boolean}){
@@ -12,7 +13,13 @@ export function ExpressionPreview({expression,busy=false}:{expression:string;bus
  return <div className="input-preview"><span>Lecture de ta saisie</span>{preview.latex?<MathView tex={preview.latex}/>:<p>{preview.hint??'La formule apparaîtra ici pendant la saisie.'}</p>}</div>;
 }
 const keys:[string,string][]=[['x','x'],['x²','²'],['xⁿ','^(□)'],['a/b','(□)/(□)'],['√','√(□)'],['∛','∛(□)'],['( )','(□)'],['ln','ln(□)'],['eˣ','e^(□)'],['sin','sin(□)'],['cos','cos(□)'],['tan','tan(□)'],['|x|','|□|'],['π','π'],['+','+'],['−','−'],['×','×'],['÷','÷'],['=','='],['≥','≥'],['≤','≤'],['!','!'],['i','i'],[';',';']];
-export function ExpressionEditor({draft,tool,busy,onChange,onSubmit}:{draft:Request;tool:Tool;busy:boolean;onChange:(value:string)=>void;onSubmit:()=>void}){
+export function ExpressionEditor({draft,tool,busy,onChange,onSubmit,onModeChange}:{draft:Request;tool:Tool;busy:boolean;onChange:(value:string,latex?:string)=>void;onSubmit:()=>void;onModeChange:(mode:string)=>void}){
+ const rows=['system','matrix','statistics','geometry'].includes(tool.id),visual=!rows&&draft.params.editor!=='text';
+ return <>{!rows&&<div className="editor-switch" role="group" aria-label="Présentation de la formule"><button type="button" aria-pressed={visual} onClick={()=>onModeChange('visual')}>Écriture mathématique</button><button type="button" aria-pressed={!visual} onClick={()=>onModeChange('text')}>Saisie texte</button></div>}
+ {visual?<Suspense fallback={<p className="editor-loading" role="status">Préparation de l’éditeur mathématique…</p>}><VisualEditor key={tool.id} label={tool.label} expression={draft.expression} latex={draft.params.mathSource===draft.expression?draft.params.mathLatex:undefined} onChange={onChange} onSubmit={onSubmit}/></Suspense>:<TextEditor draft={draft} tool={tool} busy={busy} onChange={onChange} onSubmit={onSubmit}/>}
+ </>;
+}
+function TextEditor({draft,tool,busy,onChange,onSubmit}:{draft:Request;tool:Tool;busy:boolean;onChange:(value:string)=>void;onSubmit:()=>void}){
  const textarea=useRef<HTMLTextAreaElement>(null),cursor=useRef<number|null>(null),[keyboard,setKeyboard]=useState(true);
  useLayoutEffect(()=>{const el=textarea.current;if(el&&cursor.current!==null){el.focus();el.setSelectionRange(cursor.current,cursor.current);cursor.current=null;}});
  const insert=(template:string)=>{const el=textarea.current,start=el?.selectionStart??draft.expression.length,end=el?.selectionEnd??start,selected=draft.expression.slice(start,end);let at=template.indexOf('□');

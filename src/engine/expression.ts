@@ -5,7 +5,7 @@ export {normalize} from './notation';
 // A small boundary around the CAS keeps package-specific entities out of the UI.
 export const cas = nerdamer as any;
 export const math=create(all,{number:'BigNumber',precision:64});
-const functions=new Set(['sqrt','cbrt','abs','sign','log','log10','exp','sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','floor','ceil','factorial']);
+const functions=new Set(['sqrt','cbrt','abs','sign','log','log10','exp','sin','cos','tan','sec','csc','cot','asin','acos','atan','sinh','cosh','tanh','floor','ceil','factorial']);
 const symbols=new Set(['x','y','z','n','t','u','e','pi','i']);
 export function parse(input:string):MathNode {
  const s=normalize(input);
@@ -29,7 +29,7 @@ export function source(node:any,angle='rad'):string {
  if(node.isParenthesisNode)return '('+child(node.content)+')';
  if(node.isConstantNode){const s=typeof node.value?.toFixed==='function'?node.value.toFixed():String(node.value);if(s.includes('.')){const [whole,fraction]=s.split('.');return '('+BigInt(whole+fraction).toString()+'/'+('1'+'0'.repeat(fraction.length))+')';}return s;}
  if(node.isSymbolNode)return node.name;
- if(node.isFunctionNode){const a=child(node.args[0]),name=node.fn.name;if(name==='cbrt')return evaluateNode(node.args[0])<0?'(-abs('+a+')^(1/3))':'(('+a+')^(1/3))';if(angle==='deg'&&['sin','cos','tan'].includes(name))return name+'(('+a+')*pi/180)';if(angle==='deg'&&['asin','acos','atan'].includes(name))return '('+name+'('+a+')*180/pi)';return name==='log10'?'(log('+a+')/log(10))':name+'('+a+')';}
+ if(node.isFunctionNode){const a=child(node.args[0]),name=node.fn.name;if(name==='cbrt')return evaluateNode(node.args[0])<0?'(-abs('+a+')^(1/3))':'(('+a+')^(1/3))';if(angle==='deg'&&['sin','cos','tan','sec','csc','cot'].includes(name))return name+'(('+a+')*pi/180)';if(angle==='deg'&&['asin','acos','atan'].includes(name))return '('+name+'('+a+')*180/pi)';return name==='log10'?'(log('+a+')/log(10))':name+'('+a+')';}
  if(node.args.length===1)return node.op==='!'?'factorial('+child(node.args[0])+')':'('+node.op+child(node.args[0])+')';
  if(node.op==='^'){
   const base=evaluateNode(node.args[0]);
@@ -75,7 +75,20 @@ export function tex(s:string):string {
  try{return String(cas(s).toTeX()).replace(/\\mathrm\{log\}/g,'\\ln');}catch{return s.replace(/[\\{}]/g,'');}
 }
 export function exact(s:string):string{return cas(s).toString();}
-export function simplified(s:string):string{return cas.simplify(s).toString();}
+export function simplified(s:string):string {
+ const unwrap=(n:any):any=>n.isParenthesisNode?unwrap(n.content):n;
+ const node=parse(s).transform((n:any)=>{
+  const base=n.isOperatorNode&&n.op==='^'?unwrap(n.args[0]):null;
+  const argument=n.isFunctionNode&&n.fn.name==='exp'?unwrap(n.args[0]):base?.isSymbolNode&&base.name==='e'?unwrap(n.args[1]):null;
+  return argument?.isFunctionNode&&argument.fn.name==='log'?argument.args[0].cloneDeep():n;
+ });
+ const logs=node.transform((n:any)=>{
+  if(!n.isFunctionNode||n.fn.name!=='log')return n;
+  try{const argument=source(n.args[0]);onlyVariables(argument,[]);const value=exact(argument),m=value.match(/^(1)(0+)$|^1\/(1)(0+)$/);if(m){const power=m[2]?m[2].length:-m[4].length;return math.parse(power+'*log(10)');}}catch{}
+  return n;
+ });
+ return cas.simplify(source(logs)).toString();
+}
 export function fmt(x:number):string {
  if(!Number.isFinite(x))return x===Infinity?'+∞':x===-Infinity?'−∞':'non défini';
  if(x===0)return '0';
@@ -97,7 +110,7 @@ export function evaluateNode(n:any,scope:Record<string,number>={}):number {
  if(n.isSymbolNode)return n.name==='pi'?Math.PI:n.name==='e'?Math.E:scope[n.name]??NaN;
  const a=evaluateNode(n.args[0],scope);
  if(n.isFunctionNode){
-  const f:Record<string,(v:number)=>number>={sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,sign:Math.sign,log:Math.log,log10:Math.log10,exp:Math.exp,sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,floor:Math.floor,ceil:Math.ceil,factorial:factorial};
+  const f:Record<string,(v:number)=>number>={sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,sign:Math.sign,log:Math.log,log10:Math.log10,exp:Math.exp,sin:Math.sin,cos:Math.cos,tan:Math.tan,sec:v=>1/Math.cos(v),csc:v=>1/Math.sin(v),cot:v=>Math.cos(v)/Math.sin(v),asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,floor:Math.floor,ceil:Math.ceil,factorial:factorial};
   return f[n.fn.name]?.(a)??NaN;
  }
  if(n.args.length===1)return n.op==='-'?-a:n.op==='!'?factorial(a):a;
@@ -114,14 +127,17 @@ export function constraints(raw:string):Constraint[]{
  const add=(n:any,op:Constraint['op'],value='0')=>out.push({expr:source(n),op,value});
  node.traverse((n:any)=>{
   if(n.isOperatorNode&&n.op==='/')add(n.args[1],'!=');
-  if(n.isFunctionNode){const name=n.fn.name;if(['log','log10'].includes(name))add(n.args[0],'>');if(name==='sqrt')add(n.args[0],'>=');if(name==='tan')out.push({expr:'cos('+source(n.args[0])+')',op:'!=',value:'0'});if(['asin','acos'].includes(name)){add(n.args[0],'>=','-1');out.push({expr:'-('+source(n.args[0])+')',op:'>=',value:'-1'});}}
+  if(n.isFunctionNode){const name=n.fn.name;if(['log','log10'].includes(name))add(n.args[0],'>');if(name==='sqrt')add(n.args[0],'>=');if(['tan','sec','cot','csc'].includes(name))out.push({expr:(['tan','sec'].includes(name)?'cos':'sin')+'('+source(n.args[0])+')',op:'!=',value:'0'});if(['asin','acos'].includes(name)){add(n.args[0],'>=','-1');out.push({expr:'-('+source(n.args[0])+')',op:'>=',value:'-1'});}}
   if(n.isOperatorNode&&n.op==='^'){const q=rationalExponent(n.args[1]);if(!q)add(n.args[0],'>');else if(q[1]%2===0)add(n.args[0],q[0]<0?'>':'>=');else if(q[0]<0)add(n.args[0],'!=');}
  });
  return out.filter((v,i,a)=>a.findIndex(x=>x.expr===v.expr&&x.op===v.op&&x.value===v.value)===i);
 }
 export function domainTex(raw:string):string {
- const c=constraints(raw);
+ const c=constraints(raw).filter(v=>{try{onlyVariables(v.expr,[]);const a=asReal(v.expr),b=Number(v.value);return !(Number.isFinite(a)&&(v.op==='!='?a!==b:v.op==='>'?a>b:a>=b));}catch{return true;}});
  return c.length?'D=\\left\\{x\\in\\mathbb R\\;\\middle|\\;'+c.map(v=>tex(v.expr)+(v.op==='!='?'\\ne':v.op==='>='?'\\ge':'>')+v.value).join(',\\;')+'\\right\\}':'D=\\mathbb R';
+}
+export function checkConstantDomain(raw:string):boolean {
+ return constraints(raw).every(c=>{try{const value=math.bignumber(cas(c.expr).numeric(80).toString()),bound=math.bignumber(c.value);return value.isFinite()&&(c.op==='!='?!value.eq(bound):c.op==='>'?value.gt(bound):value.gte(bound));}catch{return false;}});
 }
 export function checkDomain(raw:string,x:number):boolean {
  return constraints(raw).every(c=>{const a=numeric(c.expr,x),b=Number(c.value);return Number.isFinite(a)&&(c.op==='!='?a!==b:c.op==='>'?a>b:a>=b);});
