@@ -47,7 +47,7 @@ test('équations : domaine, racines parasites et transcendantes',()=>{
  assert.deepEqual(values(run('equation','ln(x)=0')),[1]);
  close(values(run('equation','exp(x)=2'))[0],Math.log(2));
  assert.ok(run('equation','sin(x)=0').latex.includes('\\mathbb Z'));
- assert.ok(run('equation','(x-1)/(x-1)=1').latex.includes('\\ne'));
+ assert.equal(run('equation','(x-1)/(x-1)=1').latex,'S=]-\\infty;1[\\;\\cup\\;]1;+\\infty[');
  assert.equal(run('equation','2=3').latex,'S=\\varnothing');
 });
 test('inégalités : bornes isolées, valeurs interdites, inclusions',()=>{

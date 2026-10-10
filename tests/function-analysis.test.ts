@@ -19,7 +19,7 @@ test('saisie visuelle : fractions imbriquées, ln, exponentielles, racines et re
  assert.ok(solve({operation:'inequality',expression:editorExpression('x^2\\leq4'),params:{}}).latex.includes('2'));
  assert.throws(()=>solve({operation:'calculate',expression:editorExpression('\\frac{\\placeholder{}}{2}'),params:{}}));
  assert.throws(()=>solve({operation:'calculate',expression:'e^ln(-1)',params:{}}));
- assert.ok(solve({operation:'calculate',expression:'e^ln(x)',params:{}}).steps.some(s=>s.latex?.includes('>0')));
+ assert.ok(solve({operation:'calculate',expression:'e^ln(x)',params:{}}).steps.some(s=>s.latex==='D=]0;+\\infty['));
 });
 test('étude rationnelle : extrema, asymptotes verticale et oblique, domaine initial',()=>{
  const r=study('(x^2+1)/(x-1)'),a=r.analysis!;
@@ -29,7 +29,7 @@ test('étude rationnelle : extrema, asymptotes verticale et oblique, domaine ini
  close(a.critical[1].x,1+Math.SQRT2);close(a.critical[1].y,2+2*Math.SQRT2);
  const vertical=a.asymptotes.find(v=>v.kind==='vertical')!,oblique=a.asymptotes.find(v=>v.kind==='oblique')!;
  close(vertical.x!,1);close(oblique.slope!,1);close(oblique.intercept!,1);
- const hole=study('(x-1)/(x-1)');assert.equal(hole.analysis!.asymptotes.some(v=>v.kind==='vertical'),false);assert.ok(hole.analysis!.domain.includes('\\ne'));assert.ok(hole.analysis!.stationaryIdentity);
+ const hole=study('(x-1)/(x-1)');assert.equal(hole.analysis!.asymptotes.some(v=>v.kind==='vertical'),false);assert.equal(hole.analysis!.domain,'D=]-\\infty;1[\\;\\cup\\;]1;+\\infty[');assert.ok(hole.analysis!.stationaryIdentity);
 });
 test('ln(x)/x : zéro, maximum exact, inflexion, limites et convexité',()=>{
  const a=study('ln(x)/x').analysis!;assert.equal(a.variation,'global');assert.equal(a.zerosComplete,true);close(a.zeros[0].x,1);
