@@ -78,7 +78,7 @@ test('limites usuelles et latérales',()=>{
  assert.equal(run('limit','(x^2-1)/(x-1)',{point:'1'}).exact,'2');
  assert.equal(run('limit','1/x',{point:'0',side:'left'}).exact,'-Inf');
  assert.equal(run('limit','1/x',{point:'0',side:'right'}).exact,'Inf');
- assert.throws(()=>run('limit','1/x',{point:'0',side:'both'}));
+ assert.equal(run('limit','1/x',{point:'0',side:'both'}).title,'La limite n’existe pas');
  assert.equal(run('limit','(3*x^2+1)/(2*x^2-5)',{point:'Infinity'}).exact,'3/2');
 });
 test('systèmes, matrices, suites, probabilités et spécialités',()=>{
@@ -132,7 +132,7 @@ test('aucune borne réelle : signe et variations sur tout R',()=>{
  assert.equal(run('function','-x^3-x').table?.rows[0][1],'décroissante');
 });
 test('limites : ne jamais moyenner les deux côtés',()=>{
- assert.throws(()=>run('limit','abs(x)/x',{point:'0'}));
+ assert.equal(run('limit','abs(x)/x',{point:'0'}).title,'La limite n’existe pas');
  assert.equal(run('limit','abs(x)/x',{point:'0',side:'left'}).exact,'-1');
  assert.equal(run('limit','abs(x)/x',{point:'0',side:'right'}).exact,'1');
  assert.throws(()=>run('limit','floor(x)',{point:'0',side:'left'}));
