@@ -1,5 +1,6 @@
 """Verify the built APK, including the launcher icons actually compiled into it."""
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -111,6 +112,10 @@ for attribute, name in [('icon', 'mipmap/maths_bac_launcher'), ('roundIcon', 'mi
     assert found and application[attribute] == int(found[1], 16), 'Manifest references the wrong ' + attribute
 assert 'mipmap-anydpi-v26' in resources and 'mipmap-anydpi-v33' in resources, 'Adaptive or monochrome icon variant missing'
 
-signature = subprocess.check_output([build_tool('apksigner', args.apksigner), 'verify', '--verbose', '--print-certs', str(args.apk)], text=True)
-certificate = re.search(r'Signer #1 certificate SHA-256 digest:\s*([0-9a-f]+)', signature)[1]
+signature = subprocess.check_output([build_tool('apksigner', args.apksigner), 'verify', '--verbose', '--print-certs-pem', str(args.apk)], text=True)
+# Hash the certificate bytes rather than a version-dependent signer label.
+pem = re.findall(r'-----BEGIN CERTIFICATE-----\s*([A-Za-z0-9+/=\s]+?)\s*-----END CERTIFICATE-----', signature)
+certificates = {hashlib.sha256(base64.b64decode(re.sub(r'\s+', '', value), validate=True)).hexdigest() for value in pem}
+assert len(certificates) == 1, 'Expected one signing certificate in apksigner output: ' + signature
+certificate = certificates.pop()
 print(json.dumps({'apk': str(args.apk.resolve()), 'version': version, 'versionCode': code, 'package': manifest['package'], 'bytes': args.apk.stat().st_size, 'sha256': hashlib.sha256(args.apk.read_bytes()).hexdigest(), 'certificateSha256': certificate, 'assets': len(assets), 'fontReferencesChecked': references, 'launcherEntries': 1, 'compiledIconsVerified': True, 'signatureVerified': True}))
