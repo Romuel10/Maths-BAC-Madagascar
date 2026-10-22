@@ -2,6 +2,7 @@ import {math,parse,source,exact,cas} from './expression';
 import {all,create,type MathNode} from 'mathjs';
 import {simplifyReal} from './real-simplify';
 import {readableTex} from './math-display';
+import {checkDerivative} from './derivative-check';
 const symbolic=create(all,{number:'Fraction'});
 
 const unwrap=(n:any):any=>n.isParenthesisNode?unwrap(n.content):n;
@@ -12,7 +13,7 @@ const power=(a:any,p:number,q=1)=>new math.OperatorNode('^','pow',[a,new math.Pa
 // Compose rational powers on the original real domain, which callers retain.
 // An even root of an even power requires |u|: sqrt(x²) = |x|,
 // whereas cbrt(x³) = x, including at zero.
-export function realForm(raw:string):MathNode {
+export function realForm(raw:string|MathNode):MathNode {
  const visit=(node:any):any=>{
   let n=node.map((c:any)=>visit(c));
   if(n.isFunctionNode&&['sqrt','cbrt'].includes(n.fn.name))n=power(n.args[0],1,n.fn.name==='sqrt'?2:3);
@@ -26,6 +27,9 @@ export function realForm(raw:string):MathNode {
   }
   if(n.isOperatorNode&&n.op==='^'){
    const a=unwrap(n.args[0]),outer=fraction(n.args[1]);
+   // Integer powers may be distributed safely, including over quotients.
+   // This also keeps successive derivatives of radicals compact.
+   if(outer&&outer[1]===1&&a.isOperatorNode&&['*','/'].includes(a.op))return visit(new math.OperatorNode(a.op,a.fn,a.args.map((v:any)=>power(v,outer[0]))));
    if(outer&&a.isFunctionNode&&a.fn.name==='abs'&&outer[1]===1&&outer[0]%2===0)return power(a.args[0],outer[0]);
    if(outer&&a.isOperatorNode&&a.op==='^'){
     const inner=fraction(a.args[1]);
@@ -38,33 +42,24 @@ export function realForm(raw:string):MathNode {
   }
   return n;
  };
- return visit(parse(raw));
+ return visit(typeof raw==='string'?parse(raw):raw);
 }
 export function differentiate(raw:string):string {
- // Differentiate the input tree before any CAS rewrites. Math.js's real
- // context preserves the real branches and the formula's singularities.
+ // Differentiate the input tree before any CAS rewrites. Even the library's
+ // realContext distributes fractional powers without checking factor signs.
  const derivative=symbolic.derivative(symbolic.parse(source(realForm(raw))),'x',{simplify:false});
  const supported=derivative.transform((n:any)=>n.isFunctionNode&&n.fn.name==='sech'?symbolic.parse('1/cosh('+source(n.args[0])+')'):n);
- // Keep ln(2), sqrt(2), π and e exact. Evaluating a transcendental constant
- // inside the Fraction simplifier would introduce an approximate coefficient.
- const constants=new Map<string,MathNode>();
- const freeze=(n:any):any=>{
-  let variable=false;n.traverse((v:any)=>{if(v.isSymbolNode&&v.name==='x')variable=true;});
-  if(!variable&&!n.isConstantNode){
-   try{const value=exact(source(n));if(/^-?\d+(?:\/\d+)?$/.test(value))return symbolic.parse(value);}catch{}
-   const key='_constant'+constants.size;constants.set(key,n);return new symbolic.SymbolNode(key);
-  }
-  return n.map((child:any)=>freeze(child));
- };
- const result=symbolic.simplify(freeze(supported),symbolic.simplify.rules,{}, {context:(symbolic.simplify as any).realContext});
- const restored=result.transform((n:any)=>n.isSymbolNode&&constants.has(n.name)?constants.get(n.name)!:n);
- // Math.js prints Fraction constants as e.g. 10/1 even inside a power base.
- // Make their operator precedence explicit before serializing the tree.
- const printable=restored.transform((n:any)=>{
+ // Rewrite only with exact real algebra. The general CAS simplifier splits
+ // fractional powers over factors of unknown sign and can spend minutes on
+ // nested variable powers. Treat transcendental/radical blocks as atoms.
+ const printable=supported.transform((n:any)=>{
   if(!n.isConstantNode||!symbolic.isFraction(n.value))return n;
   const literal=math.parse(source(n));return n.value.d===1n?literal:new math.ParenthesisNode(literal);
  });
- return simplifyReal(realForm(printable.toString({parenthesis:'auto',implicit:'show'}))).toString({parenthesis:'auto',implicit:'show'});
+ const preliminary=simplifyReal(realForm(printable));
+ const answer=simplifyReal(realForm(preliminary)).toString({parenthesis:'auto',implicit:'show'});
+ if(!checkDerivative(raw,answer).matches)throw new Error('La dérivée calculée ne passe pas le contrôle indépendant. Le résultat n’est pas affiché ; décompose la fonction pour poursuivre le calcul.');
+ return answer;
 }
 export function derivativeTex(raw:string):string {return readableTex(raw);}
 export function factorDerivative(raw:string):string {

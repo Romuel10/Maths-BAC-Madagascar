@@ -7,13 +7,16 @@ export const cas = nerdamer as any;
 export const math=create(all,{number:'BigNumber',precision:64});
 const functions=new Set(['sqrt','cbrt','abs','sign','log','log10','exp','sin','cos','tan','sec','csc','cot','asin','acos','atan','sinh','cosh','tanh','floor','ceil','factorial']);
 const symbols=new Set(['x','y','z','n','t','u','v','e','pi','i']);
-export function parse(input:string):MathNode {
- const s=normalize(input);
+// Generated derivatives need room for intermediate quotient/chain formulas.
+// User entry and previews keep their original 600-character/180-node budget.
+// The same syntax, functions and exponent restrictions apply in both cases.
+export function parse(input:string,generated=true):MathNode {
+ const s=normalize(input,generated?12000:600);
  if(!/^[\dA-Za-z+\-*/^!().\s]+$/.test(s))throw new Error('Utilise des nombres, x, des parenthèses et les fonctions du clavier. Pour une équation, choisis « Équation ».');
  let node:MathNode;try{node=math.parse(s);}catch{throw new Error('Expression incomplète. Vérifie les parenthèses et les signes.');}
  let count=0;
  node.traverse((n:any,_path:string,parent:any)=>{
-  if(++count>180)throw new Error('Cette expression est trop longue. Découpe le calcul.');
+  if(++count>(generated?2400:180))throw new Error('Cette expression est trop longue. Découpe le calcul.');
   if(!['ConstantNode','SymbolNode','ParenthesisNode','OperatorNode','FunctionNode'].includes(n.type))throw new Error('Cette syntaxe n’est pas autorisée.');
   if(n.isSymbolNode&&!symbols.has(n.name)&&!functions.has(n.name))throw new Error('Symbole inconnu : '+n.name+'.');
   if(n.isSymbolNode&&functions.has(n.name)&&!parent?.isFunctionNode)throw new Error('Complète '+n.name+' avec un argument, par exemple '+n.name+'(x).');
@@ -35,9 +38,11 @@ export function source(node:any,angle='rad'):string {
   const base=evaluateNode(node.args[0]);
   if(Number.isFinite(base)&&base<0){const power=rationalExponent(node.args[1]);if(power&&power[1]%2===1&&power[1]>1)return '('+(Math.abs(power[0])%2===1?'-':'')+'(abs('+source(node.args[0])+')^('+source(node.args[1])+')))';}
  }
- return '('+child(node.args[0])+node.op+child(node.args[1])+')';
+ // CAS transformations can return sums/products with more than two terms.
+ // Serializing only the first pair silently discards the remaining operands.
+ return '('+node.args.map(child).join(node.op)+')';
 }
-export function expression(raw:string,angle='rad'):string{return source(parse(raw),angle);}
+export function expression(raw:string,angle='rad'):string{return source(parse(raw,false),angle);}
 export function substitute(raw:string,name:string,value:string):string {const replacement=parse(value);return source(parse(raw).transform((node:any)=>node.isSymbolNode&&node.name===name?replacement:node));}
 export function integerValue(raw:string):string|null {
  const read=(n:any):bigint|null=>{
@@ -65,7 +70,7 @@ export function decimalApprox(raw:string):string|undefined {
   return big.toExponential(10).replace(/e([+-]?\d+)/,' × 10^$1');
  }catch{return undefined;}
 }
-export function inputTex(raw:string):string{return parse(raw).toTex().replace(/\\mathrm\{log\}/g,'\\ln');}
+export function inputTex(raw:string):string{return parse(raw,false).toTex().replace(/\\mathrm\{log\}/g,'\\ln');}
 export function structuralKey(raw:string):string {
  const key=(n:any):string=>{if(n.isParenthesisNode)return key(n.content);if(n.isOperatorNode&&['+','*'].includes(n.op)){const terms:string[]=[];const visit=(c:any)=>{if(c.isParenthesisNode)visit(c.content);else if(c.isOperatorNode&&c.op===n.op)c.args.forEach(visit);else terms.push(key(c));};n.args.forEach(visit);return n.op+'['+terms.sort().join(',')+']';}return n.type+':'+(n.name??n.op??String(n.value??''))+'['+(n.args??[]).map(key).join(',')+']';};
  return key(parse(raw));
@@ -108,6 +113,8 @@ export function evaluateNode(n:any,scope:Record<string,number>={}):number {
  if(n.isParenthesisNode)return evaluateNode(n.content,scope);
  if(n.isConstantNode)return Number(n.value);
  if(n.isSymbolNode)return n.name==='pi'?Math.PI:n.name==='e'?Math.E:scope[n.name]??NaN;
+ if(n.isOperatorNode&&n.op==='+')return n.args.reduce((sum:number,v:any)=>sum+evaluateNode(v,scope),0);
+ if(n.isOperatorNode&&n.op==='*')return n.args.reduce((product:number,v:any)=>product*evaluateNode(v,scope),1);
  const a=evaluateNode(n.args[0],scope);
  if(n.isFunctionNode){
   const f:Record<string,(v:number)=>number>={sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,sign:Math.sign,log:Math.log,log10:Math.log10,exp:Math.exp,sin:Math.sin,cos:Math.cos,tan:Math.tan,sec:v=>1/Math.cos(v),csc:v=>1/Math.sin(v),cot:v=>Math.cos(v)/Math.sin(v),asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,floor:Math.floor,ceil:Math.ceil,factorial:factorial};
