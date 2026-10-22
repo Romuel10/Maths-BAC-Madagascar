@@ -20,7 +20,7 @@ const essential:[string,string,string][]=[
 const functions:[string,string,string][]=[
  ['Sinus','\\sin(x)','\\sin\\left(#0\\right)'],['Cosinus','\\cos(x)','\\cos\\left(#0\\right)'],
  ['Tangente','\\tan(x)','\\tan\\left(#0\\right)'],['Valeur absolue','|x|','\\left|#0\\right|'],
- ['Racine cubique','\\sqrt[3]{x}','\\sqrt[3]{#0}'],['Logarithme décimal','\\log_{10}(x)','\\log_{10}\\left(#0\\right)']
+ ['Racine cubique','\\sqrt[3]{x}','\\sqrt[3]{#0}'],['Racine d’ordre n','\\sqrt[n]{x}','\\sqrt[#?]{#0}'],['Logarithme décimal','\\log_{10}(x)','\\log_{10}\\left(#0\\right)']
 ];
 const symbols:[string,string,string][]=[
  ['Inférieur ou égal','\\le','\\le'],['Supérieur ou égal','\\ge','\\ge'],['Inférieur','<','<'],['Supérieur','>','>'],
@@ -59,11 +59,12 @@ export function VisualEditor({expression,latex,label,onChange,onSubmit}:{express
  return <section className="visual-editor">
   <div className="formula-bar"><span>ÉCRITURE MATHÉMATIQUE</span><button type="button" className="text-button" onClick={()=>{field.current?.setValue('',{silenceNotifications:true});last.current='';lastLatex.current='';setHint('');onChange('','');field.current?.focus();}}>Tout effacer</button></div>
   <div ref={host} className="math-field-host"/>
-  <p id="visual-editor-help" className="visual-help">Touche une fraction ou un exposant pour le remplir. Les flèches ↑ et ↓ passent d’un étage à l’autre.</p>
+  <p id="visual-editor-help" className="visual-help">Touche une fraction, une racine ou un exposant pour le remplir. « Champ suivant » passe à la prochaine case vide ; ↑ et ↓ changent d’étage.</p>
   {hint&&<p className="editor-error" role="status">{hint}</p>}
   <div className="keypad-tabs" role="group" aria-label="Touches mathématiques"><button type="button" aria-pressed={tab==='essential'} onClick={()=>setTab('essential')}>Essentiel</button><button type="button" aria-pressed={tab==='functions'} onClick={()=>setTab('functions')}>Fonctions</button><button type="button" aria-pressed={tab==='symbols'} onClick={()=>setTab('symbols')}>Symboles</button></div>
   <div className="formula-keys">{(tab==='essential'?essential:tab==='functions'?functions:symbols).map(([name,tex,value])=><button type="button" key={name} aria-label={'Insérer '+name.toLowerCase()} onPointerDown={e=>e.preventDefault()} onClick={()=>insert(value)}><MathView tex={tex} block={false}/><span>{name}</span></button>)}</div>
   <div className="number-keypad">{['7','8','9','x','+','4','5','6','(', '−','1','2','3',')','×','0',',','=','π','÷'].map(value=><button type="button" key={value} className={/[+−×÷=]/.test(value)?'operator-key':''} aria-label={'Insérer '+value} onPointerDown={e=>e.preventDefault()} onClick={()=>insert(value==='×'?'\\cdot':value==='÷'?'\\frac{#0}{#?}':value==='π'?'\\pi':value==='−'?'-':value===','?'.':value)}>{value}</button>)}</div>
   <div className="cursor-keys">{[['Annuler la dernière saisie','↶','undo'],['Déplacer le curseur à gauche','←','moveToPreviousChar'],['Monter dans la formule','↑','moveUp'],['Descendre dans la formule','↓','moveDown'],['Déplacer le curseur à droite','→','moveToNextChar'],['Effacer le caractère précédent','⌫','deleteBackward']].map(([name,symbol,value])=><button key={name} type="button" aria-label={name} onPointerDown={e=>e.preventDefault()} onClick={()=>command(value as Parameters<typeof command>[0])}>{symbol}</button>)}</div>
+  <button type="button" className="placeholder-navigation" aria-label="Passer au champ suivant" onPointerDown={e=>e.preventDefault()} onClick={()=>command('moveToNextPlaceholder')}><span>Champ suivant</span><span aria-hidden="true">→</span></button>
  </section>;
 }

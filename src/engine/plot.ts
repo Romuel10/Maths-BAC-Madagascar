@@ -1,6 +1,6 @@
 import {constraints,onlyVariables,parse,evaluateNode} from './expression';
 import {domainCertifier,realEvaluator} from './numerical';
-import {realForm} from './differentiation';
+import {differentiate,realForm} from './differentiation';
 import type {Plot} from './types';
 
 export function samplePlot(expression:string,derivative:string,xmin:number,xmax:number,breaks:number[]=[]):Pick<Plot,'expression'|'derivative'|'points'|'xmin'|'xmax'|'breaks'|'yRange'> {
@@ -31,7 +31,10 @@ export function samplePlot(expression:string,derivative:string,xmin:number,xmax:
 }
 export function probePlot(expression:string,derivative:string,x:number):{x:number;y:number|null;slope:number|null}{
  if(!Number.isFinite(x))throw new Error('Abscisse invalide.');
- const y=realEvaluator(expression)(x),slope=realEvaluator(derivative)(x);
- let regular=true;realForm(expression).traverse((n:any)=>{if(n.isFunctionNode&&n.fn.name==='abs'&&evaluateNode(n.args[0],{x})===0)regular=false;});
- return {x,y:Number.isFinite(y)?y:null,slope:regular&&Number.isFinite(y)&&Number.isFinite(slope)?slope:null};
+ const y=realEvaluator(expression)(x);let slope=realEvaluator(derivative)(x),absoluteZero=false;
+ realForm(expression).traverse((n:any)=>{if(n.isFunctionNode&&n.fn.name==='abs'&&evaluateNode(n.args[0],{x})===0)absoluteZero=true;});
+ // A normalized real derivative retains true singularities. An absolute
+ // value in f alone does not imply a corner: |x|³ has derivative 0 at zero.
+ if(absoluteZero&&Number.isFinite(y))try{slope=realEvaluator(differentiate(expression))(x);}catch{slope=NaN;}
+ return {x,y:Number.isFinite(y)?y:null,slope:Number.isFinite(y)&&Number.isFinite(slope)?slope:null};
 }
