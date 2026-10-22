@@ -1,4 +1,4 @@
-import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex,substitute} from './expression';
+import {cas,expression,tex,exact,simplified,asReal,numeric,parse,source,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex,substitute} from './expression';
 import {polynomialCuts} from './algebra';
 import {certifiedDomain,quadrature} from './numerical';
 import {analyzeFunction} from './function';
@@ -10,7 +10,7 @@ import {probePlot} from './plot';
 import {value} from './toolkit';
 import type {Request,Result,Step} from './types';
 function derivativeSteps(raw:string,d:string,order=1,formulas=[d]):Step[]{
- const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
+ const n:any=parse(raw);let s=n;while(s.isParenthesisNode)s=s.content;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
  if(s.isOperatorNode&&s.op==='*')rule='Pour un produit, appliquer (uv)′ = u′v + uv′.';
  if(s.isOperatorNode&&s.op==='/')rule='Pour un quotient, appliquer (u/v)′ = (u′v − uv′)/v², lorsque v ≠ 0.';
  if(s.isFunctionNode)rule='Appliquer la dérivation d’une composée : (g ∘ u)′ = u′ × g′(u).';
@@ -18,9 +18,22 @@ function derivativeSteps(raw:string,d:string,order=1,formulas=[d]):Step[]{
  if(s.isOperatorNode&&s.op==='^'){
   const p=rationalValue(s.args[1]);rule=p?.n===1n&&p.d>1n?'La fonction est une racine composée : dériver aussi l’expression sous la racine.':p?'Pour une puissance composée uʳ, appliquer r × u′ × uʳ⁻¹ dans le domaine réel.':'Pour u(x) élevé à v(x), dériver par logarithme dans le domaine où u est strictement positif.';
  }
+ const detail:Step[]=[];
+ const parts=(u:string,v?:string)=>{try{
+  const rows=['u(x)='+readableTex(u,false),"u'(x)="+derivativeTex(differentiate(u))];
+  if(v)rows.push('v(x)='+readableTex(v,false),"v'(x)="+derivativeTex(differentiate(v)));
+  detail.push({title:v?'Dériver le numérateur et le dénominateur':'Dériver la fonction intérieure',text:v?'Calculer chaque dérivée avant de remplacer dans la règle du quotient.':'Le facteur u′ vient de la dérivation de toute l’expression intérieure.',latex:'\\begin{gathered}'+rows.join('\\\\')+'\\end{gathered}'});
+ }catch{/* The complete derivative is already checked; extra pedagogy is optional. */}};
+ if(order===1&&s.isOperatorNode&&s.op==='/')parts(source(s.args[0]),source(s.args[1]));
+ else if(order===1&&s.isOperatorNode&&s.op==='*'&&s.args.length===2){
+  parts(source(s.args[0]),source(s.args[1]));const step=detail.at(-1);if(step){step.title='Dériver les deux facteurs';step.text='Calculer u′ et v′, puis former u′v + uv′. Les deux termes sont nécessaires.';}
+ }else if(order===1&&(s.isFunctionNode||s.isOperatorNode&&s.op==='^')){
+  const inner=s.args[0];if(source(inner)!=='x')parts(source(inner));
+ }
  let degree:bigint|undefined;parse(raw).traverse((n:any)=>{if(!degree&&n.isFunctionNode&&['sqrt','cbrt'].includes(n.fn.name))degree=n.fn.name==='sqrt'?2n:3n;if(!degree&&n.isOperatorNode&&n.op==='^'){const p=rationalValue(n.args[1]);if(p?.n===1n&&p.d>1n)degree=p.d;}});
  const roots:Step[]=degree?[{title:'Dériver la racine composée',text:degree===2n?'Pour √u, dériver aussi u : le numérateur est u′. Cette règle s’applique pour u > 0 ; les zéros de u se vérifient séparément.':'Pour une racine d’ordre '+degree+', dériver aussi l’expression u placée sous la racine. Cette formule s’applique pour u ≠ 0, dans le domaine réel.',latex:'\\frac{d}{dx}'+(degree===2n?'\\sqrt{u(x)}':'\\sqrt['+degree+']{u(x)}')+'=\\frac{u\u0027(x)}{'+degree+(degree===2n?'\\sqrt{u(x)}':'\\sqrt['+degree+']{u(x)^{'+(degree-1n)+'}}')+'}'}]:[];
- return [{title:'Lire la fonction',text:'Dériver cette expression en conservant ses parenthèses.',latex:'f(x)='+readableTex(raw,false)},{title:'Préciser le domaine',text:'[a ; b] inclut les deux bornes ; ]a ; b[ les exclut. L’infini est toujours exclu.',latex:domainTex(raw)},{title:'Choisir la règle',text:rule},...roots,{title:'Obtenir la dérivée',text:'Cette formule s’applique sur les intervalles où les règles de dérivation sont valables.',latex:(order===1?"f'(x)=":'f^{('+order+')}(x)=')+derivativeTex(d)},{title:'Vérifier le domaine de la formule dérivée',text:'Conserver le domaine initial et les restrictions des dérivées successives. Une borne exclue de cette formule demande un calcul de limite pour vérifier si la dérivée y existe.',latex:domainTex([raw,...formulas]).replace(/^D=/,'D_{\\text{formule}}=')}];
+ const successive:Step[]=order>1?formulas.slice(0,-1).map((formula,i)=>({title:'Calculer la dérivée d’ordre '+(i+1),text:'Dériver le résultat précédent, en conservant les restrictions déjà rencontrées.',latex:'f^{('+(i+1)+')}(x)='+derivativeTex(formula)})):[];
+ return [{title:'Lire la fonction',text:'Dériver cette expression en conservant ses parenthèses.',latex:'f(x)='+readableTex(raw,false)},{title:'Préciser le domaine',text:'[a ; b] inclut les deux bornes ; ]a ; b[ les exclut. L’infini est toujours exclu.',latex:domainTex(raw)},{title:'Choisir la règle',text:rule},...detail,...roots,...successive,{title:'Obtenir la dérivée',text:'Regrouper les termes semblables et conserver les racines entières. Cette formule s’applique sur les intervalles où les règles de dérivation sont valables.',latex:(order===1?"f'(x)=":'f^{('+order+')}(x)=')+derivativeTex(d)},{title:'Vérifier le domaine de la formule dérivée',text:'Conserver le domaine initial et les restrictions des dérivées successives. Une borne exclue de cette formule demande un calcul de limite pour vérifier si la dérivée y existe.',latex:domainTex([raw,...formulas]).replace(/^D=/,'D_{\\text{formule}}=')}];
 }
 export function calculus(req:Request):Result {
  const raw=expression(req.expression);onlyVariables(raw,['x']);

@@ -1,4 +1,4 @@
-# Maths BAC Madagascar — 2.3.0
+# Maths BAC Madagascar — 2.3.1
 
 Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
@@ -19,7 +19,7 @@ Une forme inchangée est signalée et un bouton permet de remplacer x par une va
 ## Périmètre du moteur
 
 - Calcul symbolique avec Nerdamer 2 et analyse des expressions avec math.js ; calculs exécutés dans un Web Worker avec annulation et délai maximal.
-- Dérivation sur l’arbre de la saisie avec math.js, fractions exactes et simplifications dans le contexte réel. Racines de puissances et valeurs absolues conservent leurs branches réelles. Les racines d’ordre 2 à 7, les puissances rationnelles et les dérivées successives sont vérifiées contre des formules indépendantes. Les produits et quotients sont normalisés avec des coefficients rationnels exacts. Les formules utilisent des radicaux et une barre de fraction ; la chaîne des racines est expliquée. √(x⁶) donne une dérivée nulle en zéro, alors que √(x²) garde sa pointe.
+- Dérivation sur l’arbre de la saisie avec math.js, fractions exactes et simplifications algébriques conservant les branches réelles. Racines de puissances et valeurs absolues conservent leurs branches réelles. Les racines d’ordre 2 à 7, les puissances rationnelles et les dérivées successives sont vérifiées contre des formules indépendantes. Les produits et quotients sont normalisés avec des coefficients rationnels exacts. Les formules utilisent des radicaux et une barre de fraction ; la chaîne des racines est expliquée. √(x⁶) donne une dérivée nulle en zéro, alors que √(x²) garde sa pointe.
 - Domaines en intervalles avec crochets français, unions et bornes incluses ou exclues. Les valeurs interdites initiales restent exclues après simplification ; le domaine de validité de la formule dérivée est affiché séparément. Les contraintes non résolues restent explicites.
 - Conservation des restrictions initiales lors des simplifications et vérification des candidats d’équations.
 - Recherche numérique de racines par balayage, dichotomie et Newton dans un intervalle choisi, avec contrôle dans les deux membres initiaux. Les résultats numériques portent le signe ≈ ; l’absence de racine repérée ne prouve pas l’absence de solution. Les familles trigonométriques à argument affine incluent toutes les branches.
@@ -51,7 +51,7 @@ Les tests mathématiques comprennent des oracles indépendants pour 121 couples 
 
 ## Android et diffusion
 
-Identifiant : `mg.mathsbac.madagascar`, version `2.3.0`, code `20300`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+Identifiant : `mg.mathsbac.madagascar`, version `2.3.1`, code `20301`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
 
 L’icône web et les icônes Android sont issues de `public/icon.svg`. `npm run icons` synchronise les neuf ressources vectorielles dédiées `maths_bac_*` : icônes classiques, rondes, adaptatives et monochromes. La CI vérifie leur cohérence puis contrôle les ressources réellement compilées dans l’APK, son unique entrée de lancement et sa signature avec les outils Android. Le manifeste conserve `mg.mathsbac.madagascar` et une seule activité de lancement ; les anciennes ressources génériques ont été retirées.
 
@@ -74,3 +74,13 @@ Pas de compte, pas de publicité, pas de télémétrie. Les calculs et sauvegard
 Les sélecteurs de modèle adaptent les champs ; les exemples et le manuel contextuel guident la saisie. Les rubriques `#manuel`, `#confidentialite` et `#a-propos` sont intégrées et utilisables hors connexion. L’effacement du stockage local demande confirmation ; les exports ne sont pas chiffrés. Les sauvegardes automatiques Android sont exclues pour privilégier l’export manuel explicite.
 
 La nouvelle suite de tests vérifie les divisions par reconstruction, les coefficients de Taylor connus, 12 systèmes indépendants de quatre inconnues, Fibonacci, des lois de probabilité avec références indépendantes, les queues normales, les quartiles pondérés, les racines complexes et les nouveaux parcours d’interface.
+
+## Correction des dérivées 2.3.1
+
+- Les racines de produits et de quotients restent entières : √((x+1)/(x−1)) conserve sa branche réelle pour x < −1. Les puissances entières se distribuent ; les puissances fractionnaires ne se distribuent pas sur des facteurs de signe inconnu.
+- Les numérateurs sont réduits en traitant logarithmes, exponentielles et radicaux comme des blocs. Par exemple (x ln x/(x−1))′ = (x−1−ln x)/(x−1)². Les signes et polynômes sont remis dans l’ordre usuel, avec des barres de fraction et eˣ.
+- Un contrôle par différentiation automatique directe compare le résultat symbolique à plusieurs abscisses admissibles. Une incohérence bloque l’affichage ; cet échantillonnage est un garde-fou numérique, pas une preuve d’identité ni de dérivabilité aux bornes.
+- Les étapes montrent u, u′, v et v′ pour les produits et quotients, l’expression intérieure des composées et les résultats successifs aux ordres 2 et 3. Les restrictions du domaine initial sont conservées.
+- Les formules intermédiaires générées ont un budget distinct de la saisie ; celle-ci conserve ses limites de 600 caractères et 180 nœuds. La simplification préalable et un budget de développement évitent les explosions de taille.
+
+Les tests ajoutent 3 093 valeurs obtenues à 60 chiffres avec SymPy 1.14.0 pour 60 fonctions composées et 177 dérivées, indépendamment de math.js et Nerdamer. Les références sont dans `tests/oracles/derivatives.json` et le générateur reproductible dans `tests/oracles/generate_derivatives.py`. Python/SymPy ne sont nécessaires que pour régénérer ces références ; les tests CI lisent le JSON. La relecture des formules affichées, les dérivées volontairement fausses, la branche négative et sa tangente sont aussi contrôlées.

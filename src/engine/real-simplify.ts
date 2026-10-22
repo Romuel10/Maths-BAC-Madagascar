@@ -1,4 +1,4 @@
-import {math,source,exact,parse} from './expression';
+import {math,source,exact,cas} from './expression';
 import type {MathNode} from 'mathjs';
 
 type Rational={n:bigint;d:bigint};
@@ -62,11 +62,33 @@ function build(m:Monomial):any {
  const value=denominator.length?op('/',[product(numerator),product(denominator)]):product(numerator);
  return m.coefficient.n<0n?op('-',[value]):value;
 }
-function polynomial(node:any):boolean {
- let safe=true,count=0;node.traverse((n:any)=>{
-  if(++count>70||n.isFunctionNode)safe=false;
-  if(n.isOperatorNode&&n.op==='^'){const p=rationalValue(n.args[1]);if(!p||p.d!==1n||p.n<0n||p.n>16n)safe=false;}
- });return safe;
+function reduceAlgebra(node:any):any {
+ // Reduce a polynomial in opaque atoms: ln(u), exp(u), |u| and roots stay
+ // intact. Only distributivity and collection of like terms reach the CAS.
+ // This cancels x*ln(x) in quotient numerators without expanding logarithms
+ // or splitting a radical into factors with possibly negative bases.
+ const atoms=new Map<string,any>(),names=new Map<string,string>();let count=0;
+ const mask=(node:any):any=>{
+  const n=unwrap(node);if(++count>100)throw new Error('budget');
+  const p=n.isOperatorNode&&n.op==='^'?rationalValue(n.args[1]):null;
+  if(n.isFunctionNode||n.isOperatorNode&&n.op==='^'&&(!p||p.d!==1n||p.n<0n||p.n>16n)){
+   const k=key(n);let name=names.get(k);if(!name){name='K'+atoms.size;names.set(k,name);atoms.set(name,n);}return new math.SymbolNode(name);
+  }
+  return n.map((c:any)=>mask(c));
+ };
+ const budget=(n:any):number=>{
+  if(!n.isOperatorNode)return 1;
+  const costs=n.args.map(budget);
+  if(n.op==='+'||n.op==='-')return costs.reduce((a:number,b:number)=>a+b,0);
+  if(n.op==='*')return costs.reduce((a:number,b:number)=>a*b,1);
+  if(n.op==='^'){const p=rationalValue(n.args[1]);return costs[0]**Number(p?.n??1n);}
+  return Math.max(...costs);
+ };
+ try{
+  const masked=mask(node);if(budget(masked)>96)return node;
+  const expanded=math.parse(cas('expand('+source(masked)+')').toString());
+  return expanded.transform((n:any)=>n.isSymbolNode&&atoms.has(n.name)?atoms.get(n.name)!.cloneDeep():n);
+ }catch{return node;}
 }
 function sum(node:any):any {
  const terms:Monomial[]=[];
@@ -101,7 +123,7 @@ function sum(node:any):any {
  }
  const values=active.map(build);
  let numerator=values.length?values.reduce((a,b)=>op('+',[a,b])):integer(0n);
- if(polynomial(numerator))try{numerator=parse(exact(source(numerator)));}catch{}
+ numerator=reduceAlgebra(numerator);
  return build(collect(op('/',[op('*',[build(common),numerator]),build(denominator)])));
 }
 
@@ -110,6 +132,12 @@ function sum(node:any):any {
 export function simplifyReal(node:MathNode):MathNode {
  const visit=(node:any):any=>{
   const n=unwrap(node).map((child:any)=>visit(child));
+  if(n.isFunctionNode){
+   const a=unwrap(n.args[0]);
+   if(n.fn.name==='exp'&&a.isFunctionNode&&a.fn.name==='log'||n.fn.name==='log'&&a.isFunctionNode&&a.fn.name==='exp')return a.args[0];
+   let variable=false;n.traverse((v:any)=>{if(v.isSymbolNode&&!['e','pi'].includes(v.name))variable=true;});
+   if(!variable)try{const value=exact(source(n));if(/^-?\d+(?:\/\d+)?$/.test(value))return math.parse(value);}catch{}
+  }
   if(n.isOperatorNode&&['+','-'].includes(n.op)&&n.args.length>1)return sum(n);
   if(n.isOperatorNode&&['*','/','^','-'].includes(n.op))return build(collect(n));
   return n;

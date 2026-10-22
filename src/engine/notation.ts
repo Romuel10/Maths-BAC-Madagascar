@@ -37,9 +37,9 @@ function closeArguments(s:string):string {
   return s[at]==='('?name:name+'@';
  }).replace(new RegExp('('+unary+')@\\s*([+-]?(?:\\d+(?:\\.\\d+)?|pi|[xyzne])(?:\\s*\\^\\s*(?:\\([^()]+\\)|[+-]?\\d+|[xyzne]))?)','g'),'$1($2)');
 }
-export function normalize(input:string):string {
+export function normalize(input:string,maxLength=600):string {
  if(!input.trim())throw new Error('Écris une expression avant de lancer le calcul.');
- if(input.length>600)throw new Error('Traite une question à la fois, avec une expression de moins de 600 caractères.');
+ if(input.length>maxLength)throw new Error('Traite une question à la fois, avec une expression de moins de '+maxLength+' caractères.');
  let s=indexedRoots(input.trim()).replace(/−|–/g,'-').replace(/[×·]/g,'*').replace(/÷/g,'/').replace(/π/g,'pi')
   .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ˣⁿ]+/g,part=>'^('+[...part].map(c=>superscripts[c]).join('')+')')
   .replace(/(\d),(\d)/g,'$1.$2').replace(/\b(\d+(?:\.\d*)?)[eE]([+-]?\d+)\b/g,'($1*10^($2))')
