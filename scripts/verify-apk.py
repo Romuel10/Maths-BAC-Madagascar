@@ -94,6 +94,8 @@ with zipfile.ZipFile(args.apk) as archive:
 
 manifest = next(attrs for name, attrs in nodes if name == 'manifest')
 application = next(attrs for name, attrs in nodes if name == 'application')
+assert application.get('allowBackup') == 0, 'Automatic Android backup must be disabled'
+assert application.get('fullBackupContent') and application.get('dataExtractionRules'), 'Explicit backup exclusion rules missing'
 gradle = (root / 'android/app/build.gradle').read_text()
 version = re.search(r'versionName\s+"([^"]+)"', gradle)[1]
 code = int(re.search(r'versionCode\s+(\d+)', gradle)[1])
@@ -111,6 +113,13 @@ for attribute, name in [('icon', 'mipmap/maths_bac_launcher'), ('roundIcon', 'mi
     found = re.search(r'resource\s+(0x[0-9a-f]+)\s+' + re.escape(name) + r'(?:\s|$)', resources)
     assert found and application[attribute] == int(found[1], 16), 'Manifest references the wrong ' + attribute
 assert 'mipmap-anydpi-v26' in resources and 'mipmap-anydpi-v33' in resources, 'Adaptive or monochrome icon variant missing'
+with zipfile.ZipFile(args.apk) as archive:
+    for name, repeat in [('backup_rules', 1), ('data_extraction_rules', 2)]:
+        assert 'xml/' + name in resources, 'Compiled privacy rule missing: ' + name
+        rules = manifest_nodes(archive.read('res/xml/' + name + '.xml'))
+        excluded = [attributes for tag, attributes in rules if tag == 'exclude']
+        for domain in ['root', 'file', 'database', 'sharedpref', 'external']:
+            assert sum(a.get('domain') == domain and a.get('path') == '.' for a in excluded) == repeat, 'Incomplete backup exclusions: ' + domain
 
 signature = subprocess.check_output([build_tool('apksigner', args.apksigner), 'verify', '--verbose', '--print-certs-pem', str(args.apk)], text=True)
 # Hash the certificate bytes rather than a version-dependent signer label.

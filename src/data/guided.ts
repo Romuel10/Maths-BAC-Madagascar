@@ -14,7 +14,7 @@ export const guideModels:Partial<Record<Operation,[string,string][]>>={
  function:[['polynomial','Polynôme'],['rational','Quotient de deux expressions affines'],['exponential','Expression × exponentielle'],['logarithm','Logarithme d’une expression affine']],
  derivative:[['polynomial','Polynôme'],['rational','Quotient de deux expressions affines'],['exponential','Expression × exponentielle'],['logarithm','Logarithme d’une expression affine']],
  integral:[['polynomial','Polynôme'],['rational','Quotient de deux expressions affines'],['exponential','Expression × exponentielle'],['logarithm','Logarithme d’une expression affine']],
- sequence:[['affine','u suivant = a × u + b'],['arithmetic','Suite arithmétique'],['geometric','Suite géométrique']]
+ sequence:[['affine','u suivant = a × u + b'],['arithmetic','Suite arithmétique'],['geometric','Suite géométrique'],['second','Récurrence du deuxième ordre']]
 };
 export function guideFor(req:Request):GuidedForm|undefined {
  if(['function','derivative','integral'].includes(req.operation)){
@@ -25,9 +25,14 @@ export function guideFor(req:Request):GuidedForm|undefined {
   const integrate=req.operation==='integral';
   return {model:'f(x)=ax^3+bx^2+cx+d',fields:[field('a','Coefficient de x³','1'),field('b','Coefficient de x²','0'),field('c','Coefficient de x','-3'),field('d','Terme constant','1')].map((f,i)=>integrate?{...f,initial:['0','1','2','0'][i]}:f),expression:v=>`${wrap(v.a)}*x^3+${wrap(v.b)}*x^2+${wrap(v.c)}*x+${wrap(v.d)}`};
  }
+ if(req.operation==='system'){
+  const n=['2','3','4'].includes(req.params.data_size)?Number(req.params.data_size):2,vars=['x','y','z','t'].slice(0,n),keys=['a','b','d','e'];
+  return {model:'A X=B',columns:Math.min(n+1,3),fields:Array.from({length:n},(_,i)=>[...vars.map((v,j)=>field(keys[j]+(i+1),'Coefficient de '+v+', équation '+(i+1),n===2?[['2','1'],['1','-1']][i][j]:String(i===j?1:0))),field('c'+(i+1),'Second membre c'+String.fromCharCode(8321+i),n===2?['5','1'][i]:String(i+1))]).flat(),expression:v=>Array.from({length:n},(_,i)=>vars.map((x,j)=>wrap(v[keys[j]+(i+1)])+'*'+x).join('+')+'='+wrap(v['c'+(i+1)])).join('\n')};
+ }
  if(req.operation==='inequality')return {...guidedForms.equation!,model:'ax^2+bx+c\\;'+(req.params.relation==='<'?'<':req.params.relation==='>'?'>':req.params.relation==='<='?'\\le':'\\ge')+'\\;0',expression:(v,p)=>`${wrap(v.a)}*x^2+${wrap(v.b)}*x+${wrap(v.c)}${['<','>','<=','>='].includes(p.relation)?p.relation:'>='}0`};
  if(req.operation==='sequence'){
   const model=req.params.data_model??'affine';
+  if(model==='second')return {model:'u_{n+1}=a u_n+b u_{n-1}',fields:[field('a','Coefficient du terme courant','1'),field('b','Coefficient du terme précédent','1')],expression:v=>wrap(v.a)+'*u+'+wrap(v.b)+'*v'};
   if(model==='arithmetic')return {model:'u_{n+1}=u_n+r',fields:[field('r','Différence r','3')],expression:v=>`u+${wrap(v.r)}`};
   if(model==='geometric')return {model:'u_{n+1}=q\\,u_n',fields:[field('q','Raison q','2')],expression:v=>`${wrap(v.q)}*u`};
   return {model:'u_{n+1}=a\\,u_n+b',fields:[field('a','Multiplicateur a','0,8'),field('b','Nombre ajouté b','3')],expression:v=>`${wrap(v.a)}*u+${wrap(v.b)}`};
@@ -38,7 +43,8 @@ export function guideFor(req:Request):GuidedForm|undefined {
  }
  if(req.operation==='statistics'){
   const count=Math.max(2,Math.min(30,Number(req.params.data_rows)||3));
-  return {model:'(x_1;y_1),\\;(x_2;y_2),\\;\\ldots',columns:2,fields:Array.from({length:count},(_,i)=>[field('x'+i,'Valeur x, ligne '+(i+1),String(i+1)),field('y'+i,'Valeur y, ligne '+(i+1),String(2*(i+1)))]).flat(),expression:v=>Array.from({length:count},(_,i)=>v['x'+i]+';'+v['y'+i]).join('\n')};
+  const descriptive=req.params.model==='descriptive';
+  return {model:descriptive?'(x_i;n_i)':'(x_1;y_1),\\;(x_2;y_2),\\;\\ldots',columns:2,fields:Array.from({length:count},(_,i)=>[field('x'+i,(descriptive?'Valeur, ligne ':'Valeur x, ligne ')+(i+1),String(i+1)),field('y'+i,(descriptive?'Effectif, ligne ':'Valeur y, ligne ')+(i+1),String(2*(i+1)))]).flat(),expression:v=>Array.from({length:count},(_,i)=>v['x'+i]+';'+v['y'+i]).join('\n')};
  }
  return guidedForms[req.operation];
 }
@@ -46,7 +52,7 @@ export function hasGuidedData(request:Request):boolean {return request.params.en
 export function guidedRequest(request:Request,changes:Record<string,string>={}):Request{
  const params:Record<string,string>={...request.params,...changes,entry:'guided'};
  const form=guideFor({...request,params});if(!form)return request;
- if(request.operation==='sequence')params.kind='recurrence';
+ if(request.operation==='sequence')params.kind=params.data_model==='second'?'second':'recurrence';
  const values:Record<string,string>={};
  for(const field of form.fields){const key='data_'+field.key;values[field.key]=params[key]??field.initial;params[key]=values[field.key];}
  return {...request,params,expression:form.expression(values,params)};

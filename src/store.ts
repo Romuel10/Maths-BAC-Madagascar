@@ -11,7 +11,7 @@ const key='maths-bac-v2';
 export function defaultRequest(id='equation',entry?:string):Request{const t=tools.find(v=>v.id===id)??tools[0];entry??=['system','sequence','statistics','matrix','geometry','arithmetic'].includes(t.id)?'guided':'formula';const request:Request={operation:t.id,expression:t.expression,params:{...Object.fromEntries(t.fields.map(f=>[f.key,f.initial])),entry}};return entry==='guided'?guidedRequest(request):request;}
 const initial:State={version:2,series:'D',theme:'light',size:100,motion:true,draft:defaultRequest(),history:[],read:[],attempts:[],statement:'',exam:null};
 const series=['A','C','D','L','OSE','S'];
-function requestValid(v:any):v is Request{return !!v&&tools.some(t=>t.id===v.operation)&&typeof v.expression==='string'&&v.expression.length<=600&&v.params&&typeof v.params==='object'&&!Array.isArray(v.params)&&Object.entries(v.params).every(([key,x])=>typeof x==='string'&&x.length<=(key==='mathLatex'?6000:600));}
+function requestValid(v:any):v is Request{return !!v&&tools.some(t=>t.id===v.operation)&&typeof v.expression==='string'&&v.expression.length<=(['system','statistics','matrix','geometry'].includes(v.operation)?12000:600)&&v.params&&typeof v.params==='object'&&!Array.isArray(v.params)&&Object.entries(v.params).every(([key,x])=>typeof x==='string'&&x.length<=(key==='mathLatex'?6000:600));}
 export function validateState(raw:unknown):State{
  const v=raw as any;if(!v||v.version!==2||!series.includes(v.series)||!['light','dark','system'].includes(v.theme)||!Number.isFinite(v.size)||v.size<85||v.size>135||typeof v.motion!=='boolean'||!requestValid(v.draft)||typeof v.statement!=='string'||v.statement.length>20000)throw new Error('Ce fichier n’est pas une sauvegarde Maths BAC v2 valide.');
  if(!Array.isArray(v.history)||v.history.length>100||v.history.some((h:any)=>!h||typeof h.id!=='string'||typeof h.date!=='string'||typeof h.favorite!=='boolean'||!requestValid(h.request)))throw new Error('Historique de sauvegarde invalide.');
@@ -31,5 +31,6 @@ export function update(patch:Partial<State>|((s:State)=>Partial<State>)){
 export function snapshot(){return state;}
 export function useStore(){return useSyncExternalStore(f=>{listeners.add(f);return()=>{listeners.delete(f);};},()=>state);}
 export function storageWarning(){return storageError;}
+export function erasePersonalData(){update({...initial,draft:defaultRequest(),history:[],read:[],attempts:[],statement:'',exam:null});}
 export function remember(request:Request){update(s=>({history:[{id:crypto.randomUUID(),date:new Date().toISOString(),request,favorite:false},...s.history].slice(0,100)}));}
 export function restore(raw:string){if(raw.length>3_000_000)throw new Error('Le fichier dépasse la taille maximale.');state=validateState(JSON.parse(raw));update({});}
