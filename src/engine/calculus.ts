@@ -1,4 +1,4 @@
-import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex} from './expression';
+import {cas,expression,tex,exact,simplified,asReal,numeric,parse,evaluateNode,constraints,checkDomain,domainTex,onlyVariables,fmt,param,numericTex,substitute} from './expression';
 import {polynomialCuts} from './algebra';
 import {certifiedDomain,quadrature} from './numerical';
 import {analyzeFunction} from './function';
@@ -6,6 +6,8 @@ import {differentiate,derivativeTex} from './differentiation';
 import {computeLimit} from './limits';
 import {rationalValue} from './real-simplify';
 import {readableTex} from './math-display';
+import {probePlot} from './plot';
+import {value} from './toolkit';
 import type {Request,Result,Step} from './types';
 function derivativeSteps(raw:string,d:string,order=1,formulas=[d]):Step[]{
  const n:any=parse(raw),s=n.isParenthesisNode?n.content:n;let rule='Dériver terme à terme, puis simplifier sans modifier le domaine.';
@@ -54,5 +56,13 @@ export function calculus(req:Request):Result {
  if(req.operation==='limit')return computeLimit(raw,req);
  const xmin=param(req.params,'xmin','-5'),xmax=param(req.params,'xmax','5');if(xmin>=xmax||xmax-xmin>1e6)throw new Error('Choisis deux bornes croissantes, avec une largeur au plus égale à 1 000 000.');
  const d=differentiate(raw);
- return analyzeFunction(raw,d,xmin,xmax,derivativeSteps(raw,d));
+ const result=analyzeFunction(raw,d,xmin,xmax,derivativeSteps(raw,d));
+ if(req.params.tangentAt?.trim()){
+  const at=value(req.params.tangentAt),a=asReal(at),point=probePlot(raw,d,a);
+  if(point.y===null||point.slope===null)result.notes.push('La tangente de pente finie n’est pas définie au point demandé ; le point peut être hors domaine ou non dérivable.');
+  else{const y=exact(substitute(raw,'x',at)),m=exact(substitute(d,'x',at)),line=exact('('+y+')+('+m+')*(x-('+at+'))'),normal=m==='0'?'x='+tex(at):'y='+tex(exact('('+y+')-(x-('+at+'))/('+m+')'));
+   result.analysis!.tangent={at,latex:'y='+readableTex(line,false),normal};result.steps.push({title:'Calculer la tangente exacte',text:'Utiliser y = f(a) + f′(a)(x − a). La normale est perpendiculaire à cette droite.',latex:'y='+readableTex(line,false)});
+  }
+ }
+ return result;
 }

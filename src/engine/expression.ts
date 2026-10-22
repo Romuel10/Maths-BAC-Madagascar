@@ -6,7 +6,7 @@ export {normalize} from './notation';
 export const cas = nerdamer as any;
 export const math=create(all,{number:'BigNumber',precision:64});
 const functions=new Set(['sqrt','cbrt','abs','sign','log','log10','exp','sin','cos','tan','sec','csc','cot','asin','acos','atan','sinh','cosh','tanh','floor','ceil','factorial']);
-const symbols=new Set(['x','y','z','n','t','u','e','pi','i']);
+const symbols=new Set(['x','y','z','n','t','u','v','e','pi','i']);
 export function parse(input:string):MathNode {
  const s=normalize(input);
  if(!/^[\dA-Za-z+\-*/^!().\s]+$/.test(s))throw new Error('Utilise des nombres, x, des parenthèses et les fonctions du clavier. Pour une équation, choisis « Équation ».');
@@ -19,7 +19,7 @@ export function parse(input:string):MathNode {
   if(n.isSymbolNode&&functions.has(n.name)&&!parent?.isFunctionNode)throw new Error('Complète '+n.name+' avec un argument, par exemple '+n.name+'(x).');
   if(n.isFunctionNode&&(!functions.has(n.fn.name)||n.args.length!==1))throw new Error('Utilise une fonction du clavier avec un seul argument.');
   if(n.isOperatorNode&&!['+','-','*','/','^','!'].includes(n.op))throw new Error('Opérateur non pris en charge.');
-  if(n.isOperatorNode&&n.op==='^'){let variable=false;n.args[1].traverse((a:any)=>{if(a.isSymbolNode&&['x','y','z','n','t','u','i'].includes(a.name))variable=true;});const value=evaluateNode(n.args[1]);if(!variable&&(!Number.isFinite(value)||Math.abs(value)>10000))throw new Error('Exposant trop grand pour un calcul interactif.');}
+  if(n.isOperatorNode&&n.op==='^'){let variable=false;n.args[1].traverse((a:any)=>{if(a.isSymbolNode&&['x','y','z','n','t','u','v','i'].includes(a.name))variable=true;});const value=evaluateNode(n.args[1]);if(!variable&&(!Number.isFinite(value)||Math.abs(value)>10000))throw new Error('Exposant trop grand pour un calcul interactif.');}
   if((n.isOperatorNode&&n.op==='!')||(n.isFunctionNode&&n.fn.name==='factorial')){const v=evaluateNode(n.args[0]);if(!Number.isInteger(v)||v<0||v>1000)throw new Error('La factorielle accepte un entier de 0 à 1000.');}
  });
  return node;

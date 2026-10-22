@@ -1,0 +1,25 @@
+import {asReal,exact,tex,fmt,param} from './expression';
+import {readRows,integer,result,value} from './toolkit';
+import type {Request,Step} from './types';
+const sum=(a:string[])=>exact(a.map(v=>'('+v+')').join('+'));
+export function statistics(req:Request){
+ const rows=readRows(req.expression),mode=req.params.model??'regression';
+ if(rows.some(r=>r.length!==2))throw new Error(mode==='descriptive'?'Saisis une valeur et son effectif sur chaque ligne, séparés par ;.':'Saisis un couple x ; y sur chaque ligne.');
+ if(mode==='descriptive'){
+  const groups=rows.map(([v,count])=>{const n=asReal(count);integer(n,0,1e9,'Chaque effectif');return {v,n,x:asReal(v)};}).filter(g=>g.n>0).sort((a,b)=>a.x-b.x),N=groups.reduce((a,g)=>a+g.n,0);if(!N)throw new Error('Il faut au moins un effectif strictement positif.');
+  const total=sum(groups.map(g=>'('+g.v+')*'+g.n)),mean=exact('('+total+')/'+N),variance=exact('('+sum(groups.map(g=>g.n+'*(('+g.v+')-('+mean+'))^2'))+')/'+N);
+  const rank=(k:number)=>{let at=0;for(const g of groups){at+=g.n;if(k<=at)return g.v;}return groups.at(-1)!.v;};
+  const median=N%2?rank((N+1)/2):exact('(('+rank(N/2)+')+('+rank(N/2+1)+'))/2'),q1=rank(Math.ceil(N/4)),q3=rank(Math.ceil(3*N/4)),sd=exact('sqrt('+variance+')'),range=exact('('+groups.at(-1)!.v+')-('+groups[0].v+')');
+  let cumulative=0;const table=groups.map(g=>{cumulative+=g.n;return [g.v,String(g.n),fmt(g.n/N*100)+' %',String(cumulative)];});
+  const indicators=[['Effectif total',String(N)],['Moyenne',mean],['Médiane',median],['Premier quartile Q₁',q1],['Troisième quartile Q₃',q3],['Variance de la série',variance],['Écart type',sd],['Étendue',range],['Écart interquartile',exact('('+q3+')-('+q1+')')]];
+  return result('Statistiques d’une série à effectifs','\\overline x='+tex(mean)+',\\quad \\mathrm{Med}='+tex(median),[{title:'Pondérer par les effectifs',text:'Chaque valeur compte autant de fois que son effectif ; les données ne sont pas développées en une longue liste.',latex:'N='+N+',\\quad \\overline x=\\frac{\\sum_i n_i x_i}{N}='+tex(mean)},{title:'Situer médiane et quartiles',text:'Pour un effectif pair, la médiane est la moyenne des deux valeurs centrales. Q₁ et Q₃ sont les valeurs aux rangs ⌈N/4⌉ et ⌈3N/4⌉.',latex:'Q_1='+tex(q1)+',\\quad Q_3='+tex(q3)},{title:'Mesurer la dispersion',text:'La variance descriptive divise par N. L’écart type est sa racine carrée.',latex:'V='+tex(variance)+',\\quad \\sigma='+tex(sd)}],{method:'exact',exact:mean,table:{headers:['Indicateur','Valeur exacte'],rows:indicators,latexRows:indicators.map(r=>[undefined,tex(r[1])])},secondaryTables:[{title:'Effectifs et fréquences',headers:['Valeur','Effectif','Fréquence','Cumul'],rows:table}],chart:{kind:'bars',label:'Répartition des effectifs',points:groups.map(g=>[g.x,g.n])},notes:['Convention des quartiles par rang supérieur, explicitée ci-dessus. Les effectifs nuls sont ignorés.']});
+ }
+ if(mode!=='regression')throw new Error('Choisis « Série à effectifs » ou « Ajustement affine ».');
+ if(rows.length<2)throw new Error('L’ajustement demande au moins deux couples.');
+ const n=rows.length,mx=exact('('+sum(rows.map(r=>r[0]))+')/'+n),my=exact('('+sum(rows.map(r=>r[1]))+')/'+n),vx=sum(rows.map(r=>'('+r[0]+'-('+mx+'))^2')),vy=sum(rows.map(r=>'('+r[1]+'-('+my+'))^2')),cov=sum(rows.map(r=>'('+r[0]+'-('+mx+'))*('+r[1]+'-('+my+'))'));
+ if(vx==='0')throw new Error('L’ajustement y = ax + b exige au moins deux valeurs de x différentes.');
+ const a=exact('('+cov+')/('+vx+')'),b=exact('('+my+')-('+a+')*('+mx+')'),r=vy==='0'?null:exact('('+cov+')/sqrt(('+vx+')*('+vy+'))'),r2=r===null?null:exact('('+cov+')^2/(('+vx+')*('+vy+'))');
+ const steps:Step[]=[{title:'Calculer le point moyen',text:'La droite des moindres carrés passe par G(x̄ ; ȳ).',latex:'G('+tex(mx)+';'+tex(my)+')'},{title:'Ajuster par les moindres carrés',text:'Diviser la covariance par la variance des x, puis b = ȳ − ax̄.',latex:'a='+tex(a)+',\\quad b='+tex(b)},{title:'Interpréter la corrélation',text:r===null?'Les y sont constants : le coefficient de corrélation est indéfini.':'Un |r| proche de 1 traduit un alignement marqué. Corrélation ne signifie pas causalité.',latex:r===null?undefined:'r='+tex(r)+',\\quad R^2='+tex(r2!)}];
+ if(req.params.predict?.trim()){const x=value(req.params.predict);steps.push({title:'Estimer pour un x donné',text:'La valeur est celle de la droite ajustée. Une extrapolation éloignée des données peut être peu fiable.',latex:'\\widehat y('+tex(x)+')='+tex(exact('('+a+')*('+x+')+('+b+')'))});}
+ return result('Ajustement affine','y='+tex(exact('('+a+')*x+('+b+')')),steps,{method:'exact',approximate:'a = '+fmt(asReal(a))+' ; b = '+fmt(asReal(b)),table:{headers:['Indicateur','Valeur exacte'],rows:[['Moyenne x',mx],['Moyenne y',my],['Variance x',exact('('+vx+')/'+n)],['Variance y',exact('('+vy+')/'+n)],['Covariance',exact('('+cov+')/'+n)],['Corrélation',r??'indéfinie'],['R²',r2??'indéfini']]},chart:{kind:'scatter',label:'Nuage de points et droite ajustée',points:rows.map(row=>[asReal(row[0]),asReal(row[1])]),line:Number.isFinite(asReal(a))&&Number.isFinite(asReal(b))?[asReal(a),asReal(b)]:undefined}});
+}

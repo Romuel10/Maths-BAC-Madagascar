@@ -1,5 +1,6 @@
 import {expression,cas,tex,asReal,onlyVariables,domainTex,fmt,constraints,simplified,param,checkDomain,checkConstantDomain,inputTex,structuralKey,substitute,integerValue,decimalApprox} from './expression';
 import {withoutFunctionLabel} from './notation';
+import {extendedCalculation} from './calculation';
 import {equation,inequality} from './algebra';
 import {calculus} from './calculus';
 import {advanced} from './tools';
@@ -20,6 +21,7 @@ export function solve(req:Request):Result {
  if(req.expression.includes('='))return equation(req.expression,req.params);
  const s=expression(req.expression,req.params.angle??'rad');onlyVariables(s,['x']);
  const mode=req.params.form??'simplify';
+ const extended=extendedCalculation(req,s);if(extended)return extended;
  if(!['simplify','expand','factor','evaluate'].includes(mode))throw new Error('Choisis le calcul souhaité.');
  if(mode==='evaluate'){
   const x=param(req.params,'xvalue','0');if(!checkDomain(s,x))throw new Error('Cette valeur de x est interdite dans l’expression initiale. Choisis une valeur de son domaine.');
@@ -30,7 +32,7 @@ export function solve(req:Request):Result {
  const variable=/\bx\b/.test(s);
  if(!variable&&!checkConstantDomain(s))throw new Error('Cette expression n’est pas définie dans les nombres réels. Vérifie les dénominateurs, logarithmes et racines.');
  const integer=variable?null:integerValue(s);
- const output=integer??(!variable?simplified(s):mode==='factor'?cas.factor(s).toString():mode==='expand'?cas.expand(s).toString():simplified(s));
+ const output=integer??(!variable?simplified(s):mode==='factor'?cas('factor('+s+')').toString():mode==='expand'?cas('expand('+s+')').toString():simplified(s));
  const approximate=variable?undefined:decimalApprox(output);
  const unchanged=variable&&structuralKey(s)===structuralKey(output);
  if(!variable&&approximate===undefined&&!/^[-]?\d+(?:\/\d+)?$/.test(output))throw new Error('Ce calcul sort du domaine réel ou dépasse la plage numérique. Pour un nombre complexe, choisis l’outil « Complexes ».');

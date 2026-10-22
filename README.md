@@ -1,4 +1,4 @@
-# Maths BAC Madagascar — 2.2.3
+# Maths BAC Madagascar — 2.3.0
 
 Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
@@ -51,7 +51,7 @@ Les tests mathématiques comprennent des oracles indépendants pour 121 couples 
 
 ## Android et diffusion
 
-Identifiant : `mg.mathsbac.madagascar`, version `2.2.3`, code `20203`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+Identifiant : `mg.mathsbac.madagascar`, version `2.3.0`, code `20300`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
 
 L’icône web et les icônes Android sont issues de `public/icon.svg`. `npm run icons` synchronise les neuf ressources vectorielles dédiées `maths_bac_*` : icônes classiques, rondes, adaptatives et monochromes. La CI vérifie leur cohérence puis contrôle les ressources réellement compilées dans l’APK, son unique entrée de lancement et sa signature avec les outils Android. Le manifeste conserve `mg.mathsbac.madagascar` et une seule activité de lancement ; les anciennes ressources génériques ont été retirées.
 
@@ -60,3 +60,17 @@ Le répertoire `dist` peut être hébergé statiquement. Le service worker préc
 ## Confidentialité et licences
 
 Pas de compte, pas de publicité, pas de télémétrie. Les calculs et sauvegardes restent sur l’appareil. Les exports Android utilisent le partage natif. Voir [PRIVACY_POLICY.md](PRIVACY_POLICY.md), [LICENSE](LICENSE) et [docs/SOURCES.md](docs/SOURCES.md).
+
+## Atelier 2.3.0
+
+- Calcul et algèbre : division euclidienne de polynômes (degré ≤ 8), éléments simples vérifiés, polynômes de Taylor d’ordre 0 à 8 autour d’un centre choisi.
+- Systèmes : 2 à 6 équations linéaires avec x, y, z, t, réduction exacte, contrôle des solutions et paramètres libres.
+- Étude de fonction : signe de f, parité contrôlée avec le domaine, tangente et normale exactes en une abscisse facultative, graphique interactif. Les recherches partielles restent indiquées.
+- Suites : formules explicites, récurrences des premier et deuxième ordres, sommes, formule affine et limite, calcul direct d’un rang et tracé des termes.
+- Probabilités : binomiale exacte jusqu’à 200 épreuves et numérique jusqu’à 10 000, hypergéométrique sans remise, normale par quadrature, Poisson par récurrence autour du mode, conditionnelles et dénombrement.
+- Statistiques : série à effectifs (moyenne, médiane, quartiles par rang supérieur, variance descriptive, écart type, fréquences) et régression exacte avec covariance, corrélation, R² et estimation. Diagrammes et nuage de points.
+- Complexes : formes algébrique, trigonométrique et exponentielle, puissances entières, toutes les racines d’ordre 2 à 24 et représentation dans le plan.
+
+Les sélecteurs de modèle adaptent les champs ; les exemples et le manuel contextuel guident la saisie. Les rubriques `#manuel`, `#confidentialite` et `#a-propos` sont intégrées et utilisables hors connexion. L’effacement du stockage local demande confirmation ; les exports ne sont pas chiffrés. Les sauvegardes automatiques Android sont exclues pour privilégier l’export manuel explicite.
+
+La nouvelle suite de tests vérifie les divisions par reconstruction, les coefficients de Taylor connus, 12 systèmes indépendants de quatre inconnues, Fibonacci, des lois de probabilité avec références indépendantes, les queues normales, les quartiles pondérés, les racines complexes et les nouveaux parcours d’interface.
