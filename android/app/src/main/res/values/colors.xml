@@ -1,1 +1,1 @@
-<resources><color name="brand_background">#214C3D</color><color name="colorPrimary">#214C3D</color><color name="colorPrimaryDark">#214C3D</color><color name="colorAccent">#214C3D</color></resources>
+<resources><color name="brand_background">@color/maths_bac_icon_background</color><color name="colorPrimary">@color/maths_bac_icon_background</color><color name="colorPrimaryDark">@color/maths_bac_icon_background</color><color name="colorAccent">@color/maths_bac_icon_background</color></resources>

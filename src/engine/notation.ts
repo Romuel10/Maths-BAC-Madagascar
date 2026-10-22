@@ -1,5 +1,16 @@
 const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁻':'-','⁺':'+','ˣ':'x','ⁿ':'n'};
 const unary='sqrt|cbrt|ln|log10|log|exp|sinh|cosh|tanh|sin|cos|tan|sec|csc|cot|asin|acos|atan|abs';
+export function indexedRoots(input:string):string {
+ let s=input;const token=/\broot\s*\((\d+)\)\s*\(/g;let m:RegExpExecArray|null;
+ while((m=token.exec(s))){
+  const degree=Number(m[1]);if(degree<2||degree>10000)continue;
+  let depth=1,end=token.lastIndex;for(;end<s.length&&depth;end++){if(s[end]==='(')depth++;else if(s[end]===')')depth--;}
+  if(depth)continue;
+  const argument=s.slice(token.lastIndex,end-1),replacement=degree===2?'sqrt('+argument+')':degree===3?'cbrt('+argument+')':'(('+argument+')^(1/'+degree+'))';
+  s=s.slice(0,m.index)+replacement+s.slice(end);token.lastIndex=m.index;
+ }
+ return s;
+}
 function functionPowers(s:string):string {
  const token=new RegExp('\\b('+unary+')\\s*\\^\\s*','g');
  const atom=(at:number):{value:string;end:number}|null=>{
@@ -29,7 +40,7 @@ function closeArguments(s:string):string {
 export function normalize(input:string):string {
  if(!input.trim())throw new Error('Écris une expression avant de lancer le calcul.');
  if(input.length>600)throw new Error('Traite une question à la fois, avec une expression de moins de 600 caractères.');
- let s=input.trim().replace(/−|–/g,'-').replace(/[×·]/g,'*').replace(/÷/g,'/').replace(/π/g,'pi')
+ let s=indexedRoots(input.trim()).replace(/−|–/g,'-').replace(/[×·]/g,'*').replace(/÷/g,'/').replace(/π/g,'pi')
   .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ˣⁿ]+/g,part=>'^('+[...part].map(c=>superscripts[c]).join('')+')')
   .replace(/(\d),(\d)/g,'$1.$2').replace(/\b(\d+(?:\.\d*)?)[eE]([+-]?\d+)\b/g,'($1*10^($2))')
   .replace(/√\s*/g,'sqrt ').replace(/∛\s*/g,'cbrt ')

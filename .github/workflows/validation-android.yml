@@ -50,12 +50,13 @@ jobs:
       - run: npm run cap:sync
       - working-directory: android
         run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+      - run: python3 scripts/verify-apk.py android/app/build/outputs/apk/debug/app-debug.apk
       - run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/Maths-BAC-Madagascar-v2.2.2.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/Maths-BAC-Madagascar-v2.2.3.apk
       - uses: actions/upload-artifact@v7
         with:
-          name: Maths-BAC-Madagascar-v2.2.2-apk
+          name: Maths-BAC-Madagascar-v2.2.3-apk
           path: artifacts/*.apk
           if-no-files-found: error
           retention-days: 30

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="192" android:viewportHeight="192">
+  <path android:fillColor="#143245" android:pathData="M44 0H148A44 44 0 0 1 192 44V148A44 44 0 0 1 148 192H44A44 44 0 0 1 0 148V44A44 44 0 0 1 44 0Z"/>
+    <path android:name="mark" android:fillColor="#F5FAFC" android:pathData="M35 145V79H54L96 120L138 79H157V145H138V108L96 153L54 108V145Z"/>
+    <path android:name="radical" android:fillColor="#75DBB8" android:pathData="M48 49H60L67 60L77 36H145V44H82L69 75L56 57H48Z"/>
+</vector>

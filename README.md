@@ -1,4 +1,4 @@
-# Maths BAC Madagascar — 2.2.2
+# Maths BAC Madagascar — 2.2.3
 
 Application de travail pour les élèves de terminale : calculs avec étapes, cours, entraînement et carnet local. Reconstruction du code applicatif ; la version précédente reste consultable dans l’historique Git.
 
@@ -19,7 +19,7 @@ Une forme inchangée est signalée et un bouton permet de remplacer x par une va
 ## Périmètre du moteur
 
 - Calcul symbolique avec Nerdamer 2 et analyse des expressions avec math.js ; calculs exécutés dans un Web Worker avec annulation et délai maximal.
-- Dérivation sur l’arbre de la saisie avec math.js, fractions exactes et simplifications dans le contexte réel. Racines de puissances et valeurs absolues conservent leurs branches réelles.
+- Dérivation sur l’arbre de la saisie avec math.js, fractions exactes et simplifications dans le contexte réel. Racines de puissances et valeurs absolues conservent leurs branches réelles. Les racines d’ordre 2 à 7, les puissances rationnelles et les dérivées successives sont vérifiées contre des formules indépendantes. Les produits et quotients sont normalisés avec des coefficients rationnels exacts. Les formules utilisent des radicaux et une barre de fraction ; la chaîne des racines est expliquée. √(x⁶) donne une dérivée nulle en zéro, alors que √(x²) garde sa pointe.
 - Domaines en intervalles avec crochets français, unions et bornes incluses ou exclues. Les valeurs interdites initiales restent exclues après simplification ; le domaine de validité de la formule dérivée est affiché séparément. Les contraintes non résolues restent explicites.
 - Conservation des restrictions initiales lors des simplifications et vérification des candidats d’équations.
 - Recherche numérique de racines par balayage, dichotomie et Newton dans un intervalle choisi, avec contrôle dans les deux membres initiaux. Les résultats numériques portent le signe ≈ ; l’absence de racine repérée ne prouve pas l’absence de solution. Les familles trigonométriques à argument affine incluent toutes les branches.
@@ -37,6 +37,7 @@ Node.js >= 22.12, npm. Pour Android : Java 21 et SDK Android API 36.
 
 ```sh
 npm ci
+npm run icons # après modification de public/icon.svg
 npm run dev
 npm test
 npm run build
@@ -46,11 +47,13 @@ npm run cap:sync
 npm run android:debug
 ```
 
-Les tests mathématiques comprennent des oracles indépendants pour 121 couples de racines et 386 valeurs de dérivées, dont 305 pour les fonctions composées et les ordres 1 à 3, des références d’intégrales obtenues par séries intégrées à 85 chiffres, des équations transcendantes, les branches trigonométriques, les pôles, le sous-dépassement numérique, les grands entiers, les restrictions, limites latérales et sauvegardes. Les limites sont aussi vérifiées contre des références connues pour les deux infinis, les logarithmes, racines réelles, points fractionnaires, intervalles courts et formes indéterminées. Les parcours Chromium vérifient tailles d’écran, thèmes, saisie, worker, reprise, correction, sauvegarde et cache interrompu, ainsi que l’édition tactile et physique de fractions, ln, exponentielles, le zoom et la tangente, et le parcours de limites avec infinis par boutons, sélection du sens, reprise, messages de saisie et calcul hors connexion. Les polices et modules de l’éditeur sont embarqués et mis en cache ; aucun service externe de calcul n’est utilisé.
+Les tests mathématiques comprennent des oracles indépendants pour 121 couples de racines et 386 valeurs de dérivées, dont 305 pour les fonctions composées et les ordres 1 à 3, 1 104 valeurs supplémentaires de dérivées de racines et puissances rationnelles aux ordres 1 à 3, la relecture des formules affichées, les points lisses et les pointes en zéro, des références d’intégrales obtenues par séries intégrées à 85 chiffres, des équations transcendantes, les branches trigonométriques, les pôles, le sous-dépassement numérique, les grands entiers, les restrictions, limites latérales et sauvegardes. Les limites sont aussi vérifiées contre des références connues pour les deux infinis, les logarithmes, racines réelles, points fractionnaires, intervalles courts et formes indéterminées. Les parcours Chromium vérifient tailles d’écran, thèmes, saisie, worker, reprise, correction, sauvegarde et cache interrompu, ainsi que l’édition tactile et physique de fractions, ln, exponentielles, le zoom et la tangente, et le parcours de limites avec infinis par boutons, sélection du sens, reprise, messages de saisie et calcul hors connexion. Les polices et modules de l’éditeur sont embarqués et mis en cache ; aucun service externe de calcul n’est utilisé.
 
 ## Android et diffusion
 
-Identifiant : `mg.mathsbac.madagascar`, version `2.2.2`, code `20202`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+Identifiant : `mg.mathsbac.madagascar`, version `2.2.3`, code `20203`. La CI construit un APK de test après les tests web. Ce fichier utilise la signature de débogage ; pour une publication en boutique, produire une version avec la clé de signature de distribution. Une mise à jour d’une installation existante exige la même signature.
+
+L’icône web et les icônes Android sont issues de `public/icon.svg`. `npm run icons` synchronise les neuf ressources vectorielles dédiées `maths_bac_*` : icônes classiques, rondes, adaptatives et monochromes. La CI vérifie leur cohérence puis contrôle les ressources réellement compilées dans l’APK, son unique entrée de lancement et sa signature avec les outils Android. Le manifeste conserve `mg.mathsbac.madagascar` et une seule activité de lancement ; les anciennes ressources génériques ont été retirées.
 
 Le répertoire `dist` peut être hébergé statiquement. Le service worker précharge toutes les ressources et n’active le cache qu’après un téléchargement complet. L’APK embarque directement les ressources, sans téléchargement initial.
 

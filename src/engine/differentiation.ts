@@ -1,5 +1,7 @@
-import {math,parse,source,exact,inputTex,cas} from './expression';
+import {math,parse,source,exact,cas} from './expression';
 import {all,create,type MathNode} from 'mathjs';
+import {simplifyReal} from './real-simplify';
+import {readableTex} from './math-display';
 const symbolic=create(all,{number:'Fraction'});
 
 const unwrap=(n:any):any=>n.isParenthesisNode?unwrap(n.content):n;
@@ -7,8 +9,9 @@ function fraction(n:any):[number,number]|null {
  try{let variable=false;n.traverse((v:any)=>{if(v.isSymbolNode&&!['e','pi'].includes(v.name))variable=true;});if(variable)return null;const m=exact(source(n)).match(/^(-?\d+)(?:\/(\d+))?$/);return m?[Number(m[1]),Number(m[2]??1)]:null;}catch{return null;}
 }
 const power=(a:any,p:number,q=1)=>new math.OperatorNode('^','pow',[a,new math.ParenthesisNode(math.parse(p+'/'+q))]);
-// These identities hold for real roots. Never flatten arbitrary nested powers:
-// sqrt(x²) = |x|, whereas cbrt(x³) = x, including at zero.
+// Compose rational powers on the original real domain, which callers retain.
+// An even root of an even power requires |u|: sqrt(x²) = |x|,
+// whereas cbrt(x³) = x, including at zero.
 export function realForm(raw:string):MathNode {
  const visit=(node:any):any=>{
   let n=node.map((c:any)=>visit(c));
@@ -26,9 +29,9 @@ export function realForm(raw:string):MathNode {
    if(outer&&a.isFunctionNode&&a.fn.name==='abs'&&outer[1]===1&&outer[0]%2===0)return power(a.args[0],outer[0]);
    if(outer&&a.isOperatorNode&&a.op==='^'){
     const inner=fraction(a.args[1]);
-    if(inner&&inner[1]===1&&(outer[1]%2===1||inner[0]%2===0)){
-     const base=outer[1]%2===0?new math.FunctionNode('abs',[a.args[0]]):a.args[0];
-     return visit(power(base,inner[0]*outer[0],outer[1]));
+    if(inner){
+     const base=outer[1]%2===0&&inner[1]%2===1&&inner[0]%2===0?new math.FunctionNode('abs',[a.args[0]]):a.args[0];
+     return visit(power(base,inner[0]*outer[0],inner[1]*outer[1]));
     }
    }
    if(outer&&outer[0]===outer[1])return n.args[0];
@@ -61,9 +64,9 @@ export function differentiate(raw:string):string {
   if(!n.isConstantNode||!symbolic.isFraction(n.value))return n;
   const literal=math.parse(source(n));return n.value.d===1n?literal:new math.ParenthesisNode(literal);
  });
- return printable.toString({parenthesis:'auto',implicit:'show'});
+ return simplifyReal(realForm(printable.toString({parenthesis:'auto',implicit:'show'}))).toString({parenthesis:'auto',implicit:'show'});
 }
-export function derivativeTex(raw:string):string {return inputTex(raw);}
+export function derivativeTex(raw:string):string {return readableTex(raw);}
 export function factorDerivative(raw:string):string {
  // Factoring is cosmetic. Keep branch-sensitive powers in their original tree.
  let sensitive=false;parse(raw).traverse((n:any)=>{

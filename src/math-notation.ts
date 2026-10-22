@@ -1,11 +1,10 @@
 import {convertAsciiMathToLatex,convertLatexToAsciiMath} from 'mathlive';
-import {normalize} from './engine/notation';
+import {normalize,indexedRoots} from './engine/notation';
 
 // Only notation crosses this boundary; the restricted engine still parses and
 // validates every calculation. No Compute Engine or remote service is needed.
 export function editorExpression(latex:string):string {
- return convertLatexToAsciiMath(latex)
-  .replace(/root\(3\)\(/g,'cbrt(')
+ return indexedRoots(convertLatexToAsciiMath(latex))
   .replace(/log\s*_\s*\(10\)\s*\(/g,'log10(')
   .replace(/\s+/g,' ').trim();
 }
