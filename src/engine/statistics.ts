@@ -6,7 +6,8 @@ export function statistics(req:Request){
  const rows=readRows(req.expression),mode=req.params.model??'regression';
  if(rows.some(r=>r.length!==2))throw new Error(mode==='descriptive'?'Saisis une valeur et son effectif sur chaque ligne, séparés par ;.':'Saisis un couple x ; y sur chaque ligne.');
  if(mode==='descriptive'){
-  const groups=rows.map(([v,count])=>{const n=asReal(count);integer(n,0,1e9,'Chaque effectif');return {v,n,x:asReal(v)};}).filter(g=>g.n>0).sort((a,b)=>a.x-b.x),N=groups.reduce((a,g)=>a+g.n,0);if(!N)throw new Error('Il faut au moins un effectif strictement positif.');
+  const groups:{v:string;n:number;x:number}[]=[];for(const [v,count]of rows){const n=asReal(count);integer(n,0,1e9,'Chaque effectif');if(!n)continue;const previous=groups.find(g=>g.v===v);if(previous)previous.n+=n;else groups.push({v,n,x:asReal(v)});}
+  groups.sort((a,b)=>a.x-b.x);const N=groups.reduce((a,g)=>a+g.n,0);if(!N)throw new Error('Il faut au moins un effectif strictement positif.');
   const total=sum(groups.map(g=>'('+g.v+')*'+g.n)),mean=exact('('+total+')/'+N),variance=exact('('+sum(groups.map(g=>g.n+'*(('+g.v+')-('+mean+'))^2'))+')/'+N);
   const rank=(k:number)=>{let at=0;for(const g of groups){at+=g.n;if(k<=at)return g.v;}return groups.at(-1)!.v;};
   const median=N%2?rank((N+1)/2):exact('(('+rank(N/2)+')+('+rank(N/2+1)+'))/2'),q1=rank(Math.ceil(N/4)),q3=rank(Math.ceil(3*N/4)),sd=exact('sqrt('+variance+')'),range=exact('('+groups.at(-1)!.v+')-('+groups[0].v+')');

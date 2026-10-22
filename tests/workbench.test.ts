@@ -50,6 +50,7 @@ test('lois continues et Poisson : valeurs de référence, symétrie et queues pe
 test('statistiques : effectifs sans expansion, quartiles et régression exacte',()=>{
  const r=run('statistics','1;2\n3;3\n7;1',{model:'descriptive'}),indicators=new Map(r.table!.rows.map(([a,b])=>[a,b] as const));assert.equal(r.exact,'3');assert.equal(indicators.get('Médiane'),'3');assert.equal(indicators.get('Premier quartile Q₁'),'1');assert.equal(indicators.get('Troisième quartile Q₃'),'3');assert.equal(indicators.get('Variance de la série'),'4');render(r);
  const even=run('statistics','1;1\n3;1',{model:'descriptive'});assert.equal(new Map(even.table!.rows.map(([a,b])=>[a,b] as const)).get('Médiane'),'2');
+ const repeated=run('statistics','1;2\n1;3\n3;1',{model:'descriptive'});assert.deepEqual(repeated.chart!.points,[[1,5],[3,1]]);assert.equal(repeated.exact,'4/3');
  const huge=run('statistics','1;1000000000\n3;1000000000',{model:'descriptive'});assert.equal(huge.exact,'2');
  const line=run('statistics','1;3\n2;5\n3;7',{predict:'10'});assert.match(line.steps.at(-1)!.latex!,/21/);assert.equal(new Map(line.table!.rows.map(([a,b])=>[a,b] as const)).get('Corrélation'),'1');render(line);
  assert.match(run('statistics','1;3\n2;5\n3;7',{predict:'1/3'}).steps.at(-1)!.latex!,/\\frac\{5\}\{3\}/);
